@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use stdClass;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class BaseModel extends Model
 {
@@ -46,6 +47,9 @@ class BaseModel extends Model
         // $this->setTable($view);
         $this->model = $this->setTable($view);
         $this->model->useView = true;
+
+
+        // $this->model = $this->model->withoutGlobalScope(SoftDeletingScope::class);
         return $this->model;
     }
 
@@ -62,7 +66,8 @@ class BaseModel extends Model
         return $this->model;
     }
 
-    public function getDeletedAtColumn() {
+    public function getDeletedAtColumn()
+    {
         return defined('static::DELETED_AT') ? static::DELETED_AT : 'deleted_at';
     }
 
@@ -141,18 +146,16 @@ class BaseModel extends Model
         $return->countFiltered = $this->model->count();
 
         if ($this->request->input('length') != -1) {
-            if($relation) {
+            if ($relation) {
                 $return->lists  = $this->model->offset((int) $this->request->input('start'))->limit((int) $this->request->input('length'))->with($relation)->get();
-            }
-            else {
+            } else {
                 $return->lists  = $this->model->offset((int) $this->request->input('start'))->limit((int) $this->request->input('length'))->get();
             }
         } else {
             if ($relation) {
                 // $this->model = $this->model->with($relation);
                 $return->lists = $this->model->with($relation)->get();
-            }
-            else {
+            } else {
                 $return->lists = $this->model->get();
             }
         }

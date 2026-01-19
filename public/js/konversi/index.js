@@ -43,7 +43,7 @@ initTableKonversi = () => {
                     searchable: true 
                 },
                 { 
-                    data: "soal_name", 
+                    data: "konversi_output", 
                     orderable: true, 
                     searchable: true 
                 },
@@ -86,7 +86,7 @@ initTableKonversi = () => {
                 {
                     targets: 3,
                     render: function (data, type, row) {
-                        return row.soal_name ? row.soal_name : '<span class="text-muted">Tidak ada soal</span>';
+                        return row.konversi_output ? row.konversi_output : '<span class="text-muted">Tidak ada soal konversi</span>';
                     },
                 },
                 {

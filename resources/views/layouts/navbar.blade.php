@@ -1,5 +1,12 @@
 @php
     $isAdmin = Auth::check() && Auth::user()->is_admin;
+    
+    // Helper untuk cek avatar
+    $userAvatar = auth()->user()->avatar;
+    $avatarPath = 'assets/media/avatars/' . $userAvatar;
+    $avatarUrl = ($userAvatar && file_exists(public_path($avatarPath))) 
+        ? asset($avatarPath) 
+        : asset('assets/media/avatars/blank.png');
 @endphp
 
 <div class="app-navbar-item d-flex align-items-stretch flex-lg-grow-1">
@@ -51,14 +58,14 @@
     <div class="cursor-pointer symbol symbol-circle symbol-35px symbol-md-45px border border-1"
         data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent"
         data-kt-menu-placement="bottom-end">
-        <img alt="avatar" src="{{ auth()->user()->avatar ? asset('assets/media/avatars/' . auth()->user()->avatar) : asset('assets/media/avatars/blank.png') }}" />
+        <img alt="avatar" src="{{ $avatarUrl }}" />
     </div>
     <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-4 fs-6 w-275px"
         data-kt-menu="true">
         <div class="menu-item px-3">
             <div class="menu-content d-flex align-items-center px-3">
                 <div class="symbol symbol-50px me-5">
-                    <img alt="Logo" src="{{ auth()->user()->avatar ? asset('assets/media/avatars/' . auth()->user()->avatar) : asset('assets/media/avatars/blank.png') }}" />
+                    <img alt="Logo" src="{{ $avatarUrl }}" />
                 </div>
                 <div class="d-flex flex-column">
                     <div class="fw-bold d-flex align-items-center fs-5">
@@ -101,7 +108,7 @@
                          data-category="${item.category}">
                         <div class="d-flex align-items-center">
                             <div class="symbol symbol-35px me-4">
-                                <img src="${item.img || '/assets/media/img/badge_sempurna.png'}" alt="badge" class="rounded-2" style="width:32px;height:32px;">
+                                <img src="${item.img || '/assets/media/img/badge_sempurna.png'}" alt="badge" class="rounded-2" style="width:32px;height:32px;" onerror="this.src='/assets/media/img/badge_sempurna.png'">
                             </div>
                             <div>
                                 <div class="fw-bold text-gray-800 fs-7">${item.name}</div>
@@ -145,7 +152,6 @@
         $(document).ready(loadPencapaianNotif);
     </script>
 
-    // Toggle Maintenance Mahasiswa
     <script>
         $('#toggle-maintenance-mahasiswa').on('change', function() {
             const status = $(this).is(':checked') ? 1 : 0;
