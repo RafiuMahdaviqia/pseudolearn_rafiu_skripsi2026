@@ -11,6 +11,8 @@ use App\Models\Soal;
 use App\Models\Kelas;
 use App\Models\Mahasiswa;
 use App\Models\HistoryConfidence;
+use App\Exports\LabelingExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LabelingController extends Controller
 {
@@ -83,5 +85,16 @@ class LabelingController extends Controller
     {
         $opr = $this->labelingService->calculateManual($request);
         return $opr;
+    }
+
+    public function export(Request $request)
+    {
+        $idKelas = $request->input('kelas');
+        $idLevel = $request->input('level');
+        $idSoal = $request->input('soal');
+
+        $filename = 'Clustering_Labeling_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        return Excel::download(new LabelingExport($idKelas, $idLevel, $idSoal), $filename);
     }
 }

@@ -32,6 +32,9 @@ class UjianCodeProgramController extends Controller
         $idUser = Auth::id();
         $nyawa = Nyawa::where('id_user', $idUser)->first();
 
+        // Check and regenerate lives (1 life per 10 minutes)
+        $nyawa->checkAndRegenerate();
+
         return view('pages.ujian.ujianCodeProgram', [
             'title' => 'Ujian Code Program',
             'soal' => $soal,

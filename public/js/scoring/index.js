@@ -332,11 +332,53 @@ $(document).off('blur.labeling').on('blur.labeling', '.pre-test-input, .post-tes
 });
 
 function exportExcel() {
-    Swal.fire({
-        icon: 'info',
-        title: 'Coming Soon',
-        text: 'Fitur export Excel akan tersedia segera.',
-    });
+    let kelas = $('#filter-kelas').val();
+    let level = $('#filter-level').val();
+    let soal  = $('#filter-soal').val();
+
+    // Create a form and submit it
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = APP_URL + 'scoring/export';
+    form.style.display = 'none';
+
+    // CSRF Token
+    var csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = $('meta[name="csrf-token"]').attr('content');
+    form.appendChild(csrfInput);
+
+    // Kelas
+    if (kelas) {
+        var kelasInput = document.createElement('input');
+        kelasInput.type = 'hidden';
+        kelasInput.name = 'kelas';
+        kelasInput.value = kelas;
+        form.appendChild(kelasInput);
+    }
+
+    // Level
+    if (level) {
+        var levelInput = document.createElement('input');
+        levelInput.type = 'hidden';
+        levelInput.name = 'level';
+        levelInput.value = level;
+        form.appendChild(levelInput);
+    }
+
+    // Soal
+    if (soal) {
+        var soalInput = document.createElement('input');
+        soalInput.type = 'hidden';
+        soalInput.name = 'soal';
+        soalInput.value = soal;
+        form.appendChild(soalInput);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
 }
 
 function calculateManual() {

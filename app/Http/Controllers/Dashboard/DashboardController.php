@@ -62,6 +62,9 @@ class DashboardController extends Controller
             $idUser = Auth::id();
             $nyawa = Nyawa::where('id_user', $idUser)->first();
 
+            // Check and regenerate lives (1 life per 10 minutes)
+            $nyawa->checkAndRegenerate();
+
             $dataReturn = [
                 'title' => 'Dashboard', // Judul untuk ditampilkan di navbar
                 'isAdmin' => $isAdmin,
@@ -88,6 +91,10 @@ class DashboardController extends Controller
      public function pencapaian()
     {
         $nyawa = Nyawa::where('id_user', Auth::id())->first();
+
+        // Check and regenerate lives (1 life per 10 minutes)
+        $nyawa->checkAndRegenerate();
+
         return view('pages.dashboard.pencapaian', [
             'title' => 'Pencapaian',
             'lives' => $nyawa->nyawa,

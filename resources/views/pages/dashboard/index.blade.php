@@ -591,6 +591,7 @@
     });
 </script>
 
+@if($isAdmin)
 <script>
     (function() {
         const ONLINE_ENDPOINT = APP_URL + 'dashboard/mahasiswa-online';
@@ -674,5 +675,6 @@
     })();
     // ...existing code...
 </script>
+@endif
 
 @endpush

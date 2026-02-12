@@ -217,6 +217,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::get('/detailLevel/{id}', [LogActivityController::class, 'detailLevel'])->name('detailLevel');
             Route::get('/detailSoal/{id}', [LogActivityController::class, 'detailSoal'])->name('detailSoal'); 
             Route::get('/getSoalByLevel', [LogActivityController::class, 'getSoalByLevel'])->name('log-activity.getSoalByLevel');
+            Route::post('/export', [LogActivityController::class, 'export'])->name('export');
         });
 
         // labeling
@@ -225,6 +226,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::post('/table', [LabelingController::class, 'table'])->name('table');
             Route::post('/update-test', [LabelingController::class, 'updateTest'])->name('labeling.update-test');
             Route::post('/calculate-manual', [LabelingController::class, 'calculateManual'])->name('calculate-manual');
+            Route::post('/export', [LabelingController::class, 'export'])->name('export');
         });
 
         // scoring
@@ -234,6 +236,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::post('/update-test', [ScoringController::class, 'updateTest'])->name('scoring.update-test');
             Route::post('/calculate-manual', [ScoringController::class, 'calculateManual'])->name('calculate-manual');
             Route::post('/calculate-average', [ScoringController::class, 'calculateAverage'])->name('calculate-average');
+            Route::post('/export', [ScoringController::class, 'export'])->name('export');
         });
 
         // ujian konversi

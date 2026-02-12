@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 Schedule::command('nyawa:regen')->everyMinute();
+Schedule::command('nyawa:reset-daily')->dailyAt('00:00');

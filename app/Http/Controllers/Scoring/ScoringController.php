@@ -11,6 +11,8 @@ use App\Models\Soal;
 use App\Models\Kelas;
 use App\Models\Mahasiswa;
 use App\Models\HistoryConfidence;
+use App\Exports\ScoringExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ScoringController extends Controller
 {
@@ -89,5 +91,16 @@ class ScoringController extends Controller
     {
         $opr = $this->scoringService->calculateAverage($request);
         return $opr;
+    }
+
+    public function export(Request $request)
+    {
+        $idKelas = $request->input('kelas');
+        $idLevel = $request->input('level');
+        $idSoal = $request->input('soal');
+
+        $filename = 'Clustering_Scoring_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        return Excel::download(new ScoringExport($idKelas, $idLevel, $idSoal), $filename);
     }
 }

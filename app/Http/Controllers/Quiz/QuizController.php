@@ -189,6 +189,9 @@ class QuizController extends Controller
 
         $nyawa = Nyawa::where('id_user', $userId)->first();
 
+        // Check and regenerate lives (1 life per 10 minutes)
+        $nyawa->checkAndRegenerate();
+
         return view('pages.quiz.index', [
             'title' => 'Quiz',
             'dataLevel' => $dataLevel,
@@ -314,6 +317,9 @@ class QuizController extends Controller
 
         $idUser = Auth::id();
         $nyawa = Nyawa::where('id_user', $idUser)->first();
+
+        // Check and regenerate lives (1 life per 10 minutes)
+        $nyawa->checkAndRegenerate();
 
         return view('pages.quiz.question-list', [
             'title' => 'List Soal',

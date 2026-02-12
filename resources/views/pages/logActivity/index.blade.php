@@ -44,6 +44,11 @@
                             data-hide-search="true" data-allow-clear="true">
                             <option value="">Pilih Level dulu</option>
                         </select>
+
+                        <button type="button" class="btn btn-success btn-sm" id="btn-export" onclick="exportExcel()">
+                            <i class="ki-outline ki-file-up"></i>
+                            Export
+                        </button>
                     </div>
                 </div>
 

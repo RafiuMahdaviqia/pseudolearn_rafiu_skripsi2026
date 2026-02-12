@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use App\Core\BaseModel;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -44,5 +45,54 @@ class Nyawa extends BaseModel
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    /**
+     * Check and regenerate nyawa based on time.
+     * One nyawa regenerates every 10 minutes when below max.
+     */
+    public function checkAndRegenerate(): self
+    {
+        $now = Carbon::now();
+
+        // If already at max, ensure timer is cleared
+        if ($this->nyawa >= $this->max_nyawa) {
+            if ($this->next_regen_at !== null) {
+                $this->next_regen_at = null;
+                $this->save();
+            }
+            return $this;
+        }
+
+        // Below max - handle regeneration
+        if ($this->next_regen_at === null) {
+            // Start regeneration timer (first time below max)
+            $this->next_regen_at = $now->copy()->addMinutes(10);
+            $this->save();
+            return $this;
+        }
+
+        $nextRegen = Carbon::parse($this->next_regen_at);
+
+        // Check if regeneration time has passed
+        if ($now->gte($nextRegen)) {
+            // Calculate total minutes since regen timer started
+            $minutesSinceRegen = $nextRegen->diffInMinutes($now);
+            // Each 10 minutes = 1 life, plus 1 for crossing the initial threshold
+            $livesToAdd = (int) floor($minutesSinceRegen / 10) + 1;
+
+            $this->nyawa = min($this->nyawa + $livesToAdd, $this->max_nyawa);
+
+            if ($this->nyawa < $this->max_nyawa) {
+                // Set next regen relative to now
+                $this->next_regen_at = $now->copy()->addMinutes(10);
+            } else {
+                $this->next_regen_at = null;
+            }
+
+            $this->save();
+        }
+
+        return $this;
     }
 }

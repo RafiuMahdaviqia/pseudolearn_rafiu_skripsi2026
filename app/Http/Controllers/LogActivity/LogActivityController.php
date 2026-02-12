@@ -12,6 +12,8 @@ use App\Models\Kelas;
 use App\Models\Mahasiswa;
 use App\Models\Ujian;
 use App\Models\LogData;
+use App\Exports\LogActivityExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LogActivityController extends Controller
 {
@@ -140,5 +142,16 @@ class LogActivityController extends Controller
             ->get(['id', 'judul']);
 
         return response()->json($soal);
+    }
+
+    public function export(Request $request)
+    {
+        $idKelas = $request->input('kelas');
+        $idLevel = $request->input('level');
+        $idSoal = $request->input('soal');
+
+        $filename = 'Log_Aktivitas_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        return Excel::download(new LogActivityExport($idKelas, $idLevel, $idSoal), $filename);
     }
 }
