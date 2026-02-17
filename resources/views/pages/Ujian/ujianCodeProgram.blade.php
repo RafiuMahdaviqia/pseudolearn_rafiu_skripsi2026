@@ -281,6 +281,10 @@
     </div>
     @extends('pages.guide.index')
     @extends('pages.ujian.modal')
+    
+    {{-- Chatbot Component --}}
+    @include('components.chatbot')
+    
     <script>
         var hostUrl = "assets/";
     </script>

@@ -19,6 +19,7 @@ use App\Http\Controllers\Confidence\ConfidenceController;
 use App\Http\Controllers\Ujian\UjianCodeProgramController;
 use App\Http\Controllers\Leaderboard\LeaderboardController;
 use App\Http\Controllers\LogActivity\LogActivityController;
+use App\Http\Controllers\LogDataChatbot\LogDataChatbot as LogDataChatbotController;
 use App\Http\Controllers\Overlapping\OverlappingController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
 use App\Models\Setting;
@@ -218,6 +219,15 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::get('/detailSoal/{id}', [LogActivityController::class, 'detailSoal'])->name('detailSoal'); 
             Route::get('/getSoalByLevel', [LogActivityController::class, 'getSoalByLevel'])->name('log-activity.getSoalByLevel');
             Route::post('/export', [LogActivityController::class, 'export'])->name('export');
+        });
+
+        // log-data-chatbot
+        Route::prefix('log-data-chatbot')->name('log-data-chatbot.')->group(function() {
+            Route::get('/', [LogDataChatbotController::class, 'index'])->name('index');
+            Route::post('/table', [LogDataChatbotController::class, 'table'])->name('table');
+            Route::get('/detail/{id}', [LogDataChatbotController::class, 'detail'])->name('detail');
+            Route::get('/getSoalByLevel', [LogDataChatbotController::class, 'getSoalByLevel'])->name('getSoalByLevel');
+            Route::post('/export', [LogDataChatbotController::class, 'export'])->name('export');
         });
 
         // labeling
