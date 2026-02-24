@@ -55,6 +55,7 @@ services:
             - '${FORWARD_PHPMYADMIN_PORT:-8080}:80'
         environment:
             PMA_HOST: mysql
+            UPLOAD_LIMIT: 5120k
         networks:
             - sail
         depends_on:
