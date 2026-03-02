@@ -23,6 +23,7 @@ use App\Http\Controllers\LogDataChatbot\LogDataChatbot as LogDataChatbotControll
 use App\Http\Controllers\Overlapping\OverlappingController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
 use App\Models\Setting;
+use App\Http\Controllers\Chatbot\ChatbotController;
 
 Route::get('/', function () {
     return Auth::check() ? redirect('/dashboard') : redirect('/login');
@@ -86,6 +87,10 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::get('status', [NyawaController::class, 'status'])->name('nyawa.status');
         });
 
+        // chatbot
+        Route::prefix('chatbot')->name('chatbot.')->group(function() {
+            Route::post('/send', [ChatbotController::class, 'send'])->name('send');
+        });
     });
 
     // Role admin (dosen)
