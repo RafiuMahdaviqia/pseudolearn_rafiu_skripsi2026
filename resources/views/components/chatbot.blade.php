@@ -1,3 +1,8 @@
+<?php
+
+    $chatbotUserName = Auth::user()->name ?? 'Mahasiswa';
+?>
+
 {{-- Chatbot Component for Student Exam Page --}}
 
 {{-- Chatbot floating button --}}
@@ -466,24 +471,27 @@
 let chatbotOpen = false;
 const chatbotMessages = [];
 
+// Context dari halaman ujian
+const CHATBOT_ID_SOAL  = '{{ $id_soal ?? "" }}';
+const CHATBOT_ID_LEVEL = '{{ $id_level ?? "" }}';
+const CHATBOT_CSRF     = '{{ csrf_token() }}';
+
 // Toggle chatbot visibility
 function toggleChatbot() {
     const container = document.getElementById('chatbot-container');
-    const overlay = document.getElementById('chatbot-overlay');
-    chatbotOpen = !chatbotOpen;
-    
+    const overlay   = document.getElementById('chatbot-overlay');
+    chatbotOpen     = !chatbotOpen;
+
     if (chatbotOpen) {
         container.classList.remove('chatbot-hidden');
         container.classList.add('chatbot-visible');
         overlay.classList.remove('chatbot-hidden');
         overlay.classList.add('chatbot-visible');
-        
-        // Send welcome message if first time
+
         if (chatbotMessages.length === 0) {
             sendWelcomeMessage();
         }
-        
-        // Focus input
+
         setTimeout(() => {
             document.getElementById('chatbot-input').focus();
         }, 300);
@@ -498,9 +506,9 @@ function toggleChatbot() {
 // Close chatbot
 function closeChatbot() {
     const container = document.getElementById('chatbot-container');
-    const overlay = document.getElementById('chatbot-overlay');
-    chatbotOpen = false;
-    
+    const overlay   = document.getElementById('chatbot-overlay');
+    chatbotOpen     = false;
+
     container.classList.remove('chatbot-visible');
     container.classList.add('chatbot-hidden');
     overlay.classList.remove('chatbot-visible');
@@ -509,57 +517,43 @@ function closeChatbot() {
 
 // Send welcome message
 function sendWelcomeMessage() {
-    const userName = '{{ Auth::user()->name ?? "Mahasiswa" }}';
+    const userName = @json($chatbotUserName);
     addBotMessage(`Hai ${userName}! 👋\n\nSaya adalah PseudoLearn Chatbot AI. Saya siap membantu kamu memahami materi atau menjawab pertanyaan seputar soal yang sedang kamu kerjakan.\n\nSilakan ketik pertanyaanmu!`);
 }
 
-// Add bot message to chat
-function addBotMessage(text, isMaterial = false, materialTitle = '') {
+// Add bot message
+function addBotMessage(text) {
     const messagesContainer = document.getElementById('chatbot-messages');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'chatbot-message chatbot-message-bot';
-    
-    if (isMaterial) {
-        messageDiv.innerHTML = `
-            <div class="chatbot-material-card">
-                <div class="chatbot-material-title">${materialTitle}</div>
-                <div class="chatbot-material-content">${text}</div>
-            </div>
-        `;
-    } else {
-        messageDiv.innerHTML = `
-            <div class="chatbot-bubble chatbot-bubble-bot">${text.replace(/\n/g, '<br>')}</div>
-        `;
-    }
-    
+    const messageDiv        = document.createElement('div');
+    messageDiv.className    = 'chatbot-message chatbot-message-bot';
+    messageDiv.innerHTML    = `
+        <div class="chatbot-bubble chatbot-bubble-bot">${text.replace(/\n/g, '<br>')}</div>
+    `;
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    
-    chatbotMessages.push({ role: 'bot', text: text });
+    chatbotMessages.push({ role: 'bot', text });
 }
 
-// Add user message to chat
+// Add user message
 function addUserMessage(text) {
     const messagesContainer = document.getElementById('chatbot-messages');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'chatbot-message chatbot-message-user';
-    messageDiv.innerHTML = `
+    const messageDiv        = document.createElement('div');
+    messageDiv.className    = 'chatbot-message chatbot-message-user';
+    messageDiv.innerHTML    = `
         <div class="chatbot-bubble chatbot-bubble-user">${text}</div>
     `;
-    
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    
-    chatbotMessages.push({ role: 'user', text: text });
+    chatbotMessages.push({ role: 'user', text });
 }
 
 // Show typing indicator
 function showTypingIndicator() {
     const messagesContainer = document.getElementById('chatbot-messages');
-    const typingDiv = document.createElement('div');
-    typingDiv.id = 'chatbot-typing-indicator';
-    typingDiv.className = 'chatbot-message chatbot-message-bot';
-    typingDiv.innerHTML = `
+    const typingDiv         = document.createElement('div');
+    typingDiv.id            = 'chatbot-typing-indicator';
+    typingDiv.className     = 'chatbot-message chatbot-message-bot';
+    typingDiv.innerHTML     = `
         <div class="chatbot-typing">
             <div class="chatbot-typing-dot"></div>
             <div class="chatbot-typing-dot"></div>
@@ -573,68 +567,60 @@ function showTypingIndicator() {
 // Hide typing indicator
 function hideTypingIndicator() {
     const typingIndicator = document.getElementById('chatbot-typing-indicator');
-    if (typingIndicator) {
-        typingIndicator.remove();
-    }
+    if (typingIndicator) typingIndicator.remove();
 }
 
-// Handle keypress in input
+// Handle Enter key
 function handleChatbotKeypress(event) {
-    if (event.key === 'Enter') {
-        sendChatbotMessage();
-    }
+    if (event.key === 'Enter') sendChatbotMessage();
 }
 
-// Send message
-function sendChatbotMessage() {
-    const input = document.getElementById('chatbot-input');
+// Send message to backend
+async function sendChatbotMessage() {
+    const input   = document.getElementById('chatbot-input');
     const message = input.value.trim();
-    
+
     if (!message) return;
-    
-    // Add user message
+
     addUserMessage(message);
     input.value = '';
-    
-    // Show typing indicator
-    showTypingIndicator();
-    
-    // Send to backend (TODO: implement actual API call)
-    // For now, simulate response
-    setTimeout(() => {
-        hideTypingIndicator();
-        processChatbotResponse(message);
-    }, 1000);
-}
+    input.disabled = true;
+    document.querySelector('.chatbot-send-btn').disabled = true;
 
-// Process chatbot response (mock)
-// TODO: Connect to actual chatbot API
-function processChatbotResponse(userMessage) {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // Simple keyword-based responses for demo
-    if (lowerMessage.includes('tipe data')) {
-        addBotMessage(
-            'Tipe Data adalah atribut yang menentukan jenis nilai yang bisa disimpan oleh suatu variabel, seperti teks (string), angka (integer, float), atau nilai benar/salah (boolean). serta bagaimana komputer harus menginterpretasi, menyimpan, dan melakukan operasi pada data tersebut',
-            true,
-            'Tipe Data'
-        );
-    } else if (lowerMessage.includes('algoritma')) {
-        addBotMessage(
-            'Algoritma adalah langkah-langkah sistematis dan terstruktur untuk menyelesaikan suatu masalah atau mencapai tujuan tertentu. Dalam pemrograman, algoritma menjadi dasar untuk membuat program yang efisien.',
-            true,
-            'Algoritma'
-        );
-    } else if (lowerMessage.includes('variabel')) {
-        addBotMessage(
-            'Variabel adalah tempat penyimpanan data di dalam program yang memiliki nama dan dapat menyimpan nilai yang bisa berubah selama eksekusi program.',
-            true,
-            'Variabel'
-        );
-    } else if (lowerMessage.includes('bantuan') || lowerMessage.includes('help')) {
-        addBotMessage('Saya bisa membantu kamu dengan:\n\n• Menjelaskan materi tipe data\n• Menjelaskan konsep algoritma\n• Menjawab pertanyaan seputar variabel\n• Memberikan tips mengerjakan soal\n\nSilakan tanyakan apa yang ingin kamu ketahui!');
-    } else {
-        addBotMessage('Terima kasih atas pertanyaanmu! Saya sedang memproses jawabannya. Untuk saat ini, coba tanyakan tentang "tipe data", "algoritma", atau "variabel" untuk mendapatkan penjelasan.');
+    showTypingIndicator();
+
+    try {
+        const response = await fetch('/chatbot/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CHATBOT_CSRF,
+                'Accept'      : 'application/json',
+            },
+            body: JSON.stringify({
+                message  : message,
+                id_soal  : CHATBOT_ID_SOAL  || null,
+                id_level : CHATBOT_ID_LEVEL || null,
+            }),
+        });
+
+        const data = await response.json();
+        hideTypingIndicator();
+
+        if (data.success) {
+            addBotMessage(data.respons);
+        } else {
+            addBotMessage('Maaf, terjadi kesalahan. Silakan coba lagi.');
+        }
+
+    } catch (error) {
+        hideTypingIndicator();
+        addBotMessage('Maaf, tidak dapat terhubung ke server. Periksa koneksi internet kamu.');
+        console.error('Chatbot error:', error);
+    } finally {
+        input.disabled = false;
+        document.querySelector('.chatbot-send-btn').disabled = false;
+        input.focus();
     }
 }
 </script>

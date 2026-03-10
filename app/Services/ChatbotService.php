@@ -41,7 +41,7 @@ Aturan penting:
 - Jangan pernah memberikan jawaban langsung dari soal yang sedang dikerjakan mahasiswa.
 - Berikan hints, penjelasan konsep, atau pertanyaan pemandu agar mahasiswa bisa menemukan jawaban sendiri.
 - Gunakan bahasa Indonesia yang ramah dan mudah dipahami.
-- Jawab dengan singkat dan jelas, maksimal 3-4 kalimat per respons.
+- Jawab dengan singkat dan jelas, maksimal 5-6 kalimat per respons.
 - Jika pertanyaan tidak berkaitan dengan pemrograman atau materi, tolak dengan sopan.";
     }
 
@@ -51,7 +51,7 @@ Aturan penting:
     private function sendToGemini(string $systemPrompt, string $userMessage): string
     {
         $apiKey = config('services.gemini.api_key');
-        $model  = config('services.gemini.model', 'gemini-1.5-flash');
+        $model  = config('services.gemini.model', 'gemini-2.5-flash');
         $url    = config('services.gemini.url') . $model . ':generateContent?key=' . $apiKey;
 
         $payload = [
