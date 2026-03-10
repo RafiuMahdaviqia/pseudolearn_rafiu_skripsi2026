@@ -51,7 +51,7 @@ Aturan penting:
     private function sendToGemini(string $systemPrompt, string $userMessage): string
     {
         $apiKey = config('services.gemini.api_key');
-        $model  = config('services.gemini.model', 'gemini-1.5-flash');
+        $model  = config('services.gemini.model', 'gemini-2.5-flash');
         $url    = config('services.gemini.url') . $model . ':generateContent?key=' . $apiKey;
 
         $payload = [
