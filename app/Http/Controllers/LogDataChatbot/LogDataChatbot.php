@@ -8,6 +8,8 @@ use App\Models\Level;
 use App\Models\Soal;
 use App\Models\Kelas;
 use App\Models\Mahasiswa;
+use App\Models\ChatbotAccessLog;
+use App\Models\ChatbotLog;
 
 class LogDataChatbot extends Controller
 {
@@ -94,16 +96,52 @@ class LogDataChatbot extends Controller
 
         $mahasiswas = $query->skip($start)->take($length)->get();
 
-        // Map data with chatbot counts
-        // TODO: Replace with actual chatbot log data from database
-        $data = $mahasiswas->map(function ($mahasiswa) {
+        $mahasiswaIds = $mahasiswas->pluck('id');
+
+        // When level/soal filter active, count from chatbot_logs (has id_level/id_soal)
+        // When no filter, count from chatbot_access_logs (open events)
+        if (!empty($level) || !empty($soal)) {
+            $logQuery = ChatbotLog::whereIn('id_mahasiswa', $mahasiswaIds);
+            if (!empty($level)) {
+                $logQuery = $logQuery->where('id_level', $level);
+            }
+            if (!empty($soal)) {
+                $logQuery = $logQuery->where('id_soal', $soal);
+            }
+
+            $countBiasa = (clone $logQuery)
+                ->where('type', 'biasa')
+                ->selectRaw('id_mahasiswa, count(*) as total')
+                ->groupBy('id_mahasiswa')
+                ->pluck('total', 'id_mahasiswa');
+
+            $countAdaptive = (clone $logQuery)
+                ->where('type', 'adaptive')
+                ->selectRaw('id_mahasiswa, count(*) as total')
+                ->groupBy('id_mahasiswa')
+                ->pluck('total', 'id_mahasiswa');
+        } else {
+            $countBiasa = ChatbotAccessLog::whereIn('id_mahasiswa', $mahasiswaIds)
+                ->where('type', 'biasa')
+                ->selectRaw('id_mahasiswa, count(*) as total')
+                ->groupBy('id_mahasiswa')
+                ->pluck('total', 'id_mahasiswa');
+
+            $countAdaptive = ChatbotAccessLog::whereIn('id_mahasiswa', $mahasiswaIds)
+                ->where('type', 'adaptive')
+                ->selectRaw('id_mahasiswa, count(*) as total')
+                ->groupBy('id_mahasiswa')
+                ->pluck('total', 'id_mahasiswa');
+        }
+
+        $data = $mahasiswas->map(function ($mahasiswa) use ($countBiasa, $countAdaptive) {
             return [
                 'id' => $mahasiswa->id,
                 'nim' => $mahasiswa->nim,
                 'name' => $mahasiswa->name,
                 'kelas_name' => $mahasiswa->kelas_name ?? '-',
-                'jumlah_chatbot' => 0, // TODO: Get from database
-                'jumlah_chatbot_adaptive' => 0, // TODO: Get from database
+                'jumlah_chatbot' => $countBiasa[$mahasiswa->id] ?? 0,
+                'jumlah_chatbot_adaptive' => $countAdaptive[$mahasiswa->id] ?? 0,
             ];
         });
 
@@ -148,15 +186,41 @@ class LogDataChatbot extends Controller
             ]);
         }
 
-        // TODO: Get actual chatbot history from database
+        $accessLogs = ChatbotAccessLog::where('id_mahasiswa', $id)
+            ->orderBy('opened_at', 'desc')
+            ->get();
+
+        $jumlahBiasa = $accessLogs->where('type', 'biasa')->count();
+        $jumlahAdaptive = $accessLogs->where('type', 'adaptive')->count();
+
+        $history = $accessLogs->map(function ($log) {
+            $durasiText = '-';
+            if (!is_null($log->durasi_menit)) {
+                if ($log->durasi_menit > 0) {
+                    $durasiText = $log->durasi_menit . ' menit';
+                } else {
+                    $detik = $log->opened_at && $log->closed_at
+                        ? abs($log->opened_at->diffInSeconds($log->closed_at))
+                        : 0;
+                    $durasiText = '0 menit ' . $detik . ' detik';
+                }
+            }
+
+            return [
+                'type'        => $log->type,
+                'waktu_akses' => $log->opened_at ? $log->opened_at->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') . ' WIB' : '-',
+                'durasi'      => $durasiText,
+            ];
+        })->values()->toArray();
+
         $data = [
             'id' => $mahasiswa->id,
             'nim' => $mahasiswa->nim,
             'name' => $mahasiswa->name,
             'kelas_name' => $mahasiswa->kelas_name ?? '-',
-            'jumlah_chatbot' => 0, // TODO: Get from database
-            'jumlah_chatbot_adaptive' => 0, // TODO: Get from database
-            'history' => [] // TODO: Get from database
+            'jumlah_chatbot' => $jumlahBiasa,
+            'jumlah_chatbot_adaptive' => $jumlahAdaptive,
+            'history' => $history,
         ];
 
         return response()->json([
@@ -180,3 +244,4 @@ class LogDataChatbot extends Controller
         ]);
     }
 }
+

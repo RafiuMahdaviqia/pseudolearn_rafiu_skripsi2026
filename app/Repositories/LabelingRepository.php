@@ -121,9 +121,9 @@ class LabelingRepository extends BaseRepository
             $nilaiTest = null;
             if (!is_null($level) && $level !== '') {
                 $nilaiTest = $this->nilaiTestModel
-                ->where('id_mahasiswa', $id_mahasiswa)
-                ->where('id_level', $level)
-                ->first();
+                    ->where('id_mahasiswa', $id_mahasiswa)
+                    ->where('id_level', $level)
+                    ->first();
             }
 
             $labelSkor = null;
@@ -302,10 +302,32 @@ class LabelingRepository extends BaseRepository
         }
     }
 
+
+    //     private function determineLabelAndScore($totalDrag, $totalWaktuDetik)
+    // {
+    //     // Definisi label dan skor
+    //     $ideal = ['Ideal', 90];
+    //     $struggling = ['Struggling', 30];
+    //     $normal = ['Normal', 70];
+    //     $gamingTheSystem = ['Gaming the System', 50];
+
+    //     if ($totalDrag <= 18 && $totalWaktuDetik < 53) {
+    //         return $ideal;
+    //     } elseif ($totalDrag > 18 && $totalWaktuDetik >= 53) {
+    //         return $struggling;
+    //     } elseif ($totalDrag <= 18 && $totalWaktuDetik >= 53) {
+    //         return $normal;
+    //     } elseif ($totalDrag >= 18 && $totalWaktuDetik < 53) {
+    //         return $gamingTheSystem;
+    //     } else {
+    //         return [null, null];
+    //     }
+    // }
+
     public function calculateAverage($data)
     {
         DB::beginTransaction();
-        try {   
+        try {
             $dataMahasiswa = $this->mahasiswaModel->where('id_kelas', $data->kelas)->get();
             $level = $data->level;
             $dataSoal = $this->soalModel->where('id_level', $level)->get();

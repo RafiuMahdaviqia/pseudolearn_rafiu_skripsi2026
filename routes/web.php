@@ -90,6 +90,8 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         // chatbot
         Route::prefix('chatbot')->name('chatbot.')->group(function() {
             Route::post('/send', [ChatbotController::class, 'send'])->name('send');
+            Route::post('/open', [ChatbotController::class, 'open'])->name('open');
+            Route::post('/close', [ChatbotController::class, 'close'])->name('close');
         });
     });
 

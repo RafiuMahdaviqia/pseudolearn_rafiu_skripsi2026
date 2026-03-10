@@ -2,7 +2,7 @@
 
 {{-- Chatbot floating button --}}
 <div id="chatbot-toggle-btn" class="chatbot-floating-btn" onclick="toggleChatbot()">
-    <img src="{{ asset('assets/media/icons_chatbot/NicePng_chat-png_8743894 2.png') }}" alt="Chatbot" class="chatbot-btn-icon">
+    <img src="{{ asset('assets/media/icons_chatbot/logo_chatbot.png') }}" alt="Chatbot" class="chatbot-btn-icon">
 </div>
 
 {{-- Chatbot overlay for closing when clicking outside --}}
@@ -20,7 +20,7 @@
             </div>
             <div class="chatbot-header-actions">
                 <div class="chatbot-header-icon-wrapper">
-                    <img src="{{ asset('assets/media/icons_chatbot/NicePng_chat-png_8743894 2.png') }}" alt="Chatbot" class="chatbot-header-icon">
+                    <img src="{{ asset('assets/media/icons_chatbot/logo_chatbot.png') }}" alt="Chatbot" class="chatbot-header-icon">
                 </div>
                 {{-- <button class="chatbot-close-btn" onclick="closeChatbot()" title="Tutup">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -170,16 +170,31 @@
 }
 
 .chatbot-header-icon-wrapper {
-    width: 55px;
-    height: 55px;
+    width: 60px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #ffffff;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 
+                0 2px 6px rgba(0, 0, 0, 0.1),
+                inset 0 1px 3px rgba(255, 255, 255, 0.8);
+    padding: 8px;
+    transition: all 0.3s ease;
+}
+
+.chatbot-header-icon-wrapper:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 
+                0 3px 8px rgba(0, 0, 0, 0.15),
+                inset 0 1px 3px rgba(255, 255, 255, 0.8);
 }
 
 .chatbot-header-icon {
-    width: 50px;
-    height: 50px;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
 }
 
@@ -464,7 +479,58 @@
 <script>
 // Chatbot state
 let chatbotOpen = false;
+let chatbotAccessId = null;
 const chatbotMessages = [];
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+
+// Log chatbot open to backend
+function logChatbotOpen() {
+    fetch("{{ route('chatbot.open') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({ type: 'biasa' }),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            chatbotAccessId = data.access_id;
+        }
+    })
+    .catch(err => console.error('Log open error:', err));
+}
+
+// Log chatbot close to backend
+function logChatbotClose() {
+    if (!chatbotAccessId) return;
+    const payload = JSON.stringify({ access_id: chatbotAccessId });
+    // Use sendBeacon for reliability on page close
+    if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon("{{ route('chatbot.close') }}?_token=" + csrfToken, blob);
+    } else {
+        fetch("{{ route('chatbot.close') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: payload,
+        }).catch(() => {});
+    }
+    chatbotAccessId = null;
+}
+
+// Close chatbot on page unload
+window.addEventListener('beforeunload', function () {
+    if (chatbotOpen) {
+        logChatbotClose();
+    }
+});
 
 // Toggle chatbot visibility
 function toggleChatbot() {
@@ -477,6 +543,9 @@ function toggleChatbot() {
         container.classList.add('chatbot-visible');
         overlay.classList.remove('chatbot-hidden');
         overlay.classList.add('chatbot-visible');
+
+        // Log open
+        logChatbotOpen();
         
         // Send welcome message if first time
         if (chatbotMessages.length === 0) {
@@ -492,6 +561,9 @@ function toggleChatbot() {
         container.classList.add('chatbot-hidden');
         overlay.classList.remove('chatbot-visible');
         overlay.classList.add('chatbot-hidden');
+
+        // Log close
+        logChatbotClose();
     }
 }
 
@@ -505,6 +577,9 @@ function closeChatbot() {
     container.classList.add('chatbot-hidden');
     overlay.classList.remove('chatbot-visible');
     overlay.classList.add('chatbot-hidden');
+
+    // Log close
+    logChatbotClose();
 }
 
 // Send welcome message
@@ -599,42 +674,40 @@ function sendChatbotMessage() {
     // Show typing indicator
     showTypingIndicator();
     
-    // Send to backend (TODO: implement actual API call)
-    // For now, simulate response
-    setTimeout(() => {
-        hideTypingIndicator();
-        processChatbotResponse(message);
-    }, 1000);
-}
+    // Get soal and level context from the page
+    const idSoal = document.getElementById('id-soal')?.value 
+                || document.getElementById('id-soal-konversi')?.value 
+                || null;
+    const idLevel = document.getElementById('id-level')?.value || null;
 
-// Process chatbot response (mock)
-// TODO: Connect to actual chatbot API
-function processChatbotResponse(userMessage) {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // Simple keyword-based responses for demo
-    if (lowerMessage.includes('tipe data')) {
-        addBotMessage(
-            'Tipe Data adalah atribut yang menentukan jenis nilai yang bisa disimpan oleh suatu variabel, seperti teks (string), angka (integer, float), atau nilai benar/salah (boolean). serta bagaimana komputer harus menginterpretasi, menyimpan, dan melakukan operasi pada data tersebut',
-            true,
-            'Tipe Data'
-        );
-    } else if (lowerMessage.includes('algoritma')) {
-        addBotMessage(
-            'Algoritma adalah langkah-langkah sistematis dan terstruktur untuk menyelesaikan suatu masalah atau mencapai tujuan tertentu. Dalam pemrograman, algoritma menjadi dasar untuk membuat program yang efisien.',
-            true,
-            'Algoritma'
-        );
-    } else if (lowerMessage.includes('variabel')) {
-        addBotMessage(
-            'Variabel adalah tempat penyimpanan data di dalam program yang memiliki nama dan dapat menyimpan nilai yang bisa berubah selama eksekusi program.',
-            true,
-            'Variabel'
-        );
-    } else if (lowerMessage.includes('bantuan') || lowerMessage.includes('help')) {
-        addBotMessage('Saya bisa membantu kamu dengan:\n\n• Menjelaskan materi tipe data\n• Menjelaskan konsep algoritma\n• Menjawab pertanyaan seputar variabel\n• Memberikan tips mengerjakan soal\n\nSilakan tanyakan apa yang ingin kamu ketahui!');
-    } else {
-        addBotMessage('Terima kasih atas pertanyaanmu! Saya sedang memproses jawabannya. Untuk saat ini, coba tanyakan tentang "tipe data", "algoritma", atau "variabel" untuk mendapatkan penjelasan.');
-    }
+    // Send to backend API
+    fetch("{{ route('chatbot.send') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content 
+                         || '{{ csrf_token() }}',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            message: message,
+            id_soal: idSoal,
+            id_level: idLevel,
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideTypingIndicator();
+        if (data.success) {
+            addBotMessage(data.respons);
+        } else {
+            addBotMessage(data.message || 'Maaf, terjadi kesalahan. Silakan coba lagi.');
+        }
+    })
+    .catch(error => {
+        hideTypingIndicator();
+        console.error('Chatbot error:', error);
+        addBotMessage('Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.');
+    });
 }
 </script>

@@ -190,6 +190,7 @@
                                         </div>
 
                                         <input type="hidden" id="id-level" value="{{ $soal->id_level }}">
+                                        <input type="hidden" id="id-soal" value="{{ $soal->id }}">
                                         <div class="row">
                                             <div class="col-md-5">
                                                 <div class="panel-box text-center mb-8">
