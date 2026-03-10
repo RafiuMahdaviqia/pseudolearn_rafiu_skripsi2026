@@ -101,21 +101,20 @@ class LogDataChatbot extends Controller
         // When level/soal filter active, count from chatbot_logs (has id_level/id_soal)
         // When no filter, count from chatbot_access_logs (open events)
         if (!empty($level) || !empty($soal)) {
-            $logQuery = ChatbotLog::whereIn('id_mahasiswa', $mahasiswaIds);
-            if (!empty($level)) {
-                $logQuery = $logQuery->where('id_level', $level);
-            }
-            if (!empty($soal)) {
-                $logQuery = $logQuery->where('id_soal', $soal);
-            }
+            // Cari mahasiswa yang punya chatbot_logs di soal/level tersebut
+            $relevantIds = ChatbotLog::whereIn('id_mahasiswa', $mahasiswaIds);
+            if (!empty($level)) $relevantIds->where('id_level', $level);
+            if (!empty($soal))  $relevantIds->where('id_soal', $soal);
+            $relevantIds = $relevantIds->pluck('id_mahasiswa')->unique();
 
-            $countBiasa = (clone $logQuery)
+            // Hitung dari chatbot_access_logs seperti biasa
+            $countBiasa = ChatbotAccessLog::whereIn('id_mahasiswa', $relevantIds)
                 ->where('type', 'biasa')
                 ->selectRaw('id_mahasiswa, count(*) as total')
                 ->groupBy('id_mahasiswa')
                 ->pluck('total', 'id_mahasiswa');
 
-            $countAdaptive = (clone $logQuery)
+            $countAdaptive = ChatbotAccessLog::whereIn('id_mahasiswa', $relevantIds)
                 ->where('type', 'adaptive')
                 ->selectRaw('id_mahasiswa, count(*) as total')
                 ->groupBy('id_mahasiswa')

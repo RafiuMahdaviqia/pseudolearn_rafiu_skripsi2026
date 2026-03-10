@@ -498,8 +498,10 @@ function toggleChatbot() {
         container.classList.add('chatbot-visible');
         overlay.classList.remove('chatbot-hidden');
         overlay.classList.add('chatbot-visible');
-        
-        // Send welcome message if first time
+
+        // Log open
+        logChatbotOpen();
+
         if (chatbotMessages.length === 0) {
             sendWelcomeMessage();
         }
@@ -593,6 +595,50 @@ function handleChatbotKeypress(event) {
     if (event.key === 'Enter') sendChatbotMessage();
 }
 
+// Log chatbot open
+async function logChatbotOpen() {
+    try {
+        const response = await fetch('/chatbot/open', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept'      : 'application/json',
+            },
+            body: JSON.stringify({
+                type: 'biasa',
+            }),
+        });
+        const data = await response.json();
+        if (data.success) {
+            chatbotAccessId = data.access_id;
+        }
+    } catch (error) {
+        console.error('Log open error:', error);
+    }
+}
+
+// Log chatbot close
+async function logChatbotClose() {
+    if (!chatbotAccessId) return;
+    try {
+        await fetch('/chatbot/close', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept'      : 'application/json',
+            },
+            body: JSON.stringify({
+                access_id: chatbotAccessId,
+            }),
+        });
+        chatbotAccessId = null;
+    } catch (error) {
+        console.error('Log close error:', error);
+    }
+}
+
 // Send message to backend
 async function sendChatbotMessage() {
     const input   = document.getElementById('chatbot-input');
@@ -601,48 +647,44 @@ async function sendChatbotMessage() {
     if (!message) return;
 
     addUserMessage(message);
-    input.value = '';
+    input.value    = '';
     input.disabled = true;
     document.querySelector('.chatbot-send-btn').disabled = true;
 
     showTypingIndicator();
-    
-    // Send to backend (TODO: implement actual API call)
-    // For now, simulate response
-    setTimeout(() => {
-        hideTypingIndicator();
-        processChatbotResponse(message);
-    }, 1000);
-}
 
-// Process chatbot response (mock)
-// TODO: Connect to actual chatbot API
-function processChatbotResponse(userMessage) {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // Simple keyword-based responses for demo
-    if (lowerMessage.includes('tipe data')) {
-        addBotMessage(
-            'Tipe Data adalah atribut yang menentukan jenis nilai yang bisa disimpan oleh suatu variabel, seperti teks (string), angka (integer, float), atau nilai benar/salah (boolean). serta bagaimana komputer harus menginterpretasi, menyimpan, dan melakukan operasi pada data tersebut',
-            true,
-            'Tipe Data'
-        );
-    } else if (lowerMessage.includes('algoritma')) {
-        addBotMessage(
-            'Algoritma adalah langkah-langkah sistematis dan terstruktur untuk menyelesaikan suatu masalah atau mencapai tujuan tertentu. Dalam pemrograman, algoritma menjadi dasar untuk membuat program yang efisien.',
-            true,
-            'Algoritma'
-        );
-    } else if (lowerMessage.includes('variabel')) {
-        addBotMessage(
-            'Variabel adalah tempat penyimpanan data di dalam program yang memiliki nama dan dapat menyimpan nilai yang bisa berubah selama eksekusi program.',
-            true,
-            'Variabel'
-        );
-    } else if (lowerMessage.includes('bantuan') || lowerMessage.includes('help')) {
-        addBotMessage('Saya bisa membantu kamu dengan:\n\n• Menjelaskan materi tipe data\n• Menjelaskan konsep algoritma\n• Menjawab pertanyaan seputar variabel\n• Memberikan tips mengerjakan soal\n\nSilakan tanyakan apa yang ingin kamu ketahui!');
-    } else {
-        addBotMessage('Terima kasih atas pertanyaanmu! Saya sedang memproses jawabannya. Untuk saat ini, coba tanyakan tentang "tipe data", "algoritma", atau "variabel" untuk mendapatkan penjelasan.');
+    try {
+        const response = await fetch('/chatbot/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept'      : 'application/json',
+            },
+            body: JSON.stringify({
+                message  : message,
+                id_soal  : '{{ $id_soal ?? "" }}' || null,
+                id_level : '{{ $id_level ?? "" }}' || null,
+            }),
+        });
+
+        const data = await response.json();
+        hideTypingIndicator();
+
+        if (data.success) {
+            addBotMessage(data.respons);
+        } else {
+            addBotMessage('Maaf, terjadi kesalahan. Silakan coba lagi.');
+        }
+
+    } catch (error) {
+        hideTypingIndicator();
+        addBotMessage('Maaf, tidak dapat terhubung ke server. Periksa koneksi internet kamu.');
+        console.error('Chatbot error:', error);
+    } finally {
+        input.disabled = false;
+        document.querySelector('.chatbot-send-btn').disabled = false;
+        input.focus();
     }
 }
 </script>
