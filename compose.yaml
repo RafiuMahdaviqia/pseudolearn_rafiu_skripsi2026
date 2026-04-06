@@ -54,7 +54,10 @@ services:
         ports:
             - '${FORWARD_PHPMYADMIN_PORT:-8080}:80'
         environment:
-            PMA_HOST: mysql
+            PMA_ARBITRARY: 1
+            PMA_HOST: '${DB_HOST}'
+            PMA_USER: '${DB_USERNAME}'
+            PMA_PASSWORD: '${DB_PASSWORD}'
             UPLOAD_LIMIT: 5120k
         networks:
             - sail
