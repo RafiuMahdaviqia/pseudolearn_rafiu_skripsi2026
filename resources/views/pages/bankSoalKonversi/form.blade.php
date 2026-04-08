@@ -6,6 +6,139 @@
         .ck-editor__editable {
             min-height: 120px;
         }
+
+        #jawaban-textarea {
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            resize: vertical;
+            min-height: 180px;
+        }
+
+        /* Panel pseudocode */
+        #panel-pseudocode {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #panel-pseudocode .pseudo-header {
+            background: #1a2744;
+            color: #fff;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #panel-pseudocode .pseudo-body {
+            padding: 12px 16px;
+            background: #f8f9fa;
+        }
+
+        .pseudo-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .pseudo-legend span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .pseudo-legend .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .pseudo-step {
+            display: flex;
+            align-items: stretch;
+            gap: 10px;
+            margin-bottom: 7px;
+        }
+
+        .pseudo-step-num {
+            min-width: 28px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+            background: #1a2744;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .pseudo-step-text {
+            flex: 1;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: monospace;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .pseudo-step-text.tipe-data {
+            background: #e8f0fe;
+            color: #1a2744;
+            border-left: 3px solid #4a6fa5;
+        }
+
+        .pseudo-step-text.algoritma {
+            background: #e6f4ea;
+            color: #14532d;
+            border-left: 3px solid #34a853;
+        }
+
+        .pseudo-badge {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .pseudo-badge.tipe {
+            background: #4a6fa5;
+            color: #fff;
+        }
+
+        .pseudo-badge.algo {
+            background: #34a853;
+            color: #fff;
+        }
+
+        .jawaban-preview-chip {
+            display: inline-block;
+            background: #1a2744;
+            color: #e0e8ff;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            margin: 3px 4px 3px 0;
+        }
+
+        #btn-run-konversi.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
     </style>
 @endpush
 
@@ -18,12 +151,12 @@
                     <div class="d-flex justify-content-between align-items-center mb-8">
                         <h3 class="mb-0">Form Soal</h3>
                     </div>
-                    <form method="POST" action="" id="form-soal">
+                    <form method="POST" action="{{ route('bank-soal-konversi.store') }}" id="form-soal">
                         <input type="hidden" name="id" id="id_konversi">
                         <input type="hidden" name="data-soal" id="data-soal" value="{{ $data ? json_encode($data) : '' }}">
                         @csrf
 
-                        {{-- Baris 1: Select Level, Soal, Bobot --}}
+                        {{-- Baris 1: Select Level, Soal --}}
                         <div class="row mb-5">
                             <div class="fv-row col-md-4">
                                 <label for="level_id" class="form-label fs-5 required">Level</label>
@@ -43,15 +176,9 @@
                                     <option value="" selected disabled>Pilih Soal</option>
                                 </select>
                             </div>
-
-                            <div class="fv-row col-md-4">
-                                <label for="bobot" class="form-label fs-5 required">Bobot</label>
-                                <input type="number" name="bobot" id="bobot" class="form-control" min="0"
-                                    required>
-                            </div>
                         </div>
 
-                        {{-- Soal --}}
+                        {{-- Soal (readonly CKEditor) --}}
                         <div class="row mb-5">
                             <div class="fv-row col-md-12">
                                 <label for="soal" class="form-label fs-5 required">Soal</label>
@@ -59,17 +186,62 @@
                             </div>
                         </div>
 
-                        <div id="row-konversi" class="row mb-8 d-none">
-                            <div class="col-md-6">
-                                <h5 class="mb-3">Kunci</h5>
-                                <div id="col-kunci" class="small"></div>
-                            </div>
-                            <div class="col-md-6">
-                                <h5 class="mb-3">Konversi Kode</h5>
-                                <div id="col-input"></div>
+                        {{-- Panel Pseudocode — muncul otomatis saat soal dipilih --}}
+                        <div class="row mb-5 d-none" id="row-pseudocode">
+                            <div class="fv-row col-md-12">
+                                <label class="form-label fs-5">Pseudocode</label>
+                                <div id="panel-pseudocode">
+                                    <div class="pseudo-header">
+                                        <i class="ki-outline ki-code fs-6"></i>
+                                        Langkah-langkah pseudocode soal ini
+                                    </div>
+                                    <div class="pseudo-body">
+                                        <div class="pseudo-legend">
+                                            <span>
+                                                <span class="dot" style="background:#4a6fa5;"></span>
+                                                Tipe Data / Variabel
+                                            </span>
+                                            <span>
+                                                <span class="dot" style="background:#34a853;"></span>
+                                                Algoritma / Langkah
+                                            </span>
+                                        </div>
+                                        <div id="pseudo-steps"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
+                        {{-- Jawaban Kode Java --}}
+                        <div class="row mb-5">
+                            <div class="fv-row col-md-12">
+                                <label for="jawaban-textarea" class="form-label fs-5 required">
+                                    Jawaban (Kode Java)
+                                </label>
+                                <textarea
+                                    name="jawaban"
+                                    id="jawaban-textarea"
+                                    class="form-control"
+                                    {{-- placeholder="Kode Java akan muncul di sini setelah klik Jalankan Konversi, atau ketik langsung. Satu baris per baris kode." --}}
+                                ></textarea>
+                                {{-- <div class="form-text text-muted mt-1">
+                                    Setiap baris = satu langkah kode Java di dalam <code>main()</code>.
+                                    Baris kosong diabaikan.
+                                </div> --}}
+                            </div>
+                        </div>
+
+                        {{-- Preview chip acak --}}
+                        <div class="row mb-5 d-none" id="row-preview-chip">
+                            <div class="fv-row col-md-12">
+                                <label class="form-label fs-6 text-muted">
+                                    Preview tampilan drag &amp; drop siswa (urutan diacak)
+                                </label>
+                                <div id="preview-chip-wrap" class="p-3 bg-light rounded border"></div>
+                            </div>
+                        </div>
+
+                        {{-- Output --}}
                         <div class="row mb-10">
                             <div class="fv-row col-md-12">
                                 <label for="output" class="form-label fs-5 required">Output</label>
@@ -78,7 +250,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <div class="">
+                            <div>
                                 <button type="button" class="btn btn-sm btn-primary" id="btn-run-konversi"
                                     onclick="runKonversi()">
                                     <i class="ki-outline ki-send fs-6"></i>
@@ -100,320 +272,300 @@
 @push('scripts')
     <script src="{{ asset('assets/plugins/custom/ckeditor/ckeditor-classic.bundle.js') }}"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    <script src="{{ asset('assets/plugins/custom/formrepeater/formrepeater.bundle.js') }}"></script>
+
     <script>
         let soalEditor;
         var APP_URL = window.APP_URL || "/";
-        // Inisialisasi CKEditor hanya readonly tanpa toolbar dan tinggi 3 row
+
+        // ─── CKEditor (readonly) ───────────────────────────────────────────────────
         ClassicEditor.create(document.querySelector('#soal'), {
-            // toolbar: [],
             readOnly: true
         }).then(editor => {
             soalEditor = editor;
-            editor.enableReadOnlyMode("soal");
+            editor.enableReadOnlyMode('soal');
             editor.ui.view.editable.element.style.height = '120px';
         });
 
-        $('#level_id').on('change', function() {
+        // ─── Level change → load soal list ────────────────────────────────────────
+        $('#level_id').on('change', function () {
             soalEditor.setData('');
-            clearKonversi();
-            var levelId = $(this).val();
-            if (levelId) {
-                $.ajax({
-                    url: APP_URL +
-                        'konversi/getSoalByLevel', // pastikan route name/URL sesuai (konversi.getSoalByLevel)
-                    type: "GET",
-                    data: {
-                        level_id: levelId
-                    },
-                    success: function(data) {
-                        $('#soal_id').empty().append(
-                            '<option value="" selected disabled>Pilih Soal</option>');
-                        $.each(data, function(_, soal) {
-                            $('#soal_id').append('<option value="' + soal.id + '">' + soal
-                                .judul + '</option>');
-                        });
-                    }
-                });
-            } else {
+            clearAll();
+            const levelId = $(this).val();
+            if (!levelId) {
                 $('#soal_id').empty().append('<option value="" selected disabled>Pilih Soal</option>');
+                return;
             }
-        });
-
-        $('#soal_id').on('change', function() {
-            var soalId = $(this).val();
-            clearKonversi();
-            if (soalId) {
-                $.ajax({
-                    url: APP_URL + 'soal/' + soalId,
-                    type: "GET",
-                    data: {
-                        soal_id: soalId
-                    },
-                    success: function(data) {
-                        soalEditor.setData(data.soal || '');
-                        renderKonversi(data);
-                    }
+            $.get(APP_URL + 'konversi/getSoalByLevel', { level_id: levelId }, function (data) {
+                $('#soal_id').empty().append('<option value="" selected disabled>Pilih Soal</option>');
+                $.each(data, function (_, soal) {
+                    $('#soal_id').append(`<option value="${soal.id}">${soal.judul}</option>`);
                 });
-            } else {
-                soalEditor.setData('');
-            }
+            });
         });
 
-        let baseKonversiRows = 0; // jumlah minimal (baris kunci)
-        let extraKonversiIndex = 0; // penghitung baris Langkah
-        let lastLineIndex = 0; // untuk penomoran baris Langkah
+        // ─── Soal change → load detail + tampilkan pseudocode ─────────────────────
+        $('#soal_id').on('change', function () {
+            console.log('Soal dipilih:', $(this).val());
+            const soalId = $(this).val();
+            clearAll();
+            if (!soalId) {
+                soalEditor.setData('');
+                return;
+            }
+            $.get(APP_URL + 'soal/' + soalId, function (data) {
+                soalEditor.setData(data.soal || '');
+                $('#output').val(data.output || '');
+                renderPseudocode(data);
 
-        function clearKonversi() {
-            $('#col-kunci').empty();
-            $('#col-input').empty();
-            $('#row-konversi').addClass('d-none');
-            baseKonversiRows = 0;
-            extraKonversiIndex = 0;
-            lastLineIndex = 0;
-        }
-
-        function renderKonversi(data) {
-            clearKonversi();
-            if (!data) return;
-
-            let tipeData = [],
-                algoritma = [];
-            try {
-                if (data.kunci_tipe_data) tipeData = JSON.parse(data.kunci_tipe_data) || [];
-            } catch (e) {}
-            try {
-                if (data.kunci_algoritma) algoritma = JSON.parse(data.kunci_algoritma) || [];
-            } catch (e) {}
-
-            // Filter hanya yang konversi = 1
-            tipeData = tipeData.filter(it => Number(it.konversi) === 1);
-            algoritma = algoritma.filter(it => Number(it.konversi) === 1);
-
-            // Gabung list
-            const combined = [];
-            tipeData.forEach(item => combined.push({
-                kind: 'tipe_data',
-                data: item
-            }));
-            algoritma.forEach(item => combined.push({
-                kind: 'algoritma',
-                data: item
-            }));
-
-            const kunciWrap = $('#col-kunci');
-            const inputWrap = $('#col-input');
-
-            let lineIndex = 0;
-
-            combined.forEach((entry) => {
-                lineIndex++;
-                if (entry.kind === 'tipe_data') {
-                    const variabel = entry.data.variabel ?? '-';
-                    const tipe = entry.data.tipe_data ?? '-';
-                    kunciWrap.append(`
-                <div class="mb-5">
-                    <label class="form-label mb-1">Langkah ${lineIndex}</label>
-                    <input type="text" class="form-control" value="Variabel: ${variabel}, Tipe: ${tipe}" readonly>
-                </div>
-                `);
-                    inputWrap.append(`
-                <div class="mb-5 konversi-row" data-base="1">
-                    <div class="d-flex justify-content-between">
-                    <label class="form-label mb-1">Langkah ${lineIndex}</label>
-                    </div>
-                    <input type="text" name="jawaban[]" class="form-control" placeholder="Langkah ${lineIndex}">
-                    <input type="hidden" name="jawaban_tipe[]" value="tipe_data_${lineIndex}">
-                </div>
-                `);
-                } else {
-                    const langkah = entry.data.langkah ?? '';
-                    // const clue = (entry.data.clue == 1 || entry.data.clue === '1'); // Tidak ditampilkan lagi
-                    const safe = langkah
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/"/g, '&quot;')
-                        .replace(/'/g, '&#39;');
-                    kunciWrap.append(`
-                <div class="mb-5">
-                    <label class="form-label mb-1">Langkah ${lineIndex}</label>
-                    <input type="text" class="form-control" value="${safe}" readonly>
-                </div>
-                `);
-                    inputWrap.append(`
-                <div class="mb-5 konversi-row" data-base="1">
-                    <div class="d-flex justify-content-between">
-                    <label class="form-label mb-1">Langkah ${lineIndex}</label>
-                    </div>
-                    <input type="text" name="jawaban[]" class="form-control" placeholder="Langkah ${lineIndex}">
-                    <input type="hidden" name="jawaban_tipe[]" value="algoritma_${lineIndex}">
-                </div>
-                `);
+                // Jika sudah ada jawaban tersimpan di soal, tampilkan langsung
+                if (data.jawaban) {
+                    setJawaban(data.jawaban);
                 }
             });
-
-            baseKonversiRows = lineIndex;
-            lastLineIndex = lineIndex;
-            if (lineIndex > 0) {
-                $('#row-konversi').removeClass('d-none');
-            }
-        }
-
-        // Tambah baris baru (boleh dihapus)
-        $(document).on('click', '#btn-add-konversi-row', function() {
-            if (baseKonversiRows === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    text: 'Pilih soal terlebih dahulu.',
-                    confirmButtonText: 'OK'
-                });
-                return;
-            }
-            extraKonversiIndex++;
-            lastLineIndex++;
-            $('#col-input').append(`
-                <div class="mb-5 konversi-row" data-base="0">
-                    <label class="form-label mb-1">Langkah ${lastLineIndex}</label>
-                    <div class="row">
-                        <div class="col-11">
-                            <input type="text" name="jawaban[]" class="form-control" placeholder="Langkah ${lastLineIndex}">
-                        </div>
-                        <div class="col-1 d-flex justify-content-center align-item-middle">
-                            <button type="button" class="btn btn-outline btn-outline-danger btn-remove-konversi-row btn-sm px-3 py-0" title="Hapus">
-                                <i class="ki-outline ki-trash px-0 fs-4"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <input type="hidden" name="jawaban_tipe[]" value="extra_${extraKonversiIndex}">
-                </div>
-            `);
         });
 
-        // Hapus baris
-        $(document).on('click', '.btn-remove-konversi-row', function() {
-            const row = $(this).closest('.konversi-row');
-            if (row.data('base') == 1) {
-                Swal.fire({
-                    icon: 'warning',
-                    text: `Baris kunci tidak boleh dihapus.`,
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        confirmButton: 'btn btn-primary'
+        // ─── Render pseudocode ─────────────────────────────────────────────────────
+        function renderPseudocode(data) {
+            const toArray = (value) => {
+                if (Array.isArray(value)) return value;
+                if (value && typeof value === 'object') return [value];
+                if (typeof value === 'string') {
+                    const trimmed = value.trim();
+                    if (!trimmed) return [];
+                    try {
+                        const parsed = JSON.parse(trimmed);
+                        if (Array.isArray(parsed)) return parsed;
+                        if (parsed && typeof parsed === 'object') return [parsed];
+                    } catch (e) {
+                        return [];
+                    }
+                }
+                return [];
+            };
+
+            const tipeData = toArray(data.kunci_tipe_data);
+            const algoritma = toArray(data.kunci_algoritma);
+
+            // Gabungkan: tipe data dulu, lalu algoritma
+            const combined = [
+                ...tipeData.map(item => ({ kind: 'tipe_data', data: item })),
+                ...algoritma.map(item => ({ kind: 'algoritma', data: item })),
+            ];
+
+            if (combined.length === 0) {
+                $('#row-pseudocode').addClass('d-none');
+                return;
+            }
+
+            const container = $('#pseudo-steps').empty();
+
+            combined.forEach((entry, index) => {
+                const num = index + 1;
+                let label = '';
+                let klass = '';
+                let badge = '';
+
+                if (entry.kind === 'tipe_data') {
+                    const variabel = entry.data.variabel ?? '-';
+                    const tipe     = entry.data.tipe_data ?? '-';
+                    label = `Variabel: <strong>${escHtml(variabel)}</strong>, Tipe: <strong>${escHtml(tipe)}</strong>`;
+                    klass = 'tipe-data';
+                    badge = '<span class="pseudo-badge tipe">Tipe Data</span>';
+                } else {
+                    label = escHtml(entry.data.langkah ?? '');
+                    klass = 'algoritma';
+                    badge = '<span class="pseudo-badge algo">Algoritma</span>';
+                }
+
+                container.append(`
+                    <div class="pseudo-step">
+                        <div class="pseudo-step-num">${num}</div>
+                        <div class="pseudo-step-text ${klass}">
+                            <span>${label}</span>
+                            ${badge}
+                        </div>
+                    </div>
+                `);
+            });
+
+            $('#row-pseudocode').removeClass('d-none');
+        }
+
+        // ─── Clear semua section ───────────────────────────────────────────────────
+        function clearAll() {
+            $('#jawaban-textarea').val('');
+            $('#output').val('');
+            $('#preview-chip-wrap').empty();
+            $('#row-preview-chip').addClass('d-none');
+            $('#pseudo-steps').empty();
+            $('#row-pseudocode').addClass('d-none');
+        }
+
+        // ─── Set jawaban ke textarea + render preview chip ─────────────────────────
+        function setJawaban(plainText) {
+            $('#jawaban-textarea').val(plainText);
+            renderPreviewChip(plainText);
+        }
+
+        // ─── Render preview chip diacak ────────────────────────────────────────────
+        function renderPreviewChip(plainText) {
+            const lines = plainText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length === 0) {
+                $('#row-preview-chip').addClass('d-none');
+                return;
+            }
+            const shuffled = [...lines].sort(() => Math.random() - 0.5);
+            const wrap = $('#preview-chip-wrap').empty();
+            shuffled.forEach(line => {
+                wrap.append(`<span class="jawaban-preview-chip">${escHtml(line)}</span>`);
+            });
+            $('#row-preview-chip').removeClass('d-none');
+        }
+
+        // Update preview tiap kali textarea diketik manual
+        $('#jawaban-textarea').on('input', function () {
+            renderPreviewChip($(this).val());
+        });
+
+        // ─── Jalankan Konversi (jalankan kode Java dari textarea jawaban) ─────────
+        async function runKonversi() {
+            const levelId = $('#level_id').val();
+            const soalId  = $('#soal_id').val();
+            const jawabanText = $('#jawaban-textarea').val().trim();
+
+            if (!levelId || !soalId) {
+                Swal.fire({ icon: 'warning', text: 'Pilih soal terlebih dahulu.', confirmButtonText: 'OK' });
+                return;
+            }
+            if (!jawabanText) {
+                Swal.fire({ icon: 'warning', text: 'Isi jawaban kode Java terlebih dahulu.', confirmButtonText: 'OK' });
+                return;
+            }
+
+            const btn = document.getElementById('btn-run-konversi');
+            btn.classList.add('loading');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menjalankan...';
+
+            const codes = jawabanText
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .map(line => ({ value: line }));
+
+            try {
+                const res = await $.ajax({
+                    type: 'POST',
+                    url: APP_URL + 'bank-soal-konversi/runJava',
+                    data: {
+                        _token: $('meta[name="csrf-token"]').attr('content'),
+                        level_id: levelId,
+                        soal_id: soalId,
+                        codes: codes
                     }
                 });
+
+                const out = (res && typeof res.output !== 'undefined') ? res.output : '';
+                $('#output').val(String(out).trim());
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil Dijalankan',
+                    html: `<pre style="white-space:pre-wrap;">${escHtml(String(out))}</pre>`,
+                    confirmButtonText: 'OK'
+                });
+            } catch (xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    text: xhr?.responseJSON?.message || 'Gagal menjalankan kode Java.',
+                    confirmButtonText: 'OK'
+                });
+            } finally {
+                btn.classList.remove('loading');
+                btn.innerHTML = '<i class="ki-outline ki-send fs-6"></i> Jalankan Konversi';
+            }
+        }
+
+        // ─── Helper escape HTML ────────────────────────────────────────────────────
+        function escHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // ─── Submit form ───────────────────────────────────────────────────────────
+        $('#submit-form-soal').on('click', function () {
+            const jawaban = $('#jawaban-textarea').val().trim();
+            const output  = $('#output').val().trim();
+            const idKonversi = $('#id_konversi').val().trim();
+
+            if (!jawaban) {
+                Swal.fire({ icon: 'warning', text: 'Jawaban belum diisi.', confirmButtonText: 'OK' });
                 return;
             }
-            row.remove();
-            updateLangkahLabels();
+            if (!output) {
+                Swal.fire({ icon: 'warning', text: 'Output belum diisi.', confirmButtonText: 'OK' });
+                return;
+            }
+
+            if (idKonversi) {
+                $('#form-soal').attr('action', APP_URL + 'bank-soal-konversi/update/' + idKonversi);
+            } else {
+                $('#form-soal').attr('action', APP_URL + 'bank-soal-konversi/store');
+            }
+
+            $('#form-soal').submit();
         });
 
-        function updateLangkahLabels() {
-            let index = 1;
-            $('#col-input .konversi-row').each(function() {
-                $(this).find('label.form-label').text('Langkah ' + index);
-                $(this).find('input.form-control').attr('placeholder', 'Langkah ' + index);
-                index++;
-            });
-            lastLineIndex = index - 1;
-        }
-
-        function addExtraKonversiRowWithValue(value) {
-            extraKonversiIndex++;
-            lastLineIndex++;
-            const rowId = 'extra-row-' + extraKonversiIndex;
-            $('#col-input').append(`
-                <div class="mb-5 konversi-row" data-base="0" id="${rowId}">
-                    <label class="form-label mb-1">Langkah ${lastLineIndex}</label>
-                    <div class="row">
-                        <div class="col-11">
-                            <input type="text" name="jawaban[]" class="form-control" placeholder="Langkah ${lastLineIndex}">
-                        </div>
-                        <div class="col-1 d-flex justify-content-center align-item-middle">
-                            <button type="button" class="btn btn-outline btn-outline-danger btn-remove-konversi-row btn-sm px-3 py-0" title="Hapus">
-                                <i class="ki-outline ki-trash px-0 fs-4"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <input type="hidden" name="jawaban_tipe[]" value="extra_${extraKonversiIndex}">
-                </div>
-            `);
-            // Set value dengan .val agar tidak terpotong
-            $('#' + rowId).find('input[name="jawaban[]"]').val(value);
-        }
-
+        // ─── Prefill data edit ─────────────────────────────────────────────────────
         function prefillEditData() {
             const raw = $('#data-soal').val();
             if (!raw) return;
+
             let existing;
-            try {
-                existing = JSON.parse(raw);
-            } catch (e) {
-                return;
-            }
-            if (!existing || !existing.id_level || !existing.id_soal) return;
+            try { existing = JSON.parse(raw); } catch (e) { return; }
+            if (!existing?.id_level || !existing?.id_soal) return;
 
             $('#id_konversi').val(existing.id);
-            // Set level select (tanpa trigger clear manual)
             $('#level_id').val(existing.id_level).trigger('change.select2');
 
-            // Muat daftar soal sesuai level, pilih soal yang cocok
-            $.ajax({
-                url: APP_URL +
-                    'konversi/getSoalByLevel', // pastikan route name/URL sesuai (konversi.getSoalByLevel)
-                type: 'GET',
-                data: {
-                    level_id: existing.id_level,
-                    soal_id: existing.id_soal
-                },
-                success: function(list) {
-                    $('#soal_id').empty().append('<option value="" disabled>Pilih Soal</option>');
-                    (list || []).forEach(s => {
-                        $('#soal_id').append(
-                            `<option value="${s.id}" ${s.id === existing.id_soal ? 'selected':''}>${s.judul}</option>`
-                        );
-                    });
+            $.get(APP_URL + 'konversi/getSoalByLevel', { level_id: existing.id_level }, function (list) {
+                $('#soal_id').empty().append('<option value="" disabled>Pilih Soal</option>');
+                (list || []).forEach(s => {
+                    $('#soal_id').append(
+                        `<option value="${s.id}" ${s.id === existing.id_soal ? 'selected' : ''}>${s.judul}</option>`
+                    );
+                });
 
-                    // Ambil detail soal untuk render kunci
-                    $.ajax({
-                        url: APP_URL + 'soal/' + existing.id_soal,
-                        type: 'GET',
-                        success: function(detail) {
-                            if (soalEditor) soalEditor.setData(detail.soal || '');
-                            renderKonversi(detail); // ini membuat baris dasar kosong
+                $.get(APP_URL + 'soal/' + existing.id_soal, function (detail) {
+                    if (soalEditor) soalEditor.setData(detail.soal || '');
+                    $('#output').val(existing.output ?? detail.output ?? '');
 
-                            // Isi bobot & output lama
-                            $('#bobot').val(existing.bobot ?? 0);
-                            $('#output').val(existing.output ?? '');
+                    // Render pseudocode dari detail soal
+                    renderPseudocode(detail);
 
-                            // Flatten jawaban lama (array of object { "1": "code..." })
-                            const oldAnswers = Array.isArray(existing.jawaban) ?
-                                existing.jawaban.map(o => {
-                                    if (!o) return '';
-                                    const key = Object.keys(o)[0];
-                                    return o[key] ?? '';
-                                }) : [];
+                    // Prefill jawaban — support format lama & baru
+                    let jawabanText = '';
 
-                            // Prefill ke baris dasar terlebih dahulu
-                            const baseInputs = $('#col-input').find('input[name="jawaban[]"]');
-                            oldAnswers.forEach((val, idx) => {
-                                if (idx < baseInputs.length) {
-                                    $(baseInputs[idx]).val(val);
-                                } else {
-                                    addExtraKonversiRowWithValue(val);
-                                }
-                            });
-                        }
-                    });
-                }
+                    if (typeof existing.jawaban === 'string') {
+                        // Format baru: plain text
+                        jawabanText = existing.jawaban;
+                    } else if (Array.isArray(existing.jawaban)) {
+                        // Format lama: [{"1": "code"}, ...]
+                        jawabanText = existing.jawaban
+                            .map(o => o ? Object.values(o)[0] ?? '' : '')
+                            .filter(l => l.trim())
+                            .join('\n');
+                    }
+
+                    if (jawabanText) setJawaban(jawabanText);
+                });
             });
         }
 
-        // Jalankan prefill setelah semua siap
-        $(document).ready(function() {
+        $(document).ready(function () {
             prefillEditData();
         });
     </script>
-
-    <script src="{{ asset('js/konversi/form.js') }}"></script>
 @endpush

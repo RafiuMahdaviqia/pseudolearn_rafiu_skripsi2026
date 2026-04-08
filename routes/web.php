@@ -167,9 +167,11 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
 
             Route::post('/store', [BankSoalKonversiController::class, 'store'])->name('store');
 
-            Route::post('/update', [BankSoalKonversiController::class, 'update'])->name('update');
+            Route::post('/update/{id}', [BankSoalKonversiController::class, 'update'])->name('update');
 
             Route::delete('/{id}', [BankSoalKonversiController::class, 'destroy'])->name('destroy');
+
+            Route::post('/runJava', [BankSoalKonversiController::class, 'runKonversi'])->name('runJava');
         });
 
         // Konversi

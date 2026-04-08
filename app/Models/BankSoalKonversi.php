@@ -12,7 +12,7 @@ class BankSoalKonversi extends BaseModel
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    protected $table = 'konversi';
+    protected $table = 'bank_soal_konversi';
     protected $primaryKey = 'id';
     protected $fillable = [
         'id',
@@ -20,12 +20,10 @@ class BankSoalKonversi extends BaseModel
         'id_soal',
         'jawaban',
         'output',
-        'bobot',
     ];
 
     protected $casts = [
         'jawaban' => 'array',
-        'bobot' => 'integer',
     ];
 
     protected static function boot()
