@@ -6,6 +6,9 @@
     </style>
 @endpush
 
+@php
+    use App\Enums\SoalDifficulty;
+@endphp
 
 @section('content')
     <div class="container-fluid px-4" id="form-soal-container">
@@ -34,6 +37,21 @@
                             <div class="fv-row col-md-6">
                                 <label for="judul" class="form-label fs-5 required">Judul Soal</label>
                                 <input type="text" name="judul" id="judul" class="form-control" placeholder="Judul Soal" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-10">
+                            <div class="fv-row col-md-6">
+                                <label for="difficulty" class="form-label fs-5 required">Difficulty</label>
+                                <select name="difficulty" id="difficulty" class="form-select" required
+                                    data-control="select2" data-hide-search="true" data-allow-clear="false" required>
+                                    <option value="" selected disabled>Pilih Difficulty</option>
+                                    @foreach (App\Enums\SoalDifficulty::options() as $difficulty)
+                                        <option value="{{ $difficulty['value'] }}">
+                                            {{ $difficulty['label'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
 
@@ -262,6 +280,10 @@
                     // Set level
                     if (dataSoal.id_level) {
                         $('#level_id').val(dataSoal.id_level).trigger('change');
+                    }
+                    // Set difficulty
+                    if (dataSoal.difficulty) {
+                        $('#difficulty').val(dataSoal.difficulty).trigger('change');
                     }
                     // Set judul
                     if (dataSoal.judul) {

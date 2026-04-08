@@ -42,6 +42,7 @@
                                 <th class="text-start">Level</th>
                                 <th class="text-start">Judul</th>
                                 <th class="text-start">Soal</th>
+                                <th class="text-start">Difficulty</th>
                                 <th class="text-center">Status</th>
                                 <th class="text-center">Aksi</th>
                             </tr>

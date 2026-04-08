@@ -131,6 +131,7 @@ class SoalRepository extends BaseRepository
                 'id_level'        => $data['level_id'],
                 'judul'           => $data['judul'],
                 'soal'            => $data['soal'],
+                'difficulty'      => $data['difficulty'],
                 'kunci_tipe_data' => json_encode($dataInputArr),
                 'kunci_algoritma' => json_encode($algoritmaArr),
                 'order'           => $nextOrder,
@@ -220,6 +221,7 @@ class SoalRepository extends BaseRepository
                 'id_level'        => $data['level_id'] ?? $soal->id_level,
                 'judul'           => $data['judul'] ?? $soal->judul,
                 'soal'            => $data['soal'] ?? $soal->soal,
+                'difficulty'      => $data['difficulty'] ?? $soal->difficulty,
                 'kunci_tipe_data' => json_encode($dataInputArr),
                 'kunci_algoritma' => json_encode($algoritmaArr),
             ];

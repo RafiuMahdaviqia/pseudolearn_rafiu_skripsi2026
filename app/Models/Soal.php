@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Core\BaseModel;
+use App\Enums\SoalDifficulty;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,6 +24,7 @@ class Soal extends BaseModel
         'kunci_algoritma',
         'order',
         'status',
+        'difficulty',
     ];
 
     protected $casts = [

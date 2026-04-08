@@ -50,6 +50,11 @@ initTable = () => {
                     width: "35%",
                 },
                 {
+                    data: "difficulty",
+                    orderable: true,
+                    searchable: false,
+                },
+                {
                     data: "status",
                     orderable: true,
                     searchable: false,
@@ -88,6 +93,12 @@ initTable = () => {
                 },
                 {
                     targets: 4,
+                    render: function (data, type, row) {
+                        return row.difficulty ?? '';
+                    },
+                },
+                {
+                    targets: 5,
                     render: function(data, type, row) {
                         const isActive = Number(row.status) === 1;
                         const badgeClass = isActive ? 'badge-light-success' : 'badge-light-danger';
@@ -103,7 +114,7 @@ initTable = () => {
                     }
                 },
                 {
-                    targets: 5,
+                    targets: 6,
                     render: function (data, type, row, meta) {
                         return `
                             <div class="d-flex gap-3 justify-content-center">
