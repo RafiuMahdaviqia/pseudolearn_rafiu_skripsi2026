@@ -126,4 +126,30 @@ class BankSoalKonversiController extends Controller
     {
         return $this->bankSoalService->runKonversi($request);
     }
+
+    public function order()
+    {
+        $dataLevel = $this->levelModel->orderBy('order', 'asc')->get();
+
+        return view('pages.bankSoalKonversi.order', [
+            'title' => 'Urutan Bank Soal Konversi',
+            'dataLevel' => $dataLevel,
+        ]);
+    }
+
+    public function getByLevelForOrder(Request $request)
+    {
+        $request->validate([
+            'level_id' => 'required|string',
+        ]);
+
+        return response()->json(
+            $this->bankSoalService->getOrderListByLevel($request->query('level_id'))
+        );
+    }
+
+    public function saveOrder(Request $request)
+    {
+        return $this->bankSoalService->saveOrder($request);
+    }
 }

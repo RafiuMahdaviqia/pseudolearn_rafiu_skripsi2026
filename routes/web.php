@@ -163,6 +163,12 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
 
             Route::get('/form/{id}', [BankSoalKonversiController::class, 'form'])->name('formEdit');
 
+            Route::get('/getSoalByLevel', [BankSoalKonversiController::class, 'getSoalByLevel'])->name('getSoalByLevel');
+
+            Route::get('/order', [BankSoalKonversiController::class, 'order'])->name('order');
+            Route::get('/getByLevelForOrder', [BankSoalKonversiController::class, 'getByLevelForOrder'])->name('getByLevelForOrder');
+            Route::post('/saveOrder', [BankSoalKonversiController::class, 'saveOrder'])->name('saveOrder');
+
             Route::post('/table', [BankSoalKonversiController::class, 'table'])->name('table');
 
             Route::post('/store', [BankSoalKonversiController::class, 'store'])->name('store');

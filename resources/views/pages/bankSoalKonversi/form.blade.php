@@ -231,11 +231,11 @@
                             </div>
                         </div>
 
-                        {{-- Preview chip acak --}}
+                        {{-- Preview chip terurut --}}
                         <div class="row mb-5 d-none" id="row-preview-chip">
                             <div class="fv-row col-md-12">
                                 <label class="form-label fs-6 text-muted">
-                                    Preview tampilan drag &amp; drop siswa (urutan diacak)
+                                    Preview tampilan drag &amp; drop siswa (terurut)
                                 </label>
                                 <div id="preview-chip-wrap" class="p-3 bg-light rounded border"></div>
                             </div>
@@ -295,7 +295,7 @@
                 $('#soal_id').empty().append('<option value="" selected disabled>Pilih Soal</option>');
                 return;
             }
-            $.get(APP_URL + 'konversi/getSoalByLevel', { level_id: levelId }, function (data) {
+            $.get(APP_URL + 'bank-soal-konversi/getSoalByLevel', { level_id: levelId }, function (data) {
                 $('#soal_id').empty().append('<option value="" selected disabled>Pilih Soal</option>');
                 $.each(data, function (_, soal) {
                     $('#soal_id').append(`<option value="${soal.id}">${soal.judul}</option>`);
@@ -407,16 +407,15 @@
             renderPreviewChip(plainText);
         }
 
-        // ─── Render preview chip diacak ────────────────────────────────────────────
+        // ─── Render preview chip terurut ───────────────────────────────────────────
         function renderPreviewChip(plainText) {
             const lines = plainText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             if (lines.length === 0) {
                 $('#row-preview-chip').addClass('d-none');
                 return;
             }
-            const shuffled = [...lines].sort(() => Math.random() - 0.5);
             const wrap = $('#preview-chip-wrap').empty();
-            shuffled.forEach(line => {
+            lines.forEach(line => {
                 wrap.append(`<span class="jawaban-preview-chip">${escHtml(line)}</span>`);
             });
             $('#row-preview-chip').removeClass('d-none');
@@ -530,7 +529,7 @@
             $('#id_konversi').val(existing.id);
             $('#level_id').val(existing.id_level).trigger('change.select2');
 
-            $.get(APP_URL + 'konversi/getSoalByLevel', { level_id: existing.id_level }, function (list) {
+            $.get(APP_URL + 'bank-soal-konversi/getSoalByLevel', { level_id: existing.id_level }, function (list) {
                 $('#soal_id').empty().append('<option value="" disabled>Pilih Soal</option>');
                 (list || []).forEach(s => {
                     $('#soal_id').append(
