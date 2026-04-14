@@ -132,64 +132,55 @@ class BankSoalKonversiRepository
     public function runJavaCode($request)
     {
         try {
-            $codes = $request->input('codes', []);
-            $soalId = $request->input('soal_id');
+            $codes      = $request->input('codes', []);
+            $soalId     = $request->input('soal_id');
+            $soalInput  = $request->input('scanner_input', '');
 
             $safeSoalId = str_replace('-', '_', $soalId);
 
-            $mainCode = "";
-            foreach ($codes as $code) {
-                if (isset($code['value']) && trim($code['value']) !== '') {
-                    $mainCode .= "        " . $code['value'] . "\n";
-                }
-            }
-
+            // Gabungkan semua baris kode
             $rawJoined = collect($codes)
                 ->pluck('value')
                 ->filter(fn($line) => $line !== null && trim($line) !== '')
                 ->implode("\n");
 
+            // Jika user paste full class, ambil isi main() saja
+            $mainCode = '';
             if (preg_match('/\bclass\b/i', $rawJoined) && preg_match('/\bmain\s*\(/i', $rawJoined)) {
                 $mainBody = $this->extractMainBody($rawJoined);
                 if (!empty($mainBody)) {
-                    $mainCode = '';
                     foreach ($mainBody as $line) {
                         $trimmedLine = rtrim($line);
-                        if ($trimmedLine === '') {
-                            $mainCode .= "\n";
-                            continue;
-                        }
-                        $mainCode .= "        " . $trimmedLine . "\n";
+                        $mainCode .= ($trimmedLine === '' ? '' : ' ' . $trimmedLine) . "\n";
+                    }
+                }
+            } else {
+                foreach ($codes as $code) {
+                    if (isset($code['value']) && trim($code['value']) !== '') {
+                        $mainCode .= '        ' . $code['value'] . "\n";
                     }
                 }
             }
 
-            $lines = explode("\n", $mainCode);
-            $fixed = [];
+            // Auto-cast assignment supaya tipe data konsisten
+            $lines    = explode("\n", $mainCode);
             $varTypes = [];
 
             foreach ($lines as $line) {
                 $trim = trim($line);
-                if (preg_match('/^(int|float|double)\s+([a-zA-Z_][a-zA-Z0-9_]*)/', $trim, $m)) {
+                if (preg_match('/^(int|float|double|long)\s+([a-zA-Z_][a-zA-Z0-9_]*)/', $trim, $m)) {
                     $varTypes[$m[2]] = $m[1];
                 }
             }
 
+            $fixed = [];
             foreach ($lines as $line) {
                 $trim = trim($line);
                 if (preg_match('/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+);$/', $trim, $m)) {
-                    $var = $m[1];
+                    $var  = $m[1];
                     $expr = $m[2];
-
                     if (isset($varTypes[$var])) {
-                        $targetType = $varTypes[$var];
-                        if ($targetType === 'int') {
-                            $line = "        $var = (int)($expr);";
-                        } elseif ($targetType === 'float') {
-                            $line = "        $var = (float)($expr);";
-                        } elseif ($targetType === 'double') {
-                            $line = "        $var = (double)($expr);";
-                        }
+                        $line = '        ' . $var . ' = (' . $varTypes[$var] . ')(' . $expr . ');';
                     }
                 }
                 $fixed[] = $line;
@@ -197,41 +188,102 @@ class BankSoalKonversiRepository
 
             $mainCode = implode("\n", $fixed);
 
-            $javaCode = <<<EOD
-            public class Main_$safeSoalId {
-                public static void main(String[] args) {
-                    $mainCode
+            // Deteksi import yang dibutuhkan secara otomatis
+            $imports = [];
+
+            $importMap = [
+                'Scanner'           => 'java.util.Scanner',
+                'ArrayList'         => 'java.util.ArrayList',
+                'LinkedList'        => 'java.util.LinkedList',
+                'HashMap'           => 'java.util.HashMap',
+                'HashSet'           => 'java.util.HashSet',
+                'Arrays'            => 'java.util.Arrays',
+                'Collections'       => 'java.util.Collections',
+                'List'              => 'java.util.List',
+                'Map'               => 'java.util.Map',
+                'Set'               => 'java.util.Set',
+                'Stack'             => 'java.util.Stack',
+                'Queue'             => 'java.util.Queue',
+                'Iterator'          => 'java.util.Iterator',
+                'Random'            => 'java.util.Random',
+                'Math'              => null,
+                'BufferedReader'    => 'java.io.BufferedReader',
+                'InputStreamReader' => 'java.io.InputStreamReader',
+                'IOException'       => 'java.io.IOException',
+                'FileReader'        => 'java.io.FileReader',
+                'FileWriter'        => 'java.io.FileWriter',
+                'PrintWriter'       => 'java.io.PrintWriter',
+            ];
+
+            foreach ($importMap as $class => $importPath) {
+                if ($importPath && preg_match('/\b' . preg_quote($class, '/') . '\b/', $mainCode)) {
+                    $imports[] = 'import ' . $importPath . ';';
                 }
             }
-            EOD;
 
-            $dirPath = storage_path("app/java/$soalId");
+            $imports     = array_unique($imports);
+            sort($imports);
+            $importBlock = !empty($imports) ? implode("\n", $imports) . "\n\n" : '';
+
+            // Rakit file Java final
+            $className = 'Main_' . $safeSoalId;
+
+            $javaCode = $importBlock
+                . 'public class ' . $className . ' {' . "\n"
+                . '    public static void main(String[] args) {' . "\n"
+                . $mainCode
+                . '    }' . "\n"
+                . '}' . "\n";
+
+            // Tulis file .java
+            $dirPath = storage_path('app/java/' . $soalId);
             if (!is_dir($dirPath)) {
                 mkdir($dirPath, 0777, true);
             }
 
-            $filePath = $dirPath . "/Main_$safeSoalId.java";
+            $filePath = $dirPath . '/' . $className . '.java';
             file_put_contents($filePath, $javaCode);
 
-            $compile = new Process(['javac', $filePath], $dirPath);
+            // Kompilasi
+            $javaHome = env('JAVA_HOME', '');
+            $javacBin = $javaHome
+                ? rtrim($javaHome, '/\\') . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'javac'
+                : 'javac';
+            $javaBin  = $javaHome
+                ? rtrim($javaHome, '/\\') . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'java'
+                : 'java';
+
+            $compile = new Process([$javacBin, $filePath], $dirPath);
+            $compile->setTimeout(30);
             $compile->run();
+
             if (!$compile->isSuccessful()) {
-                throw new ProcessFailedException($compile);
+                throw new \RuntimeException(
+                    'Kompilasi gagal:' . "\n" . $compile->getErrorOutput()
+                );
             }
 
-            $process = new Process(['java', '-cp', $dirPath, "Main_$safeSoalId"], $dirPath);
+            // Jalankan dengan stdin dari form
+            $process = new Process([$javaBin, '-cp', $dirPath, $className], $dirPath);
+            $process->setTimeout(15);
+            $process->setInput($soalInput); // ← pipe input dari form ke Scanner
             $process->run();
+
             if (!$process->isSuccessful()) {
-                throw new ProcessFailedException($process);
+                throw new \RuntimeException(
+                    'Eksekusi gagal:' . "\n" . $process->getErrorOutput()
+                );
             }
 
             $output = $process->getOutput();
-            @unlink($dirPath . "/Main_$safeSoalId.class");
+
+            // Bersihkan file .class 
+            @unlink($dirPath . '/' . $className . '.class');
 
             return BaseResponse::json([
                 'status' => true,
-                'output' => $output,
-                'path'   => $filePath
+                'output' => trim($output),
+                'path'   => $filePath,
             ]);
         } catch (\Exception $e) {
             return BaseResponse::errorTransaction($e);

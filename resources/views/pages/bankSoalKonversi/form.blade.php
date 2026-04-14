@@ -218,12 +218,7 @@
                                 <label for="jawaban-textarea" class="form-label fs-5 required">
                                     Jawaban (Kode Java)
                                 </label>
-                                <textarea
-                                    name="jawaban"
-                                    id="jawaban-textarea"
-                                    class="form-control"
-                                    {{-- placeholder="Kode Java akan muncul di sini setelah klik Jalankan Konversi, atau ketik langsung. Satu baris per baris kode." --}}
-                                ></textarea>
+                                <textarea name="jawaban" id="jawaban-textarea" class="form-control" rows="5"></textarea>
                                 {{-- <div class="form-text text-muted mt-1">
                                     Setiap baris = satu langkah kode Java di dalam <code>main()</code>.
                                     Baris kosong diabaikan.
@@ -241,6 +236,29 @@
                             </div>
                         </div>
 
+                        <div class="d-flex justify-content-between mb-4">
+                            <div>
+                                <button type="button" class="btn btn-sm btn-primary" id="btn-run-konversi"
+                                    onclick="runKonversi()">
+                                    <i class="ki-outline ki-send fs-6"></i>
+                                    Jalankan Konversi
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Input Scanner (muncul otomatis jika kode mengandung Scanner) --}}
+                        <div class="row mb-5 d-none" id="row-input-scanner">
+                            <div class="fv-row col-md-12">
+                                <label class="form-label fs-5">Masukkan Nilai Input</label>
+                                <div id="scanner-fields" class="d-flex flex-column gap-3"></div>
+                                <button type="button" class="btn btn-sm btn-success mt-3" id="btn-run-scanner"
+                                    onclick="runWithScanner()">
+                                    <i class="ki-outline ki-play fs-6"></i>
+                                    Run
+                                </button>
+                            </div>
+                        </div>
+
                         {{-- Output --}}
                         <div class="row mb-10">
                             <div class="fv-row col-md-12">
@@ -251,17 +269,12 @@
 
                         <div class="d-flex justify-content-between">
                             <div>
-                                <button type="button" class="btn btn-sm btn-primary" id="btn-run-konversi"
-                                    onclick="runKonversi()">
-                                    <i class="ki-outline ki-send fs-6"></i>
-                                    Jalankan Konversi
-                                </button>
-                            </div>
-                            <div>
                                 <a href="{{ route('konversi.index') }}" class="btn btn-sm btn-secondary me-2">Batal</a>
-                                <button type="button" class="btn btn-sm btn-primary" id="submit-form-soal">Simpan</button>
+                                <button type="button" class="btn btn-sm btn-primary"
+                                    id="submit-form-soal">Simpan</button>
                             </div>
                         </div>
+
                     </form>
                 </div>
             </div>
@@ -277,7 +290,7 @@
         let soalEditor;
         var APP_URL = window.APP_URL || "/";
 
-        // ─── CKEditor (readonly) ───────────────────────────────────────────────────
+        // CKEditor (readonly) 
         ClassicEditor.create(document.querySelector('#soal'), {
             readOnly: true
         }).then(editor => {
@@ -286,8 +299,8 @@
             editor.ui.view.editable.element.style.height = '120px';
         });
 
-        // ─── Level change → load soal list ────────────────────────────────────────
-        $('#level_id').on('change', function () {
+        // Level change -> load soal list
+        $('#level_id').on('change', function() {
             soalEditor.setData('');
             clearAll();
             const levelId = $(this).val();
@@ -295,16 +308,18 @@
                 $('#soal_id').empty().append('<option value="" selected disabled>Pilih Soal</option>');
                 return;
             }
-            $.get(APP_URL + 'bank-soal-konversi/getSoalByLevel', { level_id: levelId }, function (data) {
+            $.get(APP_URL + 'bank-soal-konversi/getSoalByLevel', {
+                level_id: levelId
+            }, function(data) {
                 $('#soal_id').empty().append('<option value="" selected disabled>Pilih Soal</option>');
-                $.each(data, function (_, soal) {
+                $.each(data, function(_, soal) {
                     $('#soal_id').append(`<option value="${soal.id}">${soal.judul}</option>`);
                 });
             });
         });
 
-        // ─── Soal change → load detail + tampilkan pseudocode ─────────────────────
-        $('#soal_id').on('change', function () {
+        // Soal change -> load detail + tampilkan pseudocode
+        $('#soal_id').on('change', function() {
             console.log('Soal dipilih:', $(this).val());
             const soalId = $(this).val();
             clearAll();
@@ -312,7 +327,7 @@
                 soalEditor.setData('');
                 return;
             }
-            $.get(APP_URL + 'soal/' + soalId, function (data) {
+            $.get(APP_URL + 'soal/' + soalId, function(data) {
                 soalEditor.setData(data.soal || '');
                 $('#output').val(data.output || '');
                 renderPseudocode(data);
@@ -324,7 +339,7 @@
             });
         });
 
-        // ─── Render pseudocode ─────────────────────────────────────────────────────
+        // Render pseudocode
         function renderPseudocode(data) {
             const toArray = (value) => {
                 if (Array.isArray(value)) return value;
@@ -348,8 +363,14 @@
 
             // Gabungkan: tipe data dulu, lalu algoritma
             const combined = [
-                ...tipeData.map(item => ({ kind: 'tipe_data', data: item })),
-                ...algoritma.map(item => ({ kind: 'algoritma', data: item })),
+                ...tipeData.map(item => ({
+                    kind: 'tipe_data',
+                    data: item
+                })),
+                ...algoritma.map(item => ({
+                    kind: 'algoritma',
+                    data: item
+                })),
             ];
 
             if (combined.length === 0) {
@@ -367,8 +388,9 @@
 
                 if (entry.kind === 'tipe_data') {
                     const variabel = entry.data.variabel ?? '-';
-                    const tipe     = entry.data.tipe_data ?? '-';
-                    label = `Variabel: <strong>${escHtml(variabel)}</strong>, Tipe: <strong>${escHtml(tipe)}</strong>`;
+                    const tipe = entry.data.tipe_data ?? '-';
+                    label =
+                        `Variabel: <strong>${escHtml(variabel)}</strong>, Tipe: <strong>${escHtml(tipe)}</strong>`;
                     klass = 'tipe-data';
                     badge = '<span class="pseudo-badge tipe">Tipe Data</span>';
                 } else {
@@ -391,7 +413,7 @@
             $('#row-pseudocode').removeClass('d-none');
         }
 
-        // ─── Clear semua section ───────────────────────────────────────────────────
+        // Clear semua section
         function clearAll() {
             $('#jawaban-textarea').val('');
             $('#output').val('');
@@ -401,13 +423,13 @@
             $('#row-pseudocode').addClass('d-none');
         }
 
-        // ─── Set jawaban ke textarea + render preview chip ─────────────────────────
+        // Set jawaban ke textarea + render preview chip
         function setJawaban(plainText) {
             $('#jawaban-textarea').val(plainText);
             renderPreviewChip(plainText);
         }
 
-        // ─── Render preview chip terurut ───────────────────────────────────────────
+        // Render preview chip terurut
         function renderPreviewChip(plainText) {
             const lines = plainText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             if (lines.length === 0) {
@@ -422,34 +444,188 @@
         }
 
         // Update preview tiap kali textarea diketik manual
-        $('#jawaban-textarea').on('input', function () {
+        $('#jawaban-textarea').on('input', function() {
             renderPreviewChip($(this).val());
         });
 
-        // ─── Jalankan Konversi (jalankan kode Java dari textarea jawaban) ─────────
+        // Deteksi apakah kode mengandung Scanner
+        function codeHasScanner(text) {
+            return /\bScanner\b/.test(text);
+        }
+
+        // Update textarea jawaban -> sembunyikan input scanner jika Scanner dihapus
+        $('#jawaban-textarea').on('input', function() {
+            renderPreviewChip($(this).val());
+
+            if (!codeHasScanner($(this).val())) {
+                $('#row-input-scanner').addClass('d-none');
+                $('#input-scanner').val('');
+            }
+        });
+
+        // Parse kode -> ambil pasangan println + scanner input
+        function parseScannerFields(jawabanText) {
+            const lines = jawabanText
+                .split('\n')
+                .map(l => l.trim())
+                .filter(l => l.length > 0);
+
+            const fields = [];
+            const printPattern = /System\.out\.print(?:ln)?\s*\(\s*["'](.+?)["']\s*\)/;
+            const scannerPattern = /\.\s*next(?:Int|Double|Float|Long|Line|Boolean|Short|Byte)?\s*\(\s*\)/i;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                // Cek apakah baris ini adalah scanner input
+                if (scannerPattern.test(line)) {
+                    // Cari label dari baris sebelumnya (System.out.print/println)
+                    let label = '';
+                    if (i > 0 && printPattern.test(lines[i - 1])) {
+                        const match = lines[i - 1].match(printPattern);
+                        label = match ? match[1] : '';
+                    }
+                    fields.push({
+                        label: label || 'Input',
+                        index: fields.length
+                    });
+                }
+            }
+
+            return fields;
+        }
+
+        // Render input fields berdasarkan hasil parse
+        function renderScannerFields(jawabanText) {
+            const fields = parseScannerFields(jawabanText);
+            const container = $('#scanner-fields').empty();
+
+            if (fields.length === 0) {
+                container.append(`
+            <div class="text-muted fs-7">
+                Tidak ada input Scanner yang terdeteksi.
+            </div>
+        `);
+                return;
+            }
+
+            fields.forEach(field => {
+                container.append(`
+            <div class="d-flex align-items-center gap-3">
+                <label class="form-label mb-0 text-nowrap" style="min-width:220px;font-family:monospace;font-size:13px;">
+                    ${escHtml(field.label)}
+                </label>
+                <input
+                    type="text"
+                    class="form-control form-control-sm scanner-input-field"
+                    data-index="${field.index}"
+                    placeholder="Masukkan nilai..."
+                />
+            </div>
+        `);
+            });
+        }
+
+        // Jalankan Konversi (klik pertama)
         async function runKonversi() {
             const levelId = $('#level_id').val();
-            const soalId  = $('#soal_id').val();
+            const soalId = $('#soal_id').val();
             const jawabanText = $('#jawaban-textarea').val().trim();
 
             if (!levelId || !soalId) {
-                Swal.fire({ icon: 'warning', text: 'Pilih soal terlebih dahulu.', confirmButtonText: 'OK' });
+                Swal.fire({
+                    icon: 'warning',
+                    text: 'Pilih soal terlebih dahulu.',
+                    confirmButtonText: 'OK'
+                });
                 return;
             }
             if (!jawabanText) {
-                Swal.fire({ icon: 'warning', text: 'Isi jawaban kode Java terlebih dahulu.', confirmButtonText: 'OK' });
+                Swal.fire({
+                    icon: 'warning',
+                    text: 'Isi jawaban kode Java terlebih dahulu.',
+                    confirmButtonText: 'OK'
+                });
                 return;
             }
 
-            const btn = document.getElementById('btn-run-konversi');
-            btn.classList.add('loading');
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menjalankan...';
+            // Jika kode mengandung Scanner -> render fields lalu stop
+            if (codeHasScanner(jawabanText)) {
+                renderScannerFields(jawabanText);
+                $('#row-input-scanner').removeClass('d-none');
+                $('#scanner-fields input:first').focus();
+                return;
+            }
+
+            // Tidak ada Scanner -> langsung eksekusi
+            await eksekusiJava('');
+        }
+
+        // Run (klik setelah isi input scanner)
+        async function runWithScanner() {
+            // Kumpulkan semua nilai input -> gabung dengan newline
+            const values = [];
+            let allFilled = true;
+
+            $('.scanner-input-field').each(function() {
+                const val = $(this).val().trim();
+                if (!val) {
+                    allFilled = false;
+                    $(this).addClass('is-invalid');
+                } else {
+                    $(this).removeClass('is-invalid');
+                    values.push(val);
+                }
+            });
+
+            if (!allFilled) {
+                Swal.fire({
+                    icon: 'warning',
+                    text: 'Semua input Scanner harus diisi.',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            // Gabungkan nilai dengan newline agar Scanner.nextLine/nextInt bisa baca per baris
+            const scannerInput = values.join('\n');
+            await eksekusiJava(scannerInput);
+        }
+
+        // Sembunyikan scanner field jika Scanner dihapus dari kode
+        $('#jawaban-textarea').on('input', function() {
+            renderPreviewChip($(this).val());
+
+            if (!codeHasScanner($(this).val())) {
+                $('#row-input-scanner').addClass('d-none');
+                $('#scanner-fields').empty();
+            }
+        });
+
+        // Fungsi eksekusi Java (dipakai oleh keduanya)
+        async function eksekusiJava(scannerInput) {
+            const levelId = $('#level_id').val();
+            const soalId = $('#soal_id').val();
+            const jawabanText = $('#jawaban-textarea').val().trim();
+
+            const btnKonversi = document.getElementById('btn-run-konversi');
+            const btnScanner = document.getElementById('btn-run-scanner');
+
+            // Loading state
+            btnKonversi.classList.add('loading');
+            btnKonversi.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menjalankan...';
+            if (btnScanner) {
+                btnScanner.disabled = true;
+                btnScanner.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menjalankan...';
+            }
 
             const codes = jawabanText
                 .split('\n')
                 .map(line => line.trim())
                 .filter(line => line.length > 0)
-                .map(line => ({ value: line }));
+                .map(line => ({
+                    value: line
+                }));
 
             try {
                 const res = await $.ajax({
@@ -459,7 +635,8 @@
                         _token: $('meta[name="csrf-token"]').attr('content'),
                         level_id: levelId,
                         soal_id: soalId,
-                        codes: codes
+                        codes: codes,
+                        scanner_input: scannerInput
                     }
                 });
 
@@ -479,12 +656,16 @@
                     confirmButtonText: 'OK'
                 });
             } finally {
-                btn.classList.remove('loading');
-                btn.innerHTML = '<i class="ki-outline ki-send fs-6"></i> Jalankan Konversi';
+                btnKonversi.classList.remove('loading');
+                btnKonversi.innerHTML = '<i class="ki-outline ki-send fs-6"></i> Jalankan Konversi';
+                if (btnScanner) {
+                    btnScanner.disabled = false;
+                    btnScanner.innerHTML = '<i class="ki-outline ki-play fs-6"></i> Run';
+                }
             }
         }
 
-        // ─── Helper escape HTML ────────────────────────────────────────────────────
+        // Helper escape HTML
         function escHtml(s) {
             return String(s)
                 .replace(/&/g, '&amp;')
@@ -493,18 +674,26 @@
                 .replace(/"/g, '&quot;');
         }
 
-        // ─── Submit form ───────────────────────────────────────────────────────────
-        $('#submit-form-soal').on('click', function () {
+        // Submit form
+        $('#submit-form-soal').on('click', function() {
             const jawaban = $('#jawaban-textarea').val().trim();
-            const output  = $('#output').val().trim();
+            const output = $('#output').val().trim();
             const idKonversi = $('#id_konversi').val().trim();
 
             if (!jawaban) {
-                Swal.fire({ icon: 'warning', text: 'Jawaban belum diisi.', confirmButtonText: 'OK' });
+                Swal.fire({
+                    icon: 'warning',
+                    text: 'Jawaban belum diisi.',
+                    confirmButtonText: 'OK'
+                });
                 return;
             }
             if (!output) {
-                Swal.fire({ icon: 'warning', text: 'Output belum diisi.', confirmButtonText: 'OK' });
+                Swal.fire({
+                    icon: 'warning',
+                    text: 'Output belum diisi.',
+                    confirmButtonText: 'OK'
+                });
                 return;
             }
 
@@ -517,19 +706,25 @@
             $('#form-soal').submit();
         });
 
-        // ─── Prefill data edit ─────────────────────────────────────────────────────
+        // Prefill data edit
         function prefillEditData() {
             const raw = $('#data-soal').val();
             if (!raw) return;
 
             let existing;
-            try { existing = JSON.parse(raw); } catch (e) { return; }
+            try {
+                existing = JSON.parse(raw);
+            } catch (e) {
+                return;
+            }
             if (!existing?.id_level || !existing?.id_soal) return;
 
             $('#id_konversi').val(existing.id);
             $('#level_id').val(existing.id_level).trigger('change.select2');
 
-            $.get(APP_URL + 'bank-soal-konversi/getSoalByLevel', { level_id: existing.id_level }, function (list) {
+            $.get(APP_URL + 'bank-soal-konversi/getSoalByLevel', {
+                level_id: existing.id_level
+            }, function(list) {
                 $('#soal_id').empty().append('<option value="" disabled>Pilih Soal</option>');
                 (list || []).forEach(s => {
                     $('#soal_id').append(
@@ -537,7 +732,7 @@
                     );
                 });
 
-                $.get(APP_URL + 'soal/' + existing.id_soal, function (detail) {
+                $.get(APP_URL + 'soal/' + existing.id_soal, function(detail) {
                     if (soalEditor) soalEditor.setData(detail.soal || '');
                     $('#output').val(existing.output ?? detail.output ?? '');
 
@@ -563,7 +758,7 @@
             });
         }
 
-        $(document).ready(function () {
+        $(document).ready(function() {
             prefillEditData();
         });
     </script>
