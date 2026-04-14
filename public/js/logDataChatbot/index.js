@@ -11,6 +11,11 @@ $(() => {
 
 var dataTable = null; // simpan instance global
 
+function renderLevelBadge(levelName) {
+    const label = (levelName ?? '-').toString();
+    return `<span class="badge badge-light-primary fs-7">${label}</span>`;
+}
+
 initTable = () => {
     return new Promise((resolve, reject) => {
         // Kalau sudah ada, reload saja
@@ -41,6 +46,7 @@ initTable = () => {
                 { data: "nim", orderable: true, searchable: true },
                 { data: "name", orderable: true, searchable: true },
                 { data: "kelas_name", orderable: true, searchable: true, className: "text-center" },
+                { data: "level_name", orderable: true, searchable: false, className: "text-center" },
                 { data: "jumlah_chatbot", orderable: true, searchable: false, className: "text-center" },
                 { data: "jumlah_chatbot_adaptive", orderable: true, searchable: false, className: "text-center" },
                 { data: "id", orderable: false, searchable: false, className: "text-center" },
@@ -52,16 +58,20 @@ initTable = () => {
                 { targets: 3, render: (data, type, row) => row.kelas_name ?? '-' },
                 {
                     targets: 4,
-                    render: (data, type, row) =>
-                        `<span class="badge badge-light-primary fs-7">${row.jumlah_chatbot ?? 0}</span>`
+                    render: (data, type, row) => renderLevelBadge(row.level_name)
                 },
                 {
                     targets: 5,
                     render: (data, type, row) =>
-                        `<span class="badge badge-light-info fs-7">${row.jumlah_chatbot_adaptive ?? 0}</span>`
+                        `<span class="badge badge-light-primary fs-7">${row.jumlah_chatbot ?? 0}</span>`
                 },
                 {
                     targets: 6,
+                    render: (data, type, row) =>
+                        `<span class="badge badge-light-info fs-7">${row.jumlah_chatbot_adaptive ?? 0}</span>`
+                },
+                {
+                    targets: 7,
                     render: (data, type, row) => `
                         <div class="d-flex justify-content-center">
                             <button type="button" class="btn btn-sm btn-outline btn-outline-primary d-flex align-items-center gap-1 p-2" onclick="showDetail('${row.id}')">
@@ -149,6 +159,7 @@ function showDetail(idMahasiswa) {
                 $('#detail-nim').text(data.nim ?? '-');
                 $('#detail-nama').text(data.name ?? '-');
                 $('#detail-kelas').text(data.kelas_name ?? '-');
+                $('#detail-level').html(renderLevelBadge(data.level_name));
                 $('#detail-total-chatbot').text((data.jumlah_chatbot ?? 0) + (data.jumlah_chatbot_adaptive ?? 0));
                 
                 let tbody = '';
@@ -157,11 +168,13 @@ function showDetail(idMahasiswa) {
                         let typeBadge = item.type === 'adaptive' 
                             ? '<span class="badge badge-light-info">Adaptive</span>' 
                             : '<span class="badge badge-light-primary">Biasa</span>';
+                        let levelBadge = renderLevelBadge(item.level_name);
                         
                         tbody += `
                             <tr>
                                 <td class="text-center">${index + 1}</td>
                                 <td class="text-center">${typeBadge}</td>
+                                <td class="text-center">${levelBadge}</td>
                                 <td class="text-center">${item.waktu_akses ?? '-'}</td>
                                 <td class="text-center">${item.durasi ?? '-'}</td>
                             </tr>
@@ -170,7 +183,7 @@ function showDetail(idMahasiswa) {
                 } else {
                     tbody = `
                         <tr>
-                            <td colspan="4" class="text-center text-muted">Belum ada riwayat akses chatbot</td>
+                            <td colspan="5" class="text-center text-muted">Belum ada riwayat akses chatbot</td>
                         </tr>
                     `;
                 }

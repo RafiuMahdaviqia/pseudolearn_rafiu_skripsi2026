@@ -282,6 +282,56 @@ document.querySelectorAll('.answer-box').forEach(box => {
     });
 });
 
+// Hitung langkah juga saat jawaban dikembalikan ke panel pertanyaan.
+document.querySelectorAll('.panel-body, .panel-body-algoritma').forEach(panel => {
+    panel.addEventListener('dragover', e => e.preventDefault());
+
+    panel.addEventListener('drop', function (e) {
+        e.preventDefault();
+        const dragged = document.querySelector('.dragging');
+        if (!dragged) return;
+
+        const panelIsTipe = this.classList.contains('panel-body');
+        const panelIsAlgo = this.classList.contains('panel-body-algoritma');
+        const sourceClass = dragged.getAttribute('data-source');
+
+        if ((panelIsTipe && sourceClass !== 'tipe') || (panelIsAlgo && sourceClass !== 'algo')) {
+            this.classList.add('shake');
+            setTimeout(() => this.classList.remove('shake'), 400);
+            return;
+        }
+
+        const sourceParent = dragged.parentElement;
+        const sourceWasAnswerBox = sourceParent && sourceParent.classList.contains('answer-box');
+        const sourceVariabel = sourceWasAnswerBox ? (sourceParent.dataset.variable || null) : null;
+        const sourceIndex = sourceWasAnswerBox ? (sourceParent.dataset.index || null) : null;
+
+        if (sourceWasAnswerBox) {
+            sourceParent.removeChild(dragged);
+        }
+
+        this.appendChild(dragged);
+        dragged.classList.remove('dragging');
+
+        if (sourceWasAnswerBox) {
+            const itemText = dragged.innerText.trim();
+            if (sourceClass === 'tipe') {
+                logAnswerDrop({
+                    type: 'tipe_data',
+                    itemText,
+                    variabel: sourceVariabel
+                });
+            } else if (sourceClass === 'algo') {
+                logAnswerDrop({
+                    type: 'algoritma',
+                    itemText,
+                    index: sourceIndex
+                });
+            }
+        }
+    });
+});
+
 function reloadUjian() {
     Swal.fire({
         title: 'Muat Ulang Ujian?',

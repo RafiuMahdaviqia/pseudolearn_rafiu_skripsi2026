@@ -43,7 +43,7 @@
 
                         <select class="form-select form-select-sm" id="filter-soal" data-control="select2"
                             data-hide-search="true" data-allow-clear="true">
-                            <option value="">Pilih Level dulu</option>
+                            <option value="">Pilih Level</option>
                         </select>
 
                         <button type="button" class="btn btn-success btn-sm" id="btn-export" onclick="exportExcel()">
@@ -61,8 +61,9 @@
                                 <th class="text-start">NIM</th>
                                 <th class="text-start">Nama</th>
                                 <th class="text-center">Kelas</th>
-                                <th class="text-center">Jumlah Buka Chatbot</th>
-                                <th class="text-center">Jumlah Buka Chatbot Adaptive</th>
+                                <th class="text-center">Level</th>
+                                <th class="text-center">Log Chatbot</th>
+                                <th class="text-center">Log Chatbot Adaptive</th>
                                 <th class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -103,6 +104,12 @@
                         <p id="detail-kelas" class="text-gray-700">-</p>
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label fw-semibold">Level</label>
+                        <p id="detail-level" class="text-gray-700">-</p>
+                    </div>
+                </div>
+                <div class="row mb-5">
+                    <div class="col-md-6">
                         <label class="form-label fw-semibold">Total Akses Chatbot</label>
                         <p id="detail-total-chatbot" class="text-gray-700">-</p>
                     </div>
@@ -117,6 +124,7 @@
                             <tr class="fw-semibold fs-7 text-gray-800 border-bottom border-gray-200">
                                 <th class="text-center">No</th>
                                 <th class="text-center">Tipe Chatbot</th>
+                                <th class="text-center">Level</th>
                                 <th class="text-center">Waktu Akses</th>
                                 <th class="text-center">Durasi (menit)</th>
                             </tr>

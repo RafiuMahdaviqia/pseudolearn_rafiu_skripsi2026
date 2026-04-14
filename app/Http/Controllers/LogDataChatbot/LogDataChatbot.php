@@ -10,6 +10,8 @@ use App\Models\Kelas;
 use App\Models\Mahasiswa;
 use App\Models\ChatbotAccessLog;
 use App\Models\ChatbotLog;
+use App\Exports\LogDataChatbotExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LogDataChatbot extends Controller
 {
@@ -73,72 +75,86 @@ class LogDataChatbot extends Controller
         $search = $request->input('search')['value'] ?? '';
 
         // Query mahasiswa with chatbot data
-        $query = $this->mahasiswaModel->setView('v_mahasiswa');
+        $baseQuery = $this->mahasiswaModel->setView('v_mahasiswa');
 
         if (!empty($kelas)) {
-            $query = $query->where('id_kelas', $kelas);
+            $baseQuery = $baseQuery->where('id_kelas', $kelas);
         }
 
         // Apply search filter
         if (!empty($search)) {
-            $query = $query->where(function($q) use ($search) {
+            $baseQuery = $baseQuery->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('nim', 'like', "%{$search}%");
             });
         }
 
-        $totalRecords = $query->count();
-        $filteredRecords = $totalRecords;
+        $totalRecords = (clone $baseQuery)->count();
+
+        $filteredQuery = clone $baseQuery;
+
+        if (!empty($level) || !empty($soal)) {
+            $relevantIdsQuery = ChatbotLog::query();
+
+            if (!empty($level)) {
+                $relevantIdsQuery->where('id_level', $level);
+            }
+
+            if (!empty($soal)) {
+                $relevantIdsQuery->where('id_soal', $soal);
+            }
+
+            $relevantIds = $relevantIdsQuery->distinct()->pluck('id_mahasiswa');
+            $filteredQuery = $filteredQuery->whereIn('id', $relevantIds);
+        }
+
+        $filteredRecords = (clone $filteredQuery)->count();
 
         // Pagination
         $start = $request->input('start', 0);
         $length = $request->input('length', 10);
 
-        $mahasiswas = $query->skip($start)->take($length)->get();
+        $mahasiswas = $filteredQuery->skip($start)->take($length)->get();
 
         $mahasiswaIds = $mahasiswas->pluck('id');
+        $latestLevelByMahasiswa = [];
 
-        // When level/soal filter active, count from chatbot_logs (has id_level/id_soal)
-        // When no filter, count from chatbot_access_logs (open events)
-        if (!empty($level) || !empty($soal)) {
-            // Cari mahasiswa yang punya chatbot_logs di soal/level tersebut
-            $relevantIds = ChatbotLog::whereIn('id_mahasiswa', $mahasiswaIds);
-            if (!empty($level)) $relevantIds->where('id_level', $level);
-            if (!empty($soal))  $relevantIds->where('id_soal', $soal);
-            $relevantIds = $relevantIds->pluck('id_mahasiswa')->unique();
+        $latestChatbotLogs = ChatbotLog::whereIn('id_mahasiswa', $mahasiswaIds)
+            ->with('level:id,name')
+            ->when(!empty($level), function ($query) use ($level) {
+                $query->where('id_level', $level);
+            })
+            ->when(!empty($soal), function ($query) use ($soal) {
+                $query->where('id_soal', $soal);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get(['id_mahasiswa', 'id_level', 'created_at']);
 
-            // Hitung dari chatbot_access_logs seperti biasa
-            $countBiasa = ChatbotAccessLog::whereIn('id_mahasiswa', $relevantIds)
-                ->where('type', 'biasa')
-                ->selectRaw('id_mahasiswa, count(*) as total')
-                ->groupBy('id_mahasiswa')
-                ->pluck('total', 'id_mahasiswa');
-
-            $countAdaptive = ChatbotAccessLog::whereIn('id_mahasiswa', $relevantIds)
-                ->where('type', 'adaptive')
-                ->selectRaw('id_mahasiswa, count(*) as total')
-                ->groupBy('id_mahasiswa')
-                ->pluck('total', 'id_mahasiswa');
-        } else {
-            $countBiasa = ChatbotAccessLog::whereIn('id_mahasiswa', $mahasiswaIds)
-                ->where('type', 'biasa')
-                ->selectRaw('id_mahasiswa, count(*) as total')
-                ->groupBy('id_mahasiswa')
-                ->pluck('total', 'id_mahasiswa');
-
-            $countAdaptive = ChatbotAccessLog::whereIn('id_mahasiswa', $mahasiswaIds)
-                ->where('type', 'adaptive')
-                ->selectRaw('id_mahasiswa, count(*) as total')
-                ->groupBy('id_mahasiswa')
-                ->pluck('total', 'id_mahasiswa');
+        foreach ($latestChatbotLogs as $log) {
+            if (!isset($latestLevelByMahasiswa[$log->id_mahasiswa])) {
+                $latestLevelByMahasiswa[$log->id_mahasiswa] = $log->level?->name ?? '-';
+            }
         }
 
-        $data = $mahasiswas->map(function ($mahasiswa) use ($countBiasa, $countAdaptive) {
+        $countBiasa = ChatbotAccessLog::whereIn('id_mahasiswa', $mahasiswaIds)
+            ->where('type', 'biasa')
+            ->selectRaw('id_mahasiswa, count(*) as total')
+            ->groupBy('id_mahasiswa')
+            ->pluck('total', 'id_mahasiswa');
+
+        $countAdaptive = ChatbotAccessLog::whereIn('id_mahasiswa', $mahasiswaIds)
+            ->where('type', 'adaptive')
+            ->selectRaw('id_mahasiswa, count(*) as total')
+            ->groupBy('id_mahasiswa')
+            ->pluck('total', 'id_mahasiswa');
+
+        $data = $mahasiswas->map(function ($mahasiswa) use ($countBiasa, $countAdaptive, $latestLevelByMahasiswa) {
             return [
                 'id' => $mahasiswa->id,
                 'nim' => $mahasiswa->nim,
                 'name' => $mahasiswa->name,
                 'kelas_name' => $mahasiswa->kelas_name ?? '-',
+                'level_name' => $latestLevelByMahasiswa[$mahasiswa->id] ?? '-',
                 'jumlah_chatbot' => $countBiasa[$mahasiswa->id] ?? 0,
                 'jumlah_chatbot_adaptive' => $countAdaptive[$mahasiswa->id] ?? 0,
             ];
@@ -189,10 +205,17 @@ class LogDataChatbot extends Controller
             ->orderBy('opened_at', 'desc')
             ->get();
 
+        $chatbotLogs = ChatbotLog::where('id_mahasiswa', $id)
+            ->with('level:id,name')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         $jumlahBiasa = $accessLogs->where('type', 'biasa')->count();
         $jumlahAdaptive = $accessLogs->where('type', 'adaptive')->count();
 
-        $history = $accessLogs->map(function ($log) {
+        $latestLevel = $chatbotLogs->first()?->level?->name ?? '-';
+
+        $history = $accessLogs->map(function ($log) use ($chatbotLogs) {
             $durasiText = '-';
             if (!is_null($log->durasi_menit)) {
                 if ($log->durasi_menit > 0) {
@@ -205,8 +228,16 @@ class LogDataChatbot extends Controller
                 }
             }
 
+            $sessionEnd = $log->closed_at ?? now();
+            $levelName = $chatbotLogs->first(function ($chatbotLog) use ($log, $sessionEnd) {
+                return $chatbotLog->created_at
+                    && $log->opened_at
+                    && $chatbotLog->created_at->betweenIncluded($log->opened_at, $sessionEnd);
+            })?->level?->name ?? '-';
+
             return [
                 'type'        => $log->type,
+                'level_name'  => $levelName,
                 'waktu_akses' => $log->opened_at ? $log->opened_at->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') . ' WIB' : '-',
                 'durasi'      => $durasiText,
             ];
@@ -217,6 +248,7 @@ class LogDataChatbot extends Controller
             'nim' => $mahasiswa->nim,
             'name' => $mahasiswa->name,
             'kelas_name' => $mahasiswa->kelas_name ?? '-',
+            'level_name' => $latestLevel,
             'jumlah_chatbot' => $jumlahBiasa,
             'jumlah_chatbot_adaptive' => $jumlahAdaptive,
             'history' => $history,
@@ -234,13 +266,13 @@ class LogDataChatbot extends Controller
      */
     public function export(Request $request)
     {
-        // TODO: Implement Excel export
-        // return Excel::download(new LogDataChatbotExport($request->all()), 'log_data_chatbot.xlsx');
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Export belum tersedia. Silakan tunggu database siap.'
-        ]);
+        $idKelas = $request->input('kelas');
+        $idLevel = $request->input('level');
+        $idSoal  = $request->input('soal');
+
+        $filename = 'Log_Data_Chatbot_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        return Excel::download(new LogDataChatbotExport($idKelas, $idLevel, $idSoal), $filename);
     }
 }
 
