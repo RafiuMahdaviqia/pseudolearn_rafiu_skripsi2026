@@ -266,7 +266,7 @@ class BankSoalKonversiRepository
             // Jalankan dengan stdin dari form
             $process = new Process([$javaBin, '-cp', $dirPath, $className], $dirPath);
             $process->setTimeout(15);
-            $process->setInput($soalInput); // ← pipe input dari form ke Scanner
+            $process->setInput($soalInput); // input dari form ke Scanner
             $process->run();
 
             if (!$process->isSuccessful()) {
@@ -277,7 +277,7 @@ class BankSoalKonversiRepository
 
             $output = $process->getOutput();
 
-            // Bersihkan file .class 
+            // Bersihkan file .class
             @unlink($dirPath . '/' . $className . '.class');
 
             return BaseResponse::json([

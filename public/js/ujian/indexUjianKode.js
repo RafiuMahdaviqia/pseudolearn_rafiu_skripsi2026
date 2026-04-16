@@ -51,16 +51,20 @@ function openModalFeedback() {
 
 function submitKonversi() {
     var modalKonfirmasi = bootstrap.Modal.getInstance(document.getElementById('modal-konfirmasi-jawaban-konversi'));
-    var inputs = document.querySelectorAll('.input-panel input[type="text"]');
-    var kodeLangkah = [];
     var waktu = $('#waktu-ujian-detik').val();
-    inputs.forEach(function(input) {
-        kodeLangkah.push(input.value);
+
+    // Ambil jawaban dari drag-and-drop box
+    var kodeLangkah = [];
+    var boxes = document.querySelectorAll('.answer-box.box-java');
+    boxes.forEach(function(box) {
+        var item = box.querySelector('.drag-item');
+        kodeLangkah.push(item ? item.innerText.replace(/\s+/g, ' ').trim() : '');
     });
 
-    // hapus semua is-invalid
-    inputs.forEach(function(input) {
-        input.classList.remove("is-invalid");
+    // Reset highlight box sebelumnya
+    boxes.forEach(function(box) {
+        box.style.borderColor = '';
+        box.classList.remove('shake');
     });
 
     $.ajax({
@@ -75,7 +79,7 @@ function submitKonversi() {
         success: function(response) {
             modalKonfirmasi.hide();
 
-            // Jika benar, tampilkan modal correct dan hasil run Java
+            // Tampilkan modal correct dan hasil run Java
             var modalCorrect = new bootstrap.Modal(document.getElementById('modal-feedback-correct-konversi'));
             document.getElementById('java-run-result').textContent = response.java_output || '';
             modalCorrect.show();
@@ -92,9 +96,15 @@ function submitKonversi() {
             const res = xhr.responseJSON;
 
             if (res?.message?.errors) {
-                let inputs = document.querySelectorAll('.input-panel input[type="text"]');
-                res.message.errors.forEach(err => {
-                    inputs[err.index].classList.add("is-invalid");
+                var allBoxes = document.querySelectorAll('.answer-box.box-java');
+                res.message.errors.forEach(function(err) {
+                    if (allBoxes[err.index]) {
+                        allBoxes[err.index].style.borderColor = 'red';
+                        allBoxes[err.index].classList.add('shake');
+                        setTimeout(function() {
+                            allBoxes[err.index].classList.remove('shake');
+                        }, 400);
+                    }
                 });
             }
 
@@ -106,17 +116,16 @@ function submitKonversi() {
                     "Accept": "application/json",
                     "X-Requested-With": "XMLHttpRequest"
                 },
-                success: function (data) {
+                success: function(data) {
                     const livesEl = document.getElementById("lives-count");
                     if (livesEl) livesEl.innerText = (data && typeof data.lives !== 'undefined') ? data.lives : 0;
 
                     openModalFeedbackIncorrect(res?.message?.message ?? 'Terdapat jawaban salah', data.lives);
                 },
-                error: function (xhr) {
+                error: function(xhr) {
                     // console.error("Gagal mendapatkan status nyawa", xhr);
                 }
             });
-            // modalKonfirmasi.hide();
         }
     });
 }

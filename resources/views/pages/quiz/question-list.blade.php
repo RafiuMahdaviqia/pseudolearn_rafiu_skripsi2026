@@ -223,7 +223,7 @@
                 <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
 
                     <div id="kt_docs_toast_stack_container" class="toast-container position-fixed top-0 end-0 p-3 z-index-3">
-                        
+
                     </div>
 
                     <div class="d-flex flex-column flex-column-fluid">
@@ -289,7 +289,7 @@
                                                             <div class="col-2 text-center full d-inline-flex justify-content-center align-items-center text-black"
                                                                 @if($status !== 'locked')
                                                                     @if($step['type'] === 'konversi')
-                                                                        onclick="ujianCodeProgram('{{ $step['id'] }}')" style="cursor: pointer;"
+                                                                        onclick="ujianKode('{{ $step['id'] }}')" style="cursor: pointer;"
                                                                     @endif
                                                                 @endif>
                                                                 <div class="{{ $circleClass }} {{ $status }}">
@@ -405,7 +405,7 @@
                                                                 $avg = count($list) ? round(array_sum($list) / count($list), 2) : 0;
                                                                 $jumlahSoalKonversi = $jumlahSoalKonversi ?? 0;
                                                             @endphp
-                                                            
+
                                                             @if(count($list))
                                                                 @if(count($list) == $jumlahSoalKonversi && $jumlahSoalKonversi > 0)
                                                                     <div class="mb-4 d-flex align-items-center gap-2 px-2">
@@ -436,7 +436,7 @@
                                                             <img src="{{ asset('assets/media/img/badge.png') }}" alt="Badge Icon" class="me-2" style="width: 30px;">
                                                             AlgoBadge
                                                         </div>
-                                                        
+
                                                         <div class="row g-4">
                                                             @php
                                                                 $labeledSoal = collect($dataSoal ?? [])
@@ -558,7 +558,7 @@
             window.location.href = "{{ route('ujian.index') }}?id=" + id;
         }
 
-        function ujianCodeProgram(id) {
+        function ujianKode(id) {
             if ($('#lives-count').text().trim() === '0') {
                 Swal.fire({
                     icon: 'error',
@@ -568,7 +568,7 @@
                 return;
             }
 
-            window.location.href = "{{ route('code-program.code-program.index') }}?id=" + id;
+            window.location.href = "{{ route('ujian-kode.ujian-kode.index') }}?id=" + id;
         }
     </script>
     <script src="{{ asset('js/questionList/index.js') }}"></script>
@@ -691,7 +691,7 @@
         const badgeId = urlParams.get('badge_id');
         const konversiId = urlParams.get('konversi_id');
         const container = document.getElementById('kt_docs_toast_stack_container');
-    
+
         // Jika kedua id null, tidak perlu request ajax
         if (!pencapaianId && !badgeId && !konversiId) return;
 
@@ -732,7 +732,7 @@
                     const toast = bootstrap.Toast.getOrCreateInstance(toastDiv, { delay: 7000 });
                     toast.show();
                 }
-    
+
                 // Tampilkan toast pencapaian jika ada
                 if (data.pencapaian) {
                     createToast({
@@ -742,7 +742,7 @@
                         href: APP_URL + "pencapaian?tab=soal",
                     });
                 }
-    
+
                 // Tampilkan toast badge jika ada
                 if (data.badge) {
                     createToast({

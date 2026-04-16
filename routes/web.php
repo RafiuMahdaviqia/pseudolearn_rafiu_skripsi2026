@@ -17,7 +17,8 @@ use App\Http\Controllers\Labeling\LabelingController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Mahasiswa\MahasiswaController;
 use App\Http\Controllers\Confidence\ConfidenceController;
-use App\Http\Controllers\Ujian\UjianCodeProgramController;
+// use App\Http\Controllers\Ujian\UjianCodeProgramController;
+use App\Http\Controllers\UjianKode\UjianKodeController;
 use App\Http\Controllers\Leaderboard\LeaderboardController;
 use App\Http\Controllers\LogActivity\LogActivityController;
 use App\Http\Controllers\Overlapping\OverlappingController;
@@ -74,13 +75,21 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
             Route::post('/submit', [UjianController::class, 'submit'])->name('submit');
             Route::post('/send-log', [UjianController::class, 'sendLog'])->name('send-log');
         });
-        Route::prefix('code-program')->name('code-program.')->group(function () {
-            Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
-            Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
+        // Route::prefix('code-program')->name('code-program.')->group(function () {
+        //     Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
+        //     Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
+        // });
+        // Route::prefix('code-program')->name('code-program.')->group(function () {
+        //     Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
+        //     Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
+        // });
+        Route::prefix('ujian-kode')->name('ujian-kode.')->group(function () {
+            Route::get('/', [UjianKodeController::class, 'index'])->name('ujian-kode.index');
+            Route::post('submit-konversi', [UjianKodeController::class, 'submitKonversi'])->name('ujian-kode.submit-konversi');
         });
-        Route::prefix('code-program')->name('code-program.')->group(function () {
-            Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
-            Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
+        Route::prefix('ujian-kode')->name('ujian-kode.')->group(function () {
+            Route::get('/', [UjianKodeController::class, 'index'])->name('ujian-kode.index');
+            Route::post('submit-konversi', [UjianKodeController::class, 'submitKonversi'])->name('ujian-kode.submit-konversi');
         });
         Route::prefix('nyawa')->name('nyawa.')->group(function () {
             Route::get('status', [NyawaController::class, 'status'])->name('nyawa.status');

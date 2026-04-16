@@ -120,7 +120,7 @@ function openModalFeedbackIncorrect(feedbackText, lives = null) {
     // Ganti tombol dan pesan jika nyawa habis
     if (parseInt(lives) <= 0) {
         // Ganti pesan
-        document.getElementById('feedback-ujian').innerHTML = 
+        document.getElementById('feedback-ujian').innerHTML =
             '<span style="color:red;font-weight:bold;">Nyawa anda sudah habis, harap menunggu nyawa bertambah.</span>';
 
         // Ganti tombol modal
