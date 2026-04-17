@@ -21,12 +21,14 @@ use App\Http\Controllers\Leaderboard\LeaderboardController;
 use App\Http\Controllers\LogActivity\LogActivityController;
 use App\Http\Controllers\Overlapping\OverlappingController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
+use App\Http\Controllers\ARS\ArsController;
 use App\Models\Setting;
 
 Route::get('/', function () {
     return Auth::check() ? redirect('/dashboard') : redirect('/login');
 });
 
+        //Route::get('/test-ars', [SoalController::class, 'testArs']);
 Route::get('/login', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'authenticate'])->name('login.authenticate');
 
@@ -125,8 +127,8 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // Soal
-        Route::prefix('soal')->name('soal.')->group(function() {
-            Route::get('/', [SoalController::class, 'index'])->name('index');
+        Route::prefix('soal')->name('soal.')->group(function() {    
+        Route::get('/', [SoalController::class, 'index'])->name('index');
             Route::get('/order', [SoalController::class, 'order'])->name('order');
             Route::post('/table', [SoalController::class, 'table'])->name('table');
             Route::get('/form', [SoalController::class, 'form'])->name('form');
@@ -136,7 +138,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::get('/{id}', [SoalController::class, 'getById'])->name('getById');
             Route::post('/saveOrder', [SoalController::class, 'saveOrder'])->name('saveOrder');
             Route::post('/updateStatusSoal', [SoalController::class, 'updateStatusSoal'])->name('updateStatusSoal');
-        });
+            });
 
         // Level
         Route::prefix('level')->name('level.')->group(function() {
@@ -246,6 +248,12 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::get('/detail/{id}', [UjianKonversiController::class, 'detail'])->name('detail');
             Route::post('/table-detail', [UjianKonversiController::class, 'tableDetail'])->name('tableDetail');
             Route::get('/detail-konversi/{id}', [UjianKonversiController::class, 'detailKonversi'])->name('detailKonversi');
+        });
+
+        //ARS
+        Route::prefix('ars')->name('ars.')->group(function() {
+            Route::get('/', [ArsController::class, 'index'])->name('index');
+            Route::post('/table', [ArsController::class, 'table'])->name('table');
         });
 
         // Guide

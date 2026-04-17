@@ -268,84 +268,105 @@
                                                 @endphp
 
                                                 @foreach ($steps as $i => $step)
-                                                    @php
-                                                        $index = $i + 1;
-                                                        $isEven = $index % 2 === 0;
-                                                        $status = $step['status']; // done, active, locked
-                                                        $circleClass = $isEven ? 'circle' : 'circle-left';
-                                                        $timelineClass = ($loop->last || (isset($steps[$i+1]) && $steps[$i+1]['status'] === 'locked')) ? 'timeline inactive' : 'timeline';
-                                                        $judul = $step['type'] === 'konversi' ? 'Konversi Program' : 'Pseudocode';
-                                                        $deskripsi = $step['type'] === 'konversi'
-                                                            ? (isset($step['soal']['judul']) ? $step['soal']['judul'] : (isset($step['judul']) ? $step['judul'] : ''))
-                                                            : (isset($step['judul']) ? $step['judul'] : '');
-                                                    @endphp
+    @php
+        $index = $i + 1;
+        $isEven = $index % 2 === 0;
 
-                                                    <div class="row align-items-center how-it-works d-flex {{ $isEven ? 'justify-content-end' : '' }}">
-                                                        @if ($isEven)
-                                                            <div class="col-6 d-flex flex-column align-items-end text-black mb-4 mt-6">
-                                                                <h5 class="text-black">{{ $judul }}</h5>
-                                                                <p>{{ $deskripsi }}</p>
-                                                            </div>
-                                                            <div class="col-2 text-center full d-inline-flex justify-content-center align-items-center text-black"
-                                                                @if($status !== 'locked')
-                                                                    @if($step['type'] === 'konversi')
-                                                                        onclick="ujianCodeProgram('{{ $step['id'] }}')" style="cursor: pointer;"
-                                                                    @endif
-                                                                @endif>
-                                                                <div class="{{ $circleClass }} {{ $status }}">
-                                                                    @if($status === 'done')
-                                                                    @else
-                                                                        {{ $index }}
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        @else
-                                                            <div class="col-2 text-center full d-inline-flex justify-content-center align-items-center text-black"
-                                                                @if($status !== 'locked')
-                                                                    @if($step['type'] === 'soal')
-                                                                        onclick="ujian('{{ $step['id'] }}')" style="cursor: pointer;"
-                                                                    @endif
-                                                                @endif>
-                                                                <div class="{{ $circleClass }} {{ $status }}">
-                                                                    @if($status === 'done')
-                                                                    @else
-                                                                        {{ $index }}
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-6 text-black mb-4 mt-6">
-                                                                <h5 class="text-black">{{ $judul }}</h5>
-                                                                <p>{{ $deskripsi }}</p>
-                                                            </div>
-                                                        @endif
-                                                    </div>
+        $status = $step['status']; // done, active, locked
 
-                                                    @if (!$loop->last)
-                                                        <div class="row {{ $timelineClass }}">
-                                                            @if ($isEven)
-                                                                <div class="col-2">
-                                                                    <div class="corner right-bottom"></div>
-                                                                </div>
-                                                                <div class="col-8">
-                                                                    <hr style="opacity: 1;" />
-                                                                </div>
-                                                                <div class="col-2">
-                                                                    <div class="corner top-left"></div>
-                                                                </div>
-                                                            @else
-                                                                <div class="col-2">
-                                                                    <div class="corner top-right"></div>
-                                                                </div>
-                                                                <div class="col-8">
-                                                                    <hr style="opacity: 1;" />
-                                                                </div>
-                                                                <div class="col-2">
-                                                                    <div class="corner left-bottom"></div>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                    @endif
-                                                @endforeach
+        // posisi zigzag
+        $circleClass = $isEven ? 'circle' : 'circle-left';
+
+        // 🔥 FIX timeline (JANGAN cek next locked)
+        $timelineClass = $loop->last ? 'timeline inactive' : 'timeline';
+
+        // judul
+        $judul = $step['type'] === 'konversi' ? 'Konversi Program' : 'Pseudocode';
+
+        // deskripsi
+        $deskripsi = $step['judul'] ?? '';
+
+        // klik handler
+        $onClick = '';
+        if ($status !== 'locked') {
+            if ($step['type'] === 'soal') {
+                $onClick = "ujian('{$step['id']}')";
+            } else {
+                $onClick = "ujianCodeProgram('{$step['id']}')";
+            }
+        }
+    @endphp
+
+    <div class="row align-items-center how-it-works d-flex {{ $isEven ? 'justify-content-end' : '' }}">
+
+        @if ($isEven)
+            {{-- KANAN --}}
+            <div class="col-6 d-flex flex-column align-items-end text-black mb-4 mt-6">
+                <h5>{{ $judul }}</h5>
+                <p>{{ $deskripsi }}</p>
+            </div>
+
+            <div class="col-2 text-center full d-inline-flex justify-content-center align-items-center"
+                @if($status !== 'locked')
+                    onclick="{{ $onClick }}" style="cursor:pointer;"
+                @endif>
+                
+                <div class="{{ $circleClass }} {{ $status }}">
+                    @if($status !== 'done')
+                        {{ $index }}
+                    @endif
+                </div>
+            </div>
+
+        @else
+            {{-- KIRI --}}
+            <div class="col-2 text-center full d-inline-flex justify-content-center align-items-center"
+                @if($status !== 'locked')
+                    onclick="{{ $onClick }}" style="cursor:pointer;"
+                @endif>
+                
+                <div class="{{ $circleClass }} {{ $status }}">
+                    @if($status !== 'done')
+                        {{ $index }}
+                    @endif
+                </div>
+            </div>
+
+            <div class="col-6 text-black mb-4 mt-6">
+                <h5>{{ $judul }}</h5>
+                <p>{{ $deskripsi }}</p>
+            </div>
+        @endif
+    </div>
+
+    {{-- GARIS --}}
+    @if (!$loop->last)
+        <div class="row {{ $timelineClass }}">
+            @if ($isEven)
+                <div class="col-2">
+                    <div class="corner right-bottom"></div>
+                </div>
+                <div class="col-8">
+                    <hr style="opacity: 1;" />
+                </div>
+                <div class="col-2">
+                    <div class="corner top-left"></div>
+                </div>
+            @else
+                <div class="col-2">
+                    <div class="corner top-right"></div>
+                </div>
+                <div class="col-8">
+                    <hr style="opacity: 1;" />
+                </div>
+                <div class="col-2">
+                    <div class="corner left-bottom"></div>
+                </div>
+            @endif
+        </div>
+    @endif
+
+@endforeach
 
                                             </div>
                                         </div>

@@ -203,8 +203,17 @@
                                                 <div class="panel-header">Pseudocode</div>
                                                 <div class="panel-body">
                                                     @php
-                                                        $tipeDataList = collect(json_decode($soal['kunci_tipe_data'], true));
-                                                        $algoritmaList = collect(json_decode($soal['kunci_algoritma'], true));
+                                                        $tipeDataList = collect(
+                                                            is_array($soal['kunci_tipe_data'])
+                                                                ? $soal['kunci_tipe_data']
+                                                                : json_decode($soal['kunci_tipe_data'], true)
+                                                        );
+
+                                                        $algoritmaList = collect(
+                                                            is_array($soal['kunci_algoritma'])
+                                                                ? $soal['kunci_algoritma']
+                                                                : json_decode($soal['kunci_algoritma'], true)
+                                                        );
                                                         $dataLangkah = 1;
 
                                                         // Filter algoritma yang punya data konversi = 1 (field bisa 'data_konversi' atau 'konversi')
@@ -245,7 +254,11 @@
                                                 <div class="code-box-input">Public class HitungBatasUmur{</div>
                                                 <div class="code-box-input">Public static void main(String[] args) {</div>
                                                 @php
-                                                    $jawabanList = collect(json_decode(is_string($konversi['jawaban']) ? $konversi['jawaban'] : json_encode($konversi['jawaban']), true));
+                                                    $jawabanList = collect(
+                                                        is_array($konversi['jawaban'])
+                                                            ? $konversi['jawaban']
+                                                            : json_decode($konversi['jawaban'], true)
+                                                    );
                                                     $totalLangkah = $jawabanList->count();
                                                 @endphp
 

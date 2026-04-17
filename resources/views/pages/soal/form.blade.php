@@ -17,7 +17,7 @@
                     </div>
                     <form method="POST" action="" id="form-soal">
                         <input type="hidden" name="id" id="id-soal">
-                        <input type="hidden" name="data-soal" id="data-soal" value="{{ $data ? json_encode($data) : '' }}">
+                        <input type="hidden" name="data-soal" id="data-soal" value='@json($data)'>
                         @csrf
 
                         {{-- Baris 1: Select Level & Judul Soal --}}
@@ -276,8 +276,10 @@
 
                     // Tipe Data
                     if (dataSoal.kunci_tipe_data) {
-                        let tipeDataArr = JSON.parse(dataSoal.kunci_tipe_data);
-                        $('#container-tipe-data').empty();
+                        let tipeDataArr = typeof dataSoal.kunci_tipe_data === "string"
+                            ? JSON.parse(dataSoal.kunci_tipe_data)
+                            : dataSoal.kunci_tipe_data;
+                            $('#container-tipe-data').empty();
                         tipeDataArr.forEach((item, i) => {
                             const rowId = 'tipe-data-row-' + i;
                             const row = `
@@ -315,8 +317,10 @@
 
                     // Algoritma
                     if (dataSoal.kunci_algoritma) {
-                        let algoritmaArr = JSON.parse(dataSoal.kunci_algoritma);
-                        $('#container-algoritma').empty();
+                        let algoritmaArr = typeof dataSoal.kunci_algoritma === "string"
+                            ? JSON.parse(dataSoal.kunci_algoritma)
+                            : dataSoal.kunci_algoritma;
+                            $('#container-algoritma').empty();
                         algoritmaArr.forEach((item, i) => {
                             const rowId = 'algoritma-row-' + i;
                             const checked = (item.clue == 1 || item.clue === "1") ? 'checked' : '';
