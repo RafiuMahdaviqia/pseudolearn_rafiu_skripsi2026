@@ -254,6 +254,9 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         Route::prefix('ars')->name('ars.')->group(function() {
             Route::get('/', [ArsController::class, 'index'])->name('index');
             Route::post('/table', [ArsController::class, 'table'])->name('table');
+            Route::get('/detail/{id}', [ArsController::class, 'detail'])->name('detail');
+            Route::post('/tableDetail', [ArsController::class, 'tableDetail'])->name('tableDetail');
+            Route::post('/tableArsLog', [ArsController::class, 'tableArsLog'])->name('tableArsLog');
         });
 
         // Guide

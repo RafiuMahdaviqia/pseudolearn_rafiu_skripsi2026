@@ -64,6 +64,16 @@ class ArsReportRepository extends BaseRepository
             $query->where('id_kelas', $kelas);
         }
 
+        $search = $request->input('search.value');
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                ->orWhere('nim', 'like', "%{$search}%")
+                ->orWhere('kelas_name', 'like', "%{$search}%");
+            });
+        }
+
         $recordsTotal = $query->count();
 
         $start  = $request->input('start', 0);
@@ -86,5 +96,54 @@ class ArsReportRepository extends BaseRepository
             "recordsFiltered" => $recordsTotal,
             "data" => $data,
         ];
+    }
+
+    public function tableArsLog($request){
+        $idMahasiswa = $request->idMahasiswa;
+        $idLevel = $request->idLevel;
+
+        // PSEUDO
+        $pseudo = DB::table('ujian')
+            ->join('soal', 'soal.id', '=', 'ujian.id_soal')
+            ->join('level', 'level.id', '=', 'soal.id_level')
+            ->select(
+                'level.id as level_id',
+                'level.name as level',
+                'soal.judul as soal',
+                'soal.difficulty as difficulty',
+                DB::raw("'pseudo' as jenis_soal"),
+                'ujian.waktu as waktu',
+                'ujian.created_at'
+            )
+            ->where('ujian.id_mahasiswa', $idMahasiswa);
+
+        // KONVERSI
+        $konversi = DB::table('ujian_konversi')
+            ->join('konversi', 'konversi.id', '=', 'ujian_konversi.id_soal_konversi')
+            ->join('soal', 'soal.id', '=', 'konversi.id_soal')
+            ->join('level', 'level.id', '=', 'soal.id_level')
+            ->select(
+                'level.id as level_id',
+                'level.name as level',
+                'soal.judul as soal',
+                'soal.difficulty as difficulty',
+                DB::raw("'konversi' as jenis_soal"),
+                'ujian_konversi.waktu as waktu',
+                'ujian_konversi.created_at'
+            )
+            ->where('ujian_konversi.id_mahasiswa', $idMahasiswa);
+        
+        // UNION
+        $query = $pseudo->unionAll($konversi);
+
+        $query = DB::query()->fromSub($query, 'x');
+
+        if (!empty($idLevel)) {
+            $query->where('level_id', $idLevel);
+        }
+
+        return $query
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 }

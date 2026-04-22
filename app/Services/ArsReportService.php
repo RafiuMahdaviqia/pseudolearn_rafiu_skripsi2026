@@ -20,4 +20,10 @@ class ArsReportService
         $data = $this->arsReportRepository->table($request);
         return $data;
     }
+
+    public function tableArsLog($request)
+{
+    $data = $this->arsReportRepository->tableArsLog($request);
+    return $data;
+}
 }

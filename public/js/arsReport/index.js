@@ -11,9 +11,9 @@ $(() => {
 initTable = () => {
     let kelas = $('#filter-kelas').val();
     return new Promise((resolve, reject) => {
-        var table = $("#table-ars-report").DataTable({
+        var table = $("#table-ars").DataTable({
             ajax: {
-                url: APP_URL + "ars-report/table",
+                url: APP_URL + "ars/table",
                 type: "POST",
                 data: function (d) {
                     d._token = $('meta[name="csrf-token"]').attr("content"),
@@ -155,5 +155,5 @@ $('#filter-kelas').on('change', function() {
 });
 
 function detail(id) {
-    window.location.href = APP_URL + "ars-report/detail/" + id;
+    window.location.href = APP_URL + "ars/detail/" + id;
 }

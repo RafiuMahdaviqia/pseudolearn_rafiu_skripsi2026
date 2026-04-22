@@ -36,7 +36,7 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-striped" id="table-ars-report">
+                    <table class="table table-striped" id="table-ars">
                         <thead>
                             <tr class="fw-semibold fs-6 text-gray-800 border-bottom border-gray-200">
                                 <th class="text-center">No</th>
