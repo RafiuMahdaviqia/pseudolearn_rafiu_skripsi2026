@@ -84,12 +84,8 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
         //     Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
         // });
         Route::prefix('ujian-kode')->name('ujian-kode.')->group(function () {
-            Route::get('/', [UjianKodeController::class, 'index'])->name('ujian-kode.index');
-            Route::post('submit-konversi', [UjianKodeController::class, 'submitKonversi'])->name('ujian-kode.submit-konversi');
-        });
-        Route::prefix('ujian-kode')->name('ujian-kode.')->group(function () {
-            Route::get('/', [UjianKodeController::class, 'index'])->name('ujian-kode.index');
-            Route::post('submit-konversi', [UjianKodeController::class, 'submitKonversi'])->name('ujian-kode.submit-konversi');
+            Route::get('/', [UjianKodeController::class, 'index'])->name('index');
+            Route::post('submit-konversi', [UjianKodeController::class, 'submitKonversi'])->name('submit-konversi');
         });
         Route::prefix('nyawa')->name('nyawa.')->group(function () {
             Route::get('status', [NyawaController::class, 'status'])->name('nyawa.status');

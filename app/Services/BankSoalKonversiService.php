@@ -27,23 +27,10 @@ class BankSoalKonversiService
 
     public function store($request)
     {
-        $jawabanRaw = (string) $request->input('jawaban', '');
-        $jawabanLines = preg_split('/\R/', $jawabanRaw) ?: [];
-        $jawabanStructured = [];
-        $increment = 1;
-        foreach ($jawabanLines as $line) {
-            $clean = trim($line);
-            if ($clean === '') {
-                continue;
-            }
-            $jawabanStructured[] = [$increment => $clean];
-            $increment++;
-        }
-
         $payload = [
             'id_level' => $request->input('level_id'),
             'id_soal'  => $request->input('soal_id'),
-            'jawaban'  => $jawabanStructured,
+            'jawaban'  => trim($request->input('jawaban', '')), // ✅ plain text langsung
             'output'   => $request->input('output'),
         ];
         return $this->bankSoalKonversiRepository->store($payload);
@@ -51,23 +38,10 @@ class BankSoalKonversiService
 
     public function update($request, $id)
     {
-        $jawabanRaw = (string) $request->input('jawaban', '');
-        $jawabanLines = preg_split('/\R/', $jawabanRaw) ?: [];
-        $jawabanStructured = [];
-        $increment = 1;
-        foreach ($jawabanLines as $line) {
-            $clean = trim($line);
-            if ($clean === '') {
-                continue;
-            }
-            $jawabanStructured[] = [$increment => $clean];
-            $increment++;
-        }
-
         $payload = [
             'id_level' => $request->input('level_id'),
             'id_soal'  => $request->input('soal_id'),
-            'jawaban'  => $jawabanStructured,
+            'jawaban'  => trim($request->input('jawaban', '')), // ✅ plain text langsung
             'output'   => $request->input('output'),
         ];
         return $this->bankSoalKonversiRepository->update($payload, $id);
@@ -93,25 +67,25 @@ class BankSoalKonversiService
         return $this->bankSoalKonversiRepository->getOrderListByLevel($levelId);
     }
 
-    public function saveOrder($request)
-    {
-        try {
-            DB::beginTransaction();
-            $orders = $request->input('order', []);
-            if (!is_array($orders)) {
-                return BaseResponse::errorMessage('Format order tidak valid');
-            }
+    // public function saveOrder($request)
+    // {
+    //     try {
+    //         DB::beginTransaction();
+    //         $orders = $request->input('order', []);
+    //         if (!is_array($orders)) {
+    //             return BaseResponse::errorMessage('Format order tidak valid');
+    //         }
 
-            foreach ($orders as $item) {
-                if (!isset($item['id'], $item['order'])) continue;
-                $this->bankSoalKonversiRepository->update(['order' => (int) $item['order']], $item['id']);
-            }
+    //         foreach ($orders as $item) {
+    //             if (!isset($item['id'], $item['order'])) continue;
+    //             $this->bankSoalKonversiRepository->update(['order' => (int) $item['order']], $item['id']);
+    //         }
 
-            DB::commit();
-            return BaseResponse::updated('Urutan bank soal konversi berhasil disimpan');
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            return BaseResponse::errorMessage($e->getMessage());
-        }
-    }
+    //         DB::commit();
+    //         return BaseResponse::updated('Urutan bank soal konversi berhasil disimpan');
+    //     } catch (\Throwable $e) {
+    //         DB::rollBack();
+    //         return BaseResponse::errorMessage($e->getMessage());
+    //     }
+    // }
 }

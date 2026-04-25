@@ -148,8 +148,8 @@ class BankSoalKonversiController extends Controller
         );
     }
 
-    public function saveOrder(Request $request)
-    {
-        return $this->bankSoalService->saveOrder($request);
-    }
+    // public function saveOrder(Request $request)
+    // {
+    //     return $this->bankSoalService->saveOrder($request);
+    // }
 }

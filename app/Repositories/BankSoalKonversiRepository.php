@@ -19,74 +19,82 @@ class BankSoalKonversiRepository
     }
 
     public function table($request)
-    {
-        $query = $this->model
-            ->select(
-                'bank_soal_konversi.id',
-                'level.name as level',
-                'soal.judul as soal',
-                'bank_soal_konversi.jawaban',
-                'bank_soal_konversi.output'
-            )
-            ->leftJoin('level', 'level.id', '=', 'bank_soal_konversi.id_level')
-            ->leftJoin('soal', 'soal.id', '=', 'bank_soal_konversi.id_soal');
+{
+    $query = $this->model
+        ->select(
+            'bank_soal_konversi.id',
+            'level.name as level_name',
+            'soal.judul as soal',
+            'bank_soal_konversi.jawaban',
+            'bank_soal_konversi.output',
+            'bank_soal_konversi.difficulty'
+        )
+        ->leftJoin('level', 'level.id', '=', 'bank_soal_konversi.id_level')
+        ->leftJoin('soal', 'soal.id', '=', 'bank_soal_konversi.id_soal');
 
-        $level = $request->input('level');
-        if (!is_null($level) && $level !== '') {
-            $query->where('bank_soal_konversi.id_level', $level);
-        }
-        $query->orderBy('bank_soal_konversi.order', 'asc')
-            ->orderBy('bank_soal_konversi.created_at', 'asc');
-
-        return DataTables::of($query)
-            ->addIndexColumn()
-            ->editColumn('jawaban', function ($item) {
-                if (empty($item->jawaban)) return '-';
-                $jawaban = is_array($item->jawaban)
-                    ? $item->jawaban
-                    : json_decode($item->jawaban, true);
-                if (!$jawaban) return '-';
-                return collect($jawaban)
-                    ->map(function ($j) {
-                        if (is_array($j)) {
-                            return implode('', $j);
-                        }
-                        return (string) $j;
-                    })
-                    ->implode('<br>');
-            })
-            ->editColumn('output', function ($item) {
-                return $item->output ?? '-';
-            })
-            ->rawColumns(['jawaban'])
-            ->make(true);
+    // Filter Level
+    $level = $request->input('level');
+    if (!is_null($level) && $level !== '') {
+        $query->where('bank_soal_konversi.id_level', $level);
     }
+
+    // Order
+    $query->orderBy('bank_soal_konversi.difficulty', 'asc')
+          ->orderBy('bank_soal_konversi.created_at', 'asc');
+
+    return DataTables::of($query)
+        ->addIndexColumn()
+        ->filterColumn('level_name', function ($query, $keyword) {
+            $query->where('level.name', 'like', "%{$keyword}%");
+        })
+
+        ->filterColumn('soal', function ($query, $keyword) {
+            $query->where('soal.judul', 'like', "%{$keyword}%");
+        })
+
+        // Format Jawaban
+        ->editColumn('jawaban', function ($item) {
+            if (empty($item->jawaban)) return '-';
+
+            return collect(explode("\n", $item->jawaban))
+                ->map(fn($line) => trim($line))
+                ->filter(fn($line) => $line !== '')
+                ->implode('<br>');
+        })
+
+        ->editColumn('output', function ($item) {
+            return $item->output ?? '-';
+        })
+
+        ->rawColumns(['jawaban'])
+        ->make(true);
+}
 
     public function getOrderListByLevel(string $levelId)
     {
         return DB::table('bank_soal_konversi')
             ->leftJoin('soal', 'soal.id', '=', 'bank_soal_konversi.id_soal')
             ->where('bank_soal_konversi.id_level', $levelId)
-            ->orderBy('bank_soal_konversi.order', 'asc')
+            ->orderBy('bank_soal_konversi.difficulty', 'asc')
             ->orderBy('bank_soal_konversi.created_at', 'asc')
             ->select(
                 'bank_soal_konversi.id',
-                'bank_soal_konversi.order',
+                'bank_soal_konversi.difficulty',
                 'bank_soal_konversi.id_soal',
                 'soal.judul as judul'
             )
             ->get();
     }
 
-    public function saveOrder(array $orders): bool
+    public function saveOrder(array $difficulties): bool
     {
         DB::beginTransaction();
         try {
-            foreach ($orders as $item) {
-                if (!isset($item['id'], $item['order'])) continue;
+            foreach ($difficulties as $item) {
+                if (!isset($item['id'], $item['difficulty'])) continue;
                 DB::table('bank_soal_konversi')
                     ->where('id', $item['id'])
-                    ->update(['order' => (int) $item['order']]);
+                    ->update(['difficulty' => (int) $item['difficulty']]);
             }
             DB::commit();
             return true;

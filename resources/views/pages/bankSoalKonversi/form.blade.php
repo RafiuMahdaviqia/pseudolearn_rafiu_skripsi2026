@@ -290,7 +290,7 @@
         let soalEditor;
         var APP_URL = window.APP_URL || "/";
 
-        // CKEditor (readonly) 
+        // CKEditor (readonly)
         ClassicEditor.create(document.querySelector('#soal'), {
             readOnly: true
         }).then(editor => {
@@ -739,21 +739,10 @@
                     // Render pseudocode dari detail soal
                     renderPseudocode(detail);
 
-                    // Prefill jawaban — support format lama & baru
-                    let jawabanText = '';
+                    // Jawaban
+                    const jawabanText = typeof existing.jawaban === 'string' ? existing.jawaban : '';
 
-                    if (typeof existing.jawaban === 'string') {
-                        // Format baru: plain text
-                        jawabanText = existing.jawaban;
-                    } else if (Array.isArray(existing.jawaban)) {
-                        // Format lama: [{"1": "code"}, ...]
-                        jawabanText = existing.jawaban
-                            .map(o => o ? Object.values(o)[0] ?? '' : '')
-                            .filter(l => l.trim())
-                            .join('\n');
-                    }
-
-                    if (jawabanText) setJawaban(jawabanText);
+                    setJawaban(jawabanText);
                 });
             });
         }

@@ -23,10 +23,6 @@ class BankSoalKonversi extends BaseModel
         'output',
     ];
 
-    protected $casts = [
-        'jawaban' => 'array',
-    ];
-
     protected static function boot()
     {
         parent::boot();

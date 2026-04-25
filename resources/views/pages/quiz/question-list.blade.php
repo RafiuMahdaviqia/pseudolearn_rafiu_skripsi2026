@@ -568,7 +568,7 @@
                 return;
             }
 
-            window.location.href = "{{ route('ujian-kode.ujian-kode.index') }}?id=" + id;
+            window.location.href = "{{ route('ujian-kode.index') }}?id=" + id;
         }
     </script>
     <script src="{{ asset('js/questionList/index.js') }}"></script>

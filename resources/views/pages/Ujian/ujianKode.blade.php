@@ -26,7 +26,9 @@
     <link href="{!! asset('assets/css/style.bundle.css') !!}" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <script>
-        if (window.top != window.self) { window.top.location.replace(window.self.location.href); }
+        if (window.top != window.self) {
+            window.top.location.replace(window.self.location.href);
+        }
     </script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
@@ -38,7 +40,7 @@
         .panel-box {
             background-color: #CDD6E2;
             border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
             overflow: hidden;
             border: 4px solid #022349;
@@ -135,7 +137,7 @@
             border-radius: 12px;
             background-color: #CDD6E2;
             overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
         .input-header {
@@ -155,11 +157,25 @@
 
         /* ── Animations ── */
         @keyframes shake {
-            0%   { transform: translateX(0); }
-            25%  { transform: translateX(-6px); }
-            50%  { transform: translateX(6px); }
-            75%  { transform: translateX(-6px); }
-            100% { transform: translateX(0); }
+            0% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-6px);
+            }
+
+            50% {
+                transform: translateX(6px);
+            }
+
+            75% {
+                transform: translateX(-6px);
+            }
+
+            100% {
+                transform: translateX(0);
+            }
         }
 
         .answer-box.shake {
@@ -172,12 +188,29 @@
         }
 
         @keyframes heartBeat {
-            0%   { transform: scale(1); }
-            10%  { transform: scale(1.1); }
-            20%  { transform: scale(1.2); }
-            30%  { transform: scale(1.1); }
-            40%  { transform: scale(1); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            10% {
+                transform: scale(1.1);
+            }
+
+            20% {
+                transform: scale(1.2);
+            }
+
+            30% {
+                transform: scale(1.1);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         /* Pilihan kode drag-grid */
@@ -208,9 +241,9 @@
                                         <div class="d-flex justify-content-between align-items-center px-4 py-3"
                                             style="min-height: 60px; background-color: #0a3a71; border-radius: 12px;">
 
-                                            <button class="btn btn-danger btn-sm d-flex align-items-center px-3 py-2 fw-semibold"
-                                                style="font-size: 0.95rem;"
-                                                onclick="back('{{ $soal->id_level }}')">
+                                            <button
+                                                class="btn btn-danger btn-sm d-flex align-items-center px-3 py-2 fw-semibold"
+                                                style="font-size: 0.95rem;" onclick="back('{{ $soal->id_level }}')">
                                                 <i class="bi bi-arrow-left me-2"></i> Kembali
                                             </button>
 
@@ -219,11 +252,13 @@
                                                 style="font-size: 1.3rem;">
                                                 Waktu Pengerjaan
                                                 <span class="fw-bolder" id="timer-ujian">00:00:00</span>
-                                                <input type="hidden" id="waktu-ujian-detik" name="waktu" value="0" />
+                                                <input type="hidden" id="waktu-ujian-detik" name="waktu"
+                                                    value="0" />
                                             </div>
 
                                             <div class="d-flex align-items-center gap-7">
-                                                <button class="btn btn-primary btn-sm d-flex align-items-center px-3 py-2 fw-semibold"
+                                                <button
+                                                    class="btn btn-primary btn-sm d-flex align-items-center px-3 py-2 fw-semibold"
                                                     style="font-size: 0.95rem; box-shadow: -2px 2px 8px #0000004d;"
                                                     onclick="openModalGuide()">
                                                     <img src="{{ asset('assets/media/img/iconbook.png') }}"
@@ -232,9 +267,10 @@
                                                 <div class="d-flex align-items-center"
                                                     style="color: white; font-weight: bold; font-size: 1.2rem;">
                                                     <img class="heart-beat"
-                                                        src="{{ asset('assets/media/img/heart.png') }}"
-                                                        alt="Heart" style="height: 2rem; margin-right: 6px;" />
-                                                    <span id="lives-count">{{ $lives }}</span> / {{ $max_lives }}
+                                                        src="{{ asset('assets/media/img/heart.png') }}" alt="Heart"
+                                                        style="height: 2rem; margin-right: 6px;" />
+                                                    <span id="lives-count">{{ $lives }}</span> /
+                                                    {{ $max_lives }}
                                                 </div>
                                             </div>
                                         </div>
@@ -250,23 +286,27 @@
                                 <input type="hidden" id="id-level" value="{{ $soal->id_level }}">
 
                                 @php
-                                    $tipeDataList   = collect(json_decode($soal['kunci_tipe_data'], true));
-                                    $algoritmaList  = collect(json_decode($soal['kunci_algoritma'], true));
-                                    $dataLangkah    = 1;
+                                    $tipeDataList = collect(json_decode($soal['kunci_tipe_data'], true));
+                                    $algoritmaList = collect(json_decode($soal['kunci_algoritma'], true));
+                                    $dataLangkah = 1;
 
-                                    $algoritmaTerpilih = $algoritmaList->filter(function($row){
-                                        if (isset($row['data_konversi'])) return (int)$row['data_konversi'] === 1;
-                                        if (isset($row['konversi']))      return (int)$row['konversi'] === 1;
+                                    $algoritmaTerpilih = $algoritmaList->filter(function ($row) {
+                                        if (isset($row['data_konversi'])) {
+                                            return (int) $row['data_konversi'] === 1;
+                                        }
+                                        if (isset($row['konversi'])) {
+                                            return (int) $row['konversi'] === 1;
+                                        }
                                         return false;
                                     });
 
-                                    // Jawaban sebagai pilihan drag-and-drop (diacak)
-                                    $jawabanList = collect(json_decode(
-                                        is_string($konversi['jawaban'])
-                                            ? $konversi['jawaban']
-                                            : json_encode($konversi['jawaban']),
-                                        true
-                                    ))->shuffle();
+                                    // Format jawaban
+                                    $rawJawaban = $konversi['jawaban'] ?? '';
+
+                                    $jawabanList = collect(
+                                        array_filter(array_map('trim', explode("\n", (string) $rawJawaban))),
+                                    )->shuffle();
+
                                     $totalLangkah = $jawabanList->count();
                                 @endphp
 
@@ -279,8 +319,8 @@
                                         {{-- <div class="panel-box">
                                             <div class="panel-header">Pseudocode</div>
                                             <div class="panel-body">
-                                                @foreach($tipeDataList as $item)
-                                                    @if(!empty($item['variabel']))
+                                                @foreach ($tipeDataList as $item)
+                                                    @if (!empty($item['variabel']))
                                                         <div class="step-title">Langkah {{ $dataLangkah }}</div>
                                                         <div class="code-box">
                                                             {{ $item['variabel'] }} : {{ $item['tipe_data'] ?? '-' }}
@@ -289,7 +329,7 @@
                                                     @endif
                                                 @endforeach
 
-                                                @foreach($algoritmaTerpilih as $item)
+                                                @foreach ($algoritmaTerpilih as $item)
                                                     <div class="step-title">Langkah {{ $dataLangkah }}</div>
                                                     <div class="code-box">{{ $item['langkah'] }}</div>
                                                     @php $dataLangkah++; @endphp
@@ -301,24 +341,9 @@
                                         <div class="panel-box">
                                             <div class="panel-header">Pilihan Kode Java</div>
                                             <div class="panel-body drag-grid-java" id="panel-pilihan-kode">
-                                                @foreach($jawabanList as $jawaban)
-                                                    @php
-                                                        // Tangani berbagai kemungkinan struktur data jawaban
-                                                        if (is_array($jawaban)) {
-                                                            $teksJawaban = $jawaban['kode']
-                                                                ?? $jawaban['langkah']
-                                                                ?? $jawaban['jawaban']
-                                                                ?? $jawaban['text']
-                                                                ?? $jawaban['value']
-                                                                ?? collect($jawaban)->first();
-                                                        } else {
-                                                            $teksJawaban = $jawaban;
-                                                        }
-                                                    @endphp
-                                                    <div class="drag-item"
-                                                         draggable="true"
-                                                         data-source="java">
-                                                        {{ $teksJawaban }}
+                                                @foreach ($jawabanList as $jawaban)
+                                                    <div class="drag-item" draggable="true" data-source="java">
+                                                        {{ $jawaban }}
                                                     </div>
                                                 @endforeach
                                             </div>
@@ -333,34 +358,31 @@
                                             <div class="input-header">Input Kode Java</div>
                                             <div class="input-body">
 
-                                                <div class="code-box-input">public class HitungBatasUmur {</div>
-                                                <div class="code-box-input ms-3">public static void main(String[] args) {</div>
-
-                                                @for($i = 1; $i <= $totalLangkah; $i++)
+                                                @for ($i = 1; $i <= $totalLangkah; $i++)
                                                     <div class="ms-4 mb-3">
                                                         <div class="mb-1">
-                                                            <strong style="font-size: 0.9rem;">Langkah {{ $i }}</strong>
+                                                            <strong style="font-size: 0.9rem;">Langkah
+                                                                {{ $i }}</strong>
                                                         </div>
                                                         <div class="answer-box box-java"
-                                                             data-index="{{ $i }}"
-                                                             style="min-height: 46px;">
+                                                            data-index="{{ $i }}"
+                                                            style="min-height: 46px;">
                                                             {{-- Drop item here --}}
                                                         </div>
                                                     </div>
                                                 @endfor
 
-                                                <div class="code-box-input ms-3">}</div>
-                                                <div class="code-box-input">}</div>
-
                                             </div>
 
                                             <div class="d-flex justify-content-between px-4 pb-3">
-                                                <button class="btn fw-bold px-4 py-2 rounded-3 d-flex align-items-center gap-2"
+                                                <button
+                                                    class="btn fw-bold px-4 py-2 rounded-3 d-flex align-items-center gap-2"
                                                     style="background-color: #FF5C00; border: 2px solid #AA3D00; color: white;"
                                                     onclick="reloadUjian()">
                                                     <i class="bi bi-arrow-clockwise text-white fs-5"></i> Reload
                                                 </button>
-                                                <button class="btn fw-bold px-4 py-2 rounded-3 d-flex align-items-center gap-2"
+                                                <button
+                                                    class="btn fw-bold px-4 py-2 rounded-3 d-flex align-items-center gap-2"
                                                     style="background-color: #22BB33; border: 2px solid #177D22; color: white;"
                                                     onclick="openModalKonfirmasi()">
                                                     <i class="bi bi-check-circle text-white fs-5"></i> Cek Jawaban
@@ -379,10 +401,12 @@
         </div>
     </div>
 
-    @extends('pages.guide.index')
-    @extends('pages.ujian.modal')
+    @include('pages.guide.index')
+    @include('pages.Ujian.modal')
 
-    <script> var hostUrl = "assets/"; </script>
+    <script>
+        var hostUrl = "assets/";
+    </script>
     <script src="{{ asset('js/ujian/indexUjianKode.js') }}"></script>
     <script src="{!! asset('assets/plugins/global/plugins.bundle.js') !!}"></script>
     <script src="{!! asset('assets/js/scripts.bundle.js') !!}"></script>
@@ -410,8 +434,8 @@
         // ══════════════════════════════════════════
         //  Timer (count-up, starts on first drop)
         // ══════════════════════════════════════════
-        let timerInterval  = null;
-        let timerStarted   = false;
+        let timerInterval = null;
+        let timerStarted = false;
         let elapsedSeconds = 0;
         window.waktuUjianDetik = 0;
 
@@ -441,7 +465,7 @@
         }
 
         //  Drag & Drop – Java code
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             updateTimerDisplay();
 
             // Semua drag-item yang ada bisa di-drag
@@ -456,7 +480,7 @@
                 panelPilihan.addEventListener('dragover', e => e.preventDefault());
                 panelPilihan.addEventListener('dragenter', () => panelPilihan.style.outline = '2px dashed #0a3a71');
                 panelPilihan.addEventListener('dragleave', () => panelPilihan.style.outline = '');
-                panelPilihan.addEventListener('drop', function (e) {
+                panelPilihan.addEventListener('drop', function(e) {
                     e.preventDefault();
                     panelPilihan.style.outline = '';
                     const dragged = document.querySelector('.drag-item.dragging');
@@ -473,28 +497,28 @@
         function makeDraggable(item) {
             item.setAttribute('draggable', 'true');
 
-            item.addEventListener('dragstart', function (e) {
+            item.addEventListener('dragstart', function(e) {
                 e.dataTransfer.setData('text/plain', e.target.innerText.trim());
                 setTimeout(() => e.target.classList.add('dragging'), 0);
                 startTimer();
             });
 
-            item.addEventListener('dragend', function () {
+            item.addEventListener('dragend', function() {
                 item.classList.remove('dragging');
             });
         }
 
         function registerDropZone(box) {
-            box.addEventListener('dragover', function (e) {
+            box.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 this.classList.add('drag-over');
             });
 
-            box.addEventListener('dragleave', function () {
+            box.addEventListener('dragleave', function() {
                 this.classList.remove('drag-over');
             });
 
-            box.addEventListener('drop', function (e) {
+            box.addEventListener('drop', function(e) {
                 e.preventDefault();
                 this.classList.remove('drag-over');
 
@@ -517,7 +541,7 @@
         }
 
         // Double-click pada item di dalam answer-box → kembalikan ke panel
-        document.addEventListener('dblclick', function (e) {
+        document.addEventListener('dblclick', function(e) {
             const item = e.target.closest('.drag-item');
             if (!item) return;
             if (item.closest('.answer-box')) {
@@ -533,10 +557,10 @@
         //  Kumpulkan jawaban sebelum submit
         //  (dipanggil dari indexCodeProgram.js saat Cek Jawaban)
         // ══════════════════════════════════════════
-        window.getJawabanKonversi = function () {
+        window.getJawabanKonversi = function() {
             const hasil = {};
             document.querySelectorAll('.answer-box.box-java').forEach(box => {
-                const idx  = box.getAttribute('data-index');
+                const idx = box.getAttribute('data-index');
                 const item = box.querySelector('.drag-item');
                 hasil[idx] = item ? item.innerText.trim() : '';
             });
@@ -544,4 +568,5 @@
         };
     </script>
 </body>
+
 </html>

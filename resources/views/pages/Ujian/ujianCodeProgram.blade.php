@@ -279,8 +279,8 @@
                 </div>
         </div>
     </div>
-    @extends('pages.guide.index')
-    @extends('pages.ujian.modal')
+    @include('pages.guide.index')
+    @include('pages.Ujian.modal')
     <script>
         var hostUrl = "assets/";
     </script>
