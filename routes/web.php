@@ -20,9 +20,9 @@ use App\Http\Controllers\Ujian\UjianCodeProgramController;
 use App\Http\Controllers\Leaderboard\LeaderboardController;
 use App\Http\Controllers\LogActivity\LogActivityController;
 use App\Http\Controllers\LogDataChatbot\LogDataChatbot as LogDataChatbotController;
+use App\Http\Controllers\LogDataChatbot\LogChatbotAdaptive as LogChatbotAdaptiveController;
 use App\Http\Controllers\Overlapping\OverlappingController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
-use App\Models\Setting;
 use App\Http\Controllers\Chatbot\ChatbotController;
 
 Route::get('/', function () {
@@ -235,6 +235,15 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::get('/detail/{id}', [LogDataChatbotController::class, 'detail'])->name('detail');
             Route::get('/getSoalByLevel', [LogDataChatbotController::class, 'getSoalByLevel'])->name('getSoalByLevel');
             Route::post('/export', [LogDataChatbotController::class, 'export'])->name('export');
+        });
+
+        // log-chatbot-adaptive
+        Route::prefix('log-chatbot-adaptive')->name('log-chatbot-adaptive.')->group(function() {
+            Route::get('/', [LogChatbotAdaptiveController::class, 'index'])->name('index');
+            Route::post('/table', [LogChatbotAdaptiveController::class, 'table'])->name('table');
+            Route::get('/detail/{id}', [LogChatbotAdaptiveController::class, 'detail'])->name('detail');
+            Route::get('/getSoalByLevel', [LogChatbotAdaptiveController::class, 'getSoalByLevel'])->name('getSoalByLevel');
+            Route::post('/export', [LogChatbotAdaptiveController::class, 'export'])->name('export');
         });
 
         // labeling

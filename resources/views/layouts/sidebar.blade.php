@@ -102,6 +102,14 @@
                     </a>
                 </div>
                 <div class="menu-item">
+                    <a class="menu-link{{ request()->is('log-chatbot-adaptive*') ? ' active' : '' }}" href="{{ url('log-chatbot-adaptive') }}">
+                        <span class="menu-icon me-2">
+                            <i class="ki-solid ki-message-text-2 fs-2"></i>
+                        </span>
+                        <span class="menu-title {{ request()->is('log-chatbot-adaptive*') ? 'fw-bold' : 'fw-semibold' }}">Log Chatbot Adaptive</span>
+                    </a>
+                </div>
+                <div class="menu-item">
                     <a class="menu-link{{ request()->is('confidence*') ? ' active' : '' }}" href="{{ url('confidence') }}">
                         <span class="menu-icon me-2">
                             <i class="ki-solid ki-arrow-circle-left fs-2"></i>

@@ -1,0 +1,18 @@
+[33mbdaa9f6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mchatbot-adaptive[m[33m)[m chatbot 1.2
+[33m50dbfcc[m progress chatbot adaptive
+[33mb7f449a[m[33m ([m[1;31morigin/rafiu-chatbot[m[33m)[m Log Chatbot + context tracking + exports
+[33m0267bc1[m[33m ([m[1;31morigin/chatbot-adaptive[m[33m)[m Update Skripsi Revisi 14-4-2026
+[33m0b647d3[m feat: implement chatbot priorities 1-3 (history, smart parsing, injection defense)
+[33m1e25ae1[m feat: implement Gemini chatbot integration with access logging and fix log data chatbot UI
+[33m7fdd5ed[m Merge branch 'rafiu-chatbot' of https://github.com/mdhp24/pseudolearn_skripsi2026 into rafiu-chatbot
+[33m8458f6f[m feat: implement student chatbot with Gemini API and chat logging
+[33m53be6e1[m feat: implement student chatbot with Gemini API and chat logging
+[33m6ce3ff7[m chatbot+log-done
+[33mff1ada9[m feat: setup awal struktur chatbot dan UI
+[33mc3c0375[m Add adaptive chatbot feature
+[33m82f1ff5[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m PseudoLearn 12.2.2026
+[33m5077f23[m pseudolearn skripsi prepare
+[33m4d4904d[m Merge branch 'main' of https://github.com/mdhp24/chatbot-adaptive-pseudolearn
+[33mceb3dea[m Commit Pertama Prepare Sempro
+[33m6871e3c[m Delete all content from README.md
+[33m35dad88[m first commit
