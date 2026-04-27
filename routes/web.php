@@ -86,6 +86,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
         Route::prefix('ujian-kode')->name('ujian-kode.')->group(function () {
             Route::get('/', [UjianKodeController::class, 'index'])->name('index');
             Route::post('submit-konversi', [UjianKodeController::class, 'submitKonversi'])->name('submit-konversi');
+            Route::post('run-scanner', [UjianKodeController::class, 'runScanner'])->name('run-scanner');
         });
         Route::prefix('nyawa')->name('nyawa.')->group(function () {
             Route::get('status', [NyawaController::class, 'status'])->name('nyawa.status');

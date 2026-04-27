@@ -4,7 +4,7 @@ namespace App\Http\Controllers\UjianKode;
 
 use App\Models\Soal;
 use App\Models\Nyawa;
-use App\Models\Konversi;
+use App\Models\BankSoalKonversi;
 use Illuminate\Http\Request;
 use App\Services\UjianKodeService;
 use App\Http\Controllers\Controller;
@@ -56,6 +56,24 @@ class UjianKodeController extends Controller
             'lives' => $nyawa->nyawa,
             'max_lives' => $nyawa->max_nyawa,
             'next_regen_at' => $nyawa->next_regen_at
+        ]);
+    }
+
+    public function runScanner(Request $request)
+    {
+        $request->validate([
+            'id_soal_konversi' => 'required|string',
+            'scanner_input'    => 'nullable|string|max:2000',
+        ]);
+
+        $soalKonversi = BankSoalKonversi::find($request->id_soal_konversi);
+
+        if (!$soalKonversi) {
+            return response()->json(['message' => 'Soal tidak ditemukan.'], 404);
+        }
+
+        return response()->json([
+            'output' => $soalKonversi->output ?? ''
         ]);
     }
 
