@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\LogDataChatbot;
 
+use App\Exports\LogDataChatbotExport;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Level;
-use App\Models\Soal;
-use App\Models\Kelas;
-use App\Models\Mahasiswa;
 use App\Models\ChatbotAccessLog;
 use App\Models\ChatbotLog;
+use App\Models\Kelas;
+use App\Models\Level;
+use App\Models\Mahasiswa;
+use App\Models\Soal;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LogDataChatbot extends Controller
 {
@@ -39,7 +42,7 @@ class LogDataChatbot extends Controller
             return [
                 'id' => $item['id'],
                 'name' => $item['name'],
-                'angkatan' => $item['angkatan']
+                'angkatan' => $item['angkatan'],
             ];
         })->values()->toArray();
 
@@ -50,20 +53,19 @@ class LogDataChatbot extends Controller
         $list_level = collect($list_level)->map(function ($name, $id) {
             return [
                 'id' => $id,
-                'name' => $name
+                'name' => $name,
             ];
         })->values()->toArray();
 
         return view('pages.logDataChatbot.index', [
             'title' => 'Log Data Chatbot',
             'list_kelas' => $list_kelas,
-            'list_level' => $list_level
+            'list_level' => $list_level,
         ]);
     }
 
     /**
      * Get table data for DataTables
-     * TODO: Connect to actual database when ready
      */
     public function table(Request $request)
     {
@@ -72,42 +74,38 @@ class LogDataChatbot extends Controller
         $soal = $request->input('soal');
         $search = $request->input('search')['value'] ?? '';
 
-        // Query mahasiswa with chatbot data
         $query = $this->mahasiswaModel->setView('v_mahasiswa');
 
         if (!empty($kelas)) {
             $query = $query->where('id_kelas', $kelas);
         }
 
-        // Apply search filter
         if (!empty($search)) {
-            $query = $query->where(function($q) use ($search) {
+            $query = $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('nim', 'like', "%{$search}%");
+                    ->orWhere('nim', 'like', "%{$search}%");
             });
         }
 
         $totalRecords = $query->count();
         $filteredRecords = $totalRecords;
 
-        // Pagination
         $start = $request->input('start', 0);
         $length = $request->input('length', 10);
 
         $mahasiswas = $query->skip($start)->take($length)->get();
-
         $mahasiswaIds = $mahasiswas->pluck('id');
 
-        // When level/soal filter active, count from chatbot_logs (has id_level/id_soal)
-        // When no filter, count from chatbot_access_logs (open events)
         if (!empty($level) || !empty($soal)) {
-            // Cari mahasiswa yang punya chatbot_logs di soal/level tersebut
             $relevantIds = ChatbotLog::whereIn('id_mahasiswa', $mahasiswaIds);
-            if (!empty($level)) $relevantIds->where('id_level', $level);
-            if (!empty($soal))  $relevantIds->where('id_soal', $soal);
+            if (!empty($level)) {
+                $relevantIds->where('id_level', $level);
+            }
+            if (!empty($soal)) {
+                $relevantIds->where('id_soal', $soal);
+            }
             $relevantIds = $relevantIds->pluck('id_mahasiswa')->unique();
 
-            // Hitung dari chatbot_access_logs seperti biasa
             $countBiasa = ChatbotAccessLog::whereIn('id_mahasiswa', $relevantIds)
                 ->where('type', 'biasa')
                 ->selectRaw('id_mahasiswa, count(*) as total')
@@ -148,7 +146,7 @@ class LogDataChatbot extends Controller
             'draw' => intval($request->input('draw')),
             'recordsTotal' => $totalRecords,
             'recordsFiltered' => $filteredRecords,
-            'data' => $data
+            'data' => $data,
         ]);
     }
 
@@ -172,7 +170,6 @@ class LogDataChatbot extends Controller
 
     /**
      * Get detail chatbot log for a student
-     * TODO: Connect to actual database when ready
      */
     public function detail($id)
     {
@@ -181,7 +178,7 @@ class LogDataChatbot extends Controller
         if (!$mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ]);
         }
 
@@ -192,7 +189,79 @@ class LogDataChatbot extends Controller
         $jumlahBiasa = $accessLogs->where('type', 'biasa')->count();
         $jumlahAdaptive = $accessLogs->where('type', 'adaptive')->count();
 
-        $history = $accessLogs->map(function ($log) {
+        $context = $this->resolveMahasiswaContext($id, $accessLogs);
+
+        $levelName = !empty($context['id_level'])
+            ? (Level::where('id', $context['id_level'])->value('name') ?: 'Tidak tercatat')
+            : 'Tidak tercatat';
+
+        $soalName = !empty($context['id_soal'])
+            ? (Soal::where('id', $context['id_soal'])->value('judul') ?: 'Tidak tercatat')
+            : 'Tidak tercatat';
+
+        $fallbackContext = $this->getFallbackContextForAccessIds(
+            $accessLogs->pluck('id')->filter()->values()->toArray()
+        );
+
+        $singleSoalByLevelCache = [];
+        $effectiveContextByAccessId = [];
+
+        foreach ($accessLogs as $log) {
+            $ctx = $fallbackContext[$log->id] ?? ['id_level' => null, 'id_soal' => null];
+
+            if (empty($ctx['id_level']) || empty($ctx['id_soal'])) {
+                $historicalCtx = $this->resolveHistoricalContext(
+                    $id,
+                    $log->opened_at,
+                    $log->closed_at,
+                    $singleSoalByLevelCache
+                );
+
+                if (empty($ctx['id_level']) && !empty($historicalCtx['id_level'])) {
+                    $ctx['id_level'] = $historicalCtx['id_level'];
+                }
+
+                if (empty($ctx['id_soal']) && !empty($historicalCtx['id_soal'])) {
+                    $ctx['id_soal'] = $historicalCtx['id_soal'];
+                }
+            }
+
+            $effectiveLevelId = $log->id_level ?: $ctx['id_level'];
+            $effectiveSoalId = $log->id_soal ?: $ctx['id_soal'];
+
+            if (empty($effectiveLevelId) && !empty($effectiveSoalId)) {
+                $effectiveLevelId = Soal::where('id', $effectiveSoalId)->value('id_level');
+            }
+
+            if (empty($effectiveSoalId) && !empty($effectiveLevelId)) {
+                if (!array_key_exists($effectiveLevelId, $singleSoalByLevelCache)) {
+                    $soalIds = Soal::where('id_level', $effectiveLevelId)->pluck('id');
+                    $singleSoalByLevelCache[$effectiveLevelId] = $soalIds->count() === 1
+                        ? $soalIds->first()
+                        : null;
+                }
+
+                $effectiveSoalId = $singleSoalByLevelCache[$effectiveLevelId];
+            }
+
+            $effectiveContextByAccessId[$log->id] = [
+                'id_level' => $effectiveLevelId,
+                'id_soal' => $effectiveSoalId,
+            ];
+        }
+
+        $levelIds = collect($effectiveContextByAccessId)->pluck('id_level')->filter()->unique()->values()->toArray();
+        $soalIds = collect($effectiveContextByAccessId)->pluck('id_soal')->filter()->unique()->values()->toArray();
+
+        $levelMap = !empty($levelIds)
+            ? Level::whereIn('id', $levelIds)->pluck('name', 'id')->toArray()
+            : [];
+
+        $soalMap = !empty($soalIds)
+            ? Soal::whereIn('id', $soalIds)->pluck('judul', 'id')->toArray()
+            : [];
+
+        $history = $accessLogs->map(function ($log) use ($effectiveContextByAccessId, $levelMap, $soalMap) {
             $durasiText = '-';
             if (!is_null($log->durasi_menit)) {
                 if ($log->durasi_menit > 0) {
@@ -205,10 +274,22 @@ class LogDataChatbot extends Controller
                 }
             }
 
+            $ctx = $effectiveContextByAccessId[$log->id] ?? ['id_level' => null, 'id_soal' => null];
+
+            $historyLevel = !empty($ctx['id_level'])
+                ? ($levelMap[$ctx['id_level']] ?? 'Tidak tercatat')
+                : 'Tidak tercatat';
+
+            $historySoal = !empty($ctx['id_soal'])
+                ? ($soalMap[$ctx['id_soal']] ?? 'Tidak tercatat')
+                : 'Tidak tercatat';
+
             return [
-                'type'        => $log->type,
+                'type' => $log->type,
+                'level' => $historyLevel,
                 'waktu_akses' => $log->opened_at ? $log->opened_at->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') . ' WIB' : '-',
-                'durasi'      => $durasiText,
+                'jenis_soal' => $historySoal,
+                'durasi' => $durasiText,
             ];
         })->values()->toArray();
 
@@ -219,28 +300,242 @@ class LogDataChatbot extends Controller
             'kelas_name' => $mahasiswa->kelas_name ?? '-',
             'jumlah_chatbot' => $jumlahBiasa,
             'jumlah_chatbot_adaptive' => $jumlahAdaptive,
+            'level' => $levelName,
+            'jenis_soal' => $soalName,
             'history' => $history,
         ];
 
         return response()->json([
             'success' => true,
-            'data' => $data
+            'data' => $data,
         ]);
+    }
+
+    private function resolveMahasiswaContext(string $idMahasiswa, $accessLogs): array
+    {
+        $singleSoalByLevelCache = [];
+
+        $candidateAccessLogs = $accessLogs->where('type', 'biasa')->values();
+        if ($candidateAccessLogs->isEmpty()) {
+            $candidateAccessLogs = $accessLogs->values();
+        }
+
+        $accessIds = $candidateAccessLogs->pluck('id')->filter()->values()->toArray();
+        $fallbackContext = $this->getFallbackContextForAccessIds($accessIds);
+
+        foreach ($candidateAccessLogs as $accessLog) {
+            $ctx = $fallbackContext[$accessLog->id] ?? ['id_level' => null, 'id_soal' => null];
+
+            if (empty($ctx['id_level']) || empty($ctx['id_soal'])) {
+                $historicalCtx = $this->resolveHistoricalContext(
+                    $idMahasiswa,
+                    $accessLog->opened_at,
+                    $accessLog->closed_at,
+                    $singleSoalByLevelCache
+                );
+
+                if (empty($ctx['id_level']) && !empty($historicalCtx['id_level'])) {
+                    $ctx['id_level'] = $historicalCtx['id_level'];
+                }
+
+                if (empty($ctx['id_soal']) && !empty($historicalCtx['id_soal'])) {
+                    $ctx['id_soal'] = $historicalCtx['id_soal'];
+                }
+            }
+
+            $effectiveLevelId = $accessLog->id_level ?: $ctx['id_level'];
+            $effectiveSoalId = $accessLog->id_soal ?: $ctx['id_soal'];
+
+            if (empty($effectiveLevelId) && !empty($effectiveSoalId)) {
+                $effectiveLevelId = Soal::where('id', $effectiveSoalId)->value('id_level');
+            }
+
+            if (empty($effectiveSoalId) && !empty($effectiveLevelId)) {
+                if (!array_key_exists($effectiveLevelId, $singleSoalByLevelCache)) {
+                    $soalIds = Soal::where('id_level', $effectiveLevelId)->pluck('id');
+                    $singleSoalByLevelCache[$effectiveLevelId] = $soalIds->count() === 1
+                        ? $soalIds->first()
+                        : null;
+                }
+
+                $effectiveSoalId = $singleSoalByLevelCache[$effectiveLevelId];
+            }
+
+            if (!empty($effectiveLevelId) || !empty($effectiveSoalId)) {
+                return [
+                    'id_level' => $effectiveLevelId,
+                    'id_soal' => $effectiveSoalId,
+                ];
+            }
+        }
+
+        $latestLog = ChatbotLog::where('id_mahasiswa', $idMahasiswa)
+            ->where('type', 'biasa')
+            ->whereNull('deleted_at')
+            ->orderBy('created_at', 'desc')
+            ->first(['id_level', 'id_soal']);
+
+        $resolvedLevel = $latestLog->id_level ?? null;
+        $resolvedSoal = $latestLog->id_soal ?? null;
+
+        if (empty($resolvedLevel) && !empty($resolvedSoal)) {
+            $resolvedLevel = Soal::where('id', $resolvedSoal)->value('id_level');
+        }
+
+        if (empty($resolvedSoal) && !empty($resolvedLevel)) {
+            if (!array_key_exists($resolvedLevel, $singleSoalByLevelCache)) {
+                $soalIds = Soal::where('id_level', $resolvedLevel)->pluck('id');
+                $singleSoalByLevelCache[$resolvedLevel] = $soalIds->count() === 1
+                    ? $soalIds->first()
+                    : null;
+            }
+
+            $resolvedSoal = $singleSoalByLevelCache[$resolvedLevel];
+        }
+
+        return [
+            'id_level' => $resolvedLevel,
+            'id_soal' => $resolvedSoal,
+        ];
+    }
+
+    private function getFallbackContextForAccessIds(array $accessIds): array
+    {
+        if (empty($accessIds)) {
+            return [];
+        }
+
+        $logs = ChatbotLog::whereIn('access_id', $accessIds)
+            ->where('type', 'biasa')
+            ->whereNotNull('access_id')
+            ->whereNull('deleted_at')
+            ->orderBy('created_at', 'desc')
+            ->get(['access_id', 'id_level', 'id_soal']);
+
+        $result = [];
+
+        foreach ($logs->groupBy('access_id') as $accessId => $group) {
+            $resolvedLevel = optional($group->first(function ($item) {
+                return !empty($item->id_level);
+            }))->id_level;
+
+            $resolvedSoal = optional($group->first(function ($item) {
+                return !empty($item->id_soal);
+            }))->id_soal;
+
+            $result[$accessId] = [
+                'id_level' => $resolvedLevel,
+                'id_soal' => $resolvedSoal,
+            ];
+        }
+
+        return $result;
+    }
+
+    private function resolveHistoricalContext(string $idMahasiswa, $openedAt, $closedAt, array &$singleSoalByLevelCache = []): array
+    {
+        $query = ChatbotLog::where('id_mahasiswa', $idMahasiswa)
+            ->where('type', 'biasa')
+            ->whereNull('deleted_at');
+
+        $openedAtCarbon = $openedAt ? Carbon::parse($openedAt) : null;
+        $closedAtCarbon = $closedAt ? Carbon::parse($closedAt) : null;
+
+        if ($openedAtCarbon && $closedAtCarbon) {
+            $query->whereBetween('created_at', [$openedAtCarbon, $closedAtCarbon]);
+        } elseif ($openedAtCarbon) {
+            $query->where('created_at', '>=', $openedAtCarbon)
+                ->where('created_at', '<=', $openedAtCarbon->copy()->addMinutes(10));
+        }
+
+        $latestLog = (clone $query)
+            ->orderBy('created_at', 'desc')
+            ->first(['id_level', 'id_soal']);
+
+        $latestLogWithLevel = (clone $query)
+            ->whereNotNull('id_level')
+            ->orderBy('created_at', 'desc')
+            ->first(['id_level']);
+
+        $latestLogWithSoal = (clone $query)
+            ->whereNotNull('id_soal')
+            ->orderBy('created_at', 'desc')
+            ->first(['id_soal']);
+
+        $resolvedLevel = $latestLogWithLevel->id_level
+            ?? $latestLog->id_level
+            ?? null;
+
+        $resolvedSoal = $latestLogWithSoal->id_soal
+            ?? $latestLog->id_soal
+            ?? null;
+
+        if (empty($resolvedLevel) && !empty($resolvedSoal)) {
+            $resolvedLevel = Soal::where('id', $resolvedSoal)->value('id_level');
+        }
+
+        if (empty($resolvedSoal) && !empty($resolvedLevel)) {
+            $referenceTime = $openedAtCarbon ?: Carbon::now();
+
+            $nearestBefore = ChatbotLog::where('id_mahasiswa', $idMahasiswa)
+                ->where('type', 'biasa')
+                ->where('id_level', $resolvedLevel)
+                ->whereNotNull('id_soal')
+                ->whereNull('deleted_at')
+                ->where('created_at', '<=', $referenceTime)
+                ->orderBy('created_at', 'desc')
+                ->first(['id_soal', 'created_at']);
+
+            $nearestAfter = ChatbotLog::where('id_mahasiswa', $idMahasiswa)
+                ->where('type', 'biasa')
+                ->where('id_level', $resolvedLevel)
+                ->whereNotNull('id_soal')
+                ->whereNull('deleted_at')
+                ->where('created_at', '>=', $referenceTime)
+                ->orderBy('created_at', 'asc')
+                ->first(['id_soal', 'created_at']);
+
+            if ($nearestBefore && $nearestAfter) {
+                $diffBefore = Carbon::parse($nearestBefore->created_at)->diffInSeconds($referenceTime);
+                $diffAfter = Carbon::parse($nearestAfter->created_at)->diffInSeconds($referenceTime);
+                $resolvedSoal = $diffBefore <= $diffAfter
+                    ? $nearestBefore->id_soal
+                    : $nearestAfter->id_soal;
+            } elseif ($nearestBefore) {
+                $resolvedSoal = $nearestBefore->id_soal;
+            } elseif ($nearestAfter) {
+                $resolvedSoal = $nearestAfter->id_soal;
+            }
+        }
+
+        if (empty($resolvedSoal) && !empty($resolvedLevel)) {
+            if (!array_key_exists($resolvedLevel, $singleSoalByLevelCache)) {
+                $soalIds = Soal::where('id_level', $resolvedLevel)->pluck('id');
+                $singleSoalByLevelCache[$resolvedLevel] = $soalIds->count() === 1
+                    ? $soalIds->first()
+                    : null;
+            }
+
+            $resolvedSoal = $singleSoalByLevelCache[$resolvedLevel];
+        }
+
+        return [
+            'id_level' => $resolvedLevel,
+            'id_soal' => $resolvedSoal,
+        ];
     }
 
     /**
      * Export data to Excel
-     * TODO: Implement actual export when database is ready
      */
     public function export(Request $request)
     {
-        // TODO: Implement Excel export
-        // return Excel::download(new LogDataChatbotExport($request->all()), 'log_data_chatbot.xlsx');
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Export belum tersedia. Silakan tunggu database siap.'
-        ]);
+        $idKelas = $request->input('kelas');
+        $idLevel = $request->input('level');
+        $idSoal = $request->input('soal');
+
+        $filename = 'Log_Data_Chatbot_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        return Excel::download(new LogDataChatbotExport($idKelas, $idLevel, $idSoal), $filename);
     }
 }
-

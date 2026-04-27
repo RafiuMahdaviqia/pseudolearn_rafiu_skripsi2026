@@ -595,8 +595,19 @@ function handleChatbotKeypress(event) {
     if (event.key === 'Enter') sendChatbotMessage();
 }
 
+function getChatbotContextIds() {
+    return {
+        idSoal: '{{ $id_soal ?? "" }}' || (document.getElementById('id-soal') ? document.getElementById('id-soal').value : '') || null,
+        idLevel: '{{ $id_level ?? "" }}' || (document.getElementById('id-level') ? document.getElementById('id-level').value : '') || null,
+    };
+}
+
 // Log chatbot open
 async function logChatbotOpen() {
+    if (chatbotAccessId) return chatbotAccessId;
+
+    const context = getChatbotContextIds();
+
     try {
         const response = await fetch('/chatbot/open', {
             method: 'POST',
@@ -607,14 +618,18 @@ async function logChatbotOpen() {
             },
             body: JSON.stringify({
                 type: 'biasa',
+                id_soal: context.idSoal,
+                id_level: context.idLevel,
             }),
         });
         const data = await response.json();
         if (data.success) {
             chatbotAccessId = data.access_id;
         }
+        return chatbotAccessId;
     } catch (error) {
         console.error('Log open error:', error);
+        return null;
     }
 }
 
@@ -654,6 +669,12 @@ async function sendChatbotMessage() {
     showTypingIndicator();
 
     try {
+        if (!chatbotAccessId && chatbotOpen) {
+            await logChatbotOpen();
+        }
+
+        const context = getChatbotContextIds();
+
         const response = await fetch('/chatbot/send', {
             method: 'POST',
             headers: {
@@ -662,9 +683,10 @@ async function sendChatbotMessage() {
                 'Accept'      : 'application/json',
             },
             body: JSON.stringify({
-                message  : message,
-                id_soal  : '{{ $id_soal ?? "" }}' || null,
-                id_level : '{{ $id_level ?? "" }}' || null,
+                message   : message,
+                access_id : chatbotAccessId,
+                id_soal   : context.idSoal,
+                id_level  : context.idLevel,
             }),
         });
 

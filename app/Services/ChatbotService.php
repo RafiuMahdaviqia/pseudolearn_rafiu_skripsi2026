@@ -134,13 +134,14 @@ Aturan penting:
     /**
      * Main method: proses chat, simpan log, return respons
      */
-    public function chat(string $idMahasiswa, string $pesan, ?string $idSoal, ?string $idLevel): string
+    public function chat(string $idMahasiswa, string $pesan, ?string $accessId, ?string $idSoal, ?string $idLevel): string
     {
         $systemPrompt = $this->buildSystemPrompt($idMahasiswa, $idSoal, $idLevel);
         $respons      = $this->sendToGemini($systemPrompt, $pesan);
 
         ChatbotLog::create([
             'id_mahasiswa' => $idMahasiswa,
+            'access_id'    => $accessId ?: null,
             'id_level'     => $idLevel ?: null,
             'id_soal'      => $idSoal ?: null,
             'type'         => 'biasa',

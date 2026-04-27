@@ -135,7 +135,7 @@ $('#filter-soal').on('change', function() {
 // Show detail modal
 function showDetail(idMahasiswa) {
     blockUI.block();
-    
+
     $.ajax({
         url: APP_URL + "log-data-chatbot/detail/" + idMahasiswa,
         type: "GET",
@@ -150,19 +150,21 @@ function showDetail(idMahasiswa) {
                 $('#detail-nama').text(data.name ?? '-');
                 $('#detail-kelas').text(data.kelas_name ?? '-');
                 $('#detail-total-chatbot').text((data.jumlah_chatbot ?? 0) + (data.jumlah_chatbot_adaptive ?? 0));
-                
+
                 let tbody = '';
                 if (data.history && data.history.length > 0) {
                     data.history.forEach((item, index) => {
-                        let typeBadge = item.type === 'adaptive' 
-                            ? '<span class="badge badge-light-info">Adaptive</span>' 
+                        let typeBadge = item.type === 'adaptive'
+                            ? '<span class="badge badge-light-info">Adaptive</span>'
                             : '<span class="badge badge-light-primary">Biasa</span>';
-                        
+
                         tbody += `
                             <tr>
                                 <td class="text-center">${index + 1}</td>
                                 <td class="text-center">${typeBadge}</td>
+                                <td class="text-center">${item.level || 'Tidak tercatat'}</td>
                                 <td class="text-center">${item.waktu_akses ?? '-'}</td>
+                                <td class="text-center">${item.jenis_soal || 'Tidak tercatat'}</td>
                                 <td class="text-center">${item.durasi ?? '-'}</td>
                             </tr>
                         `;
@@ -170,7 +172,7 @@ function showDetail(idMahasiswa) {
                 } else {
                     tbody = `
                         <tr>
-                            <td colspan="4" class="text-center text-muted">Belum ada riwayat akses chatbot</td>
+                            <td colspan="6" class="text-center text-muted">Belum ada riwayat akses chatbot</td>
                         </tr>
                     `;
                 }

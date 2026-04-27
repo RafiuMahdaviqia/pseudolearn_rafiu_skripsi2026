@@ -307,7 +307,10 @@
     @extends('pages.ujian.modal')
     
     {{-- Chatbot Component --}}
-    @include('components.chatbot')
+    @include('components.chatbot', [
+        'id_soal' => $soal->id ?? null,
+        'id_level' => $soal->id_level ?? null
+    ])
     
     <script>
         var hostUrl = "assets/";
