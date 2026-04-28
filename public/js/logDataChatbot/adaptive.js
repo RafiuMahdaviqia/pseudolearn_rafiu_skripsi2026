@@ -37,7 +37,10 @@ function escapeHtml(text) {
 
 function renderAdaptiveMessageText(text) {
     var safeText = escapeHtml(text ?? '-');
+
+    // Convert markdown bold (**) into real bold HTML while keeping escaped content safe.
     safeText = safeText.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
     return safeText.replace(/\n/g, '<br>');
 }
 
@@ -58,18 +61,18 @@ function initTable() {
                 var kelasValue = ($('#filter-kelas').val() || '').toString().trim();
                 var searchValue = ($('#search-mahasiswa').val() || '').toString().trim();
                 d.kelas = kelasValue;
-                d.search_mahasiswa = searchValue;
+                d.search_custom = searchValue;
             },
         },
         order: [],
         columns: [
             { data: null, className: 'text-center', orderable: false, searchable: false },
-            { data: 'nim', className: 'text-start', orderable: false },
-            { data: 'name', className: 'text-start', orderable: false },
-            { data: 'kelas_name', className: 'text-center', orderable: false },
-            { data: 'waktu', className: 'text-center', orderable: false },
-            { data: 'jumlah_langkah', className: 'text-center', orderable: false },
-            { data: 'durasi', className: 'text-center', orderable: false },
+            { data: 'nim', className: 'text-start', orderable: false, },
+            { data: 'name', className: 'text-start', orderable: false, },
+            { data: 'kelas_name', className: 'text-center', orderable: false, },
+            { data: 'waktu', className: 'text-center', orderable: false, },
+            { data: 'jumlah_langkah', className: 'text-center', orderable: false, },
+            { data: 'durasi', className: 'text-center', orderable: false, },
             { data: 'id', className: 'text-center', orderable: false, searchable: false },
         ],
         columnDefs: [
@@ -141,22 +144,18 @@ function showDetail(studentId) {
 
             var tbody = '';
             if (adaptiveHistory.length > 0) {
-                var historyForDisplay = adaptiveHistory.slice().reverse();
-
-                historyForDisplay.forEach(function (item, index) {
-                    var originalHistoryIndex = adaptiveHistory.length - 1 - index;
-
+                adaptiveHistory.forEach(function (item, index) {
                     tbody += '<tr>'
                         + '<td class="text-center">' + (index + 1) + '</td>'
                         + '<td class="text-center">' + renderLevelBadge(item.level_name) + '</td>'
                         + '<td class="text-start">' + (item.soal_title ?? '-') + '</td>'
-                        + '<td class="text-center">' + (item.waktu_pengerjaan ?? item.waktu_akses ?? '-') + '</td>'
+                        + '<td class="text-center">' + (item.waktu_akses ?? '-') + '</td>'
                         + '<td class="text-center">' + renderBadge((item.durasi ?? '-'), (item.durasi ?? '-') !== '-' ? 'purple' : 'soft') + '</td>'
                         + '<td class="text-center">' + renderBadge((item.jumlah_langkah ?? 0), (item.jumlah_langkah ?? 0) > 0 ? 'blue' : 'soft') + '</td>'
-                        + '<td class="text-center"> ' + renderLabelBadge(item.labeling ?? '-') + '</td>'
+                        + '<td class="text-center">' + renderLabelBadge(item.labeling ?? '-') + '</td>'
                         + '<td class="text-center">' + renderBadge((item.total_messages ?? 0), (item.total_messages ?? 0) > 0 ? 'purple' : 'soft') + '</td>'
                         + '<td class="text-center">'
-                        + '<button type="button" class="btn btn-sm btn-light-primary" onclick="showMessages(' + originalHistoryIndex + ')">Lihat</button>'
+                        + '<button type="button" class="btn btn-sm btn-light-primary" onclick="showMessages(' + index + ')">Lihat</button>'
                         + '</td>'
                         + '</tr>';
                 });
@@ -187,11 +186,16 @@ function showMessages(historyIndex) {
         return;
     }
 
-    var messagesHtml = '';
+    var messagesHtml = '<div class="alert alert-info mb-4">'
+        + '<strong>Level:</strong> ' + (history.level_name ?? '-') + ' | '
+        + '<strong>Soal:</strong> ' + (history.soal_title ?? '-') + ' | '
+        + '<strong>Waktu Total Pengerjaan:</strong> ' + (history.waktu_akses ?? '-')
+        + '</div>';
 
     if (!history.messages || history.messages.length === 0) {
         messagesHtml += '<div class="alert alert-warning">Tidak ada pesan dalam sesi ini.</div>';
     } else {
+        // Create chat container for message bubbles
         messagesHtml += '<div class="adaptive-chat-container">';
 
         history.messages.forEach(function (msg, idx) {
@@ -206,18 +210,16 @@ function showMessages(historyIndex) {
                 systemNote = msg.pesan;
             }
 
+            // Render system note if exists
             if (systemNote) {
                 messagesHtml += '<div class="adaptive-message-group">'
                     + '<div class="adaptive-system-note">'
-                    + '<div class="adaptive-system-note-header">'
-                    + '<span>Catatan Sistem:</span>'
-                    + '<span class="adaptive-system-note-time">' + escapeHtml(waktu) + '</span>'
-                    + '</div>'
-                    + '<div>' + renderAdaptiveMessageText(systemNote) + '</div>'
+                    + '<strong>Catatan Sistem:</strong> ' + renderAdaptiveMessageText(systemNote)
                     + '</div>'
                     + '</div>';
             }
 
+            // Render student message bubble (right aligned, blue)
             if (studentMessage) {
                 messagesHtml += '<div class="adaptive-message adaptive-message-user">'
                     + '<div class="adaptive-message-bubble adaptive-bubble-user">'
@@ -228,6 +230,7 @@ function showMessages(historyIndex) {
                     + '</div>';
             }
 
+            // Render bot response bubble (left aligned, white)
             if (botResponse) {
                 messagesHtml += '<div class="adaptive-message adaptive-message-bot">'
                     + '<div class="adaptive-message-bubble adaptive-bubble-bot">'
@@ -239,7 +242,7 @@ function showMessages(historyIndex) {
             }
         });
 
-        messagesHtml += '</div>';
+        messagesHtml += '</div>'; // close chat container
     }
 
     $('#messages-container').html(messagesHtml);
@@ -270,9 +273,9 @@ $(document).ready(function () {
     initTable();
     blockUI.release();
 
-    $('#search-mahasiswa').on('input', function () {
+    $('#search-mahasiswa').on('keyup', function () {
         if (adaptiveTable) {
-            adaptiveTable.search(this.value).draw();
+            adaptiveTable.ajax.reload();
         }
     });
 

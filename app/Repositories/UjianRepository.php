@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\ChatbotAdaptiveLog;
 use App\Models\Soal;
 use App\Models\Level;
 use App\Models\Nyawa;
@@ -14,6 +15,7 @@ use App\Models\Pencapaian;
 use Illuminate\Support\Str;
 use App\Models\HistoryJawaban;
 use App\Models\HistoryConfidence;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Prettus\Repository\Eloquent\BaseRepository;
@@ -34,6 +36,7 @@ class UjianRepository extends BaseRepository
     protected $historyJawabanModel;
     protected $historyConfidenceModel;
     protected $labelSkorModel;
+    protected $chatbotAdaptiveLogModel;
 
     public function __construct()
     {
@@ -45,6 +48,7 @@ class UjianRepository extends BaseRepository
         $this->historyJawabanModel = new HistoryJawaban();
         $this->historyConfidenceModel = new HistoryConfidence();
         $this->labelSkorModel = new LabelSkor();
+        $this->chatbotAdaptiveLogModel = new ChatbotAdaptiveLog();
     }
 
     /**
@@ -314,6 +318,12 @@ class UjianRepository extends BaseRepository
                        
                     }
 
+                                    $this->syncAdaptiveRealtimeLogOnCorrectSubmit(
+                                        idMahasiswa: $idMahasiswa,
+                                        idSoal: (string) $soal->id,
+                                        totalWaktuDetik: (int) $request->timer
+                                    );
+
                 $returnData = [
                     'correct' => true,
                     'pencapaian' => $returnPencapaian,
@@ -371,6 +381,63 @@ class UjianRepository extends BaseRepository
         } else {
             return [null, null];
         }
+    }
+
+    private function syncAdaptiveRealtimeLogOnCorrectSubmit(string $idMahasiswa, string $idSoal, int $totalWaktuDetik): void
+    {
+        /** @var ChatbotAdaptiveLog|null $adaptiveLog */
+        $adaptiveLog = ChatbotAdaptiveLog::query()
+            ->where('id_mahasiswa', $idMahasiswa)
+            ->where('id_soal', $idSoal)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$adaptiveLog) {
+            return;
+        }
+
+        $safeWaktuDetik = max(0, $totalWaktuDetik);
+
+        $detail = $adaptiveLog->detail;
+        if (!is_array($detail)) {
+            $detail = [];
+        }
+
+        $startAt = $adaptiveLog->waktu_mulai;
+        if (!$startAt && !empty($detail['triggered_at'])) {
+            try {
+                $triggeredAt = Carbon::parse((string) $detail['triggered_at']);
+                $triggerElapsed = isset($detail['waktu_detik']) ? max(0, (int) $detail['waktu_detik']) : null;
+                if (!is_null($triggerElapsed)) {
+                    $startAt = $triggeredAt->copy()->subSeconds($triggerElapsed);
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+
+        if (!$startAt) {
+            $startAt = now()->subSeconds($safeWaktuDetik);
+        }
+
+        $endAt = $startAt->copy()->addSeconds($safeWaktuDetik);
+
+        $jumlahLangkah = $this->logDataModel->newQuery()
+            ->where('id_mahasiswa', $idMahasiswa)
+            ->where('id_soal', $idSoal)
+            ->whereBetween('created_at', [$startAt, $endAt])
+            ->count();
+
+        $detail['waktu_detik'] = $safeWaktuDetik;
+        $detail['waktu_akses_detik'] = $safeWaktuDetik;
+        $detail['jumlah_langkah'] = max(0, (int) $jumlahLangkah);
+        $detail['submit_benar_at'] = $endAt->toDateTimeString();
+
+        $adaptiveLog->update([
+            'waktu_mulai' => $startAt,
+            'waktu_selesai' => $endAt,
+            'jumlah_langkah' => max(0, (int) $jumlahLangkah),
+            'detail' => $detail,
+        ]);
     }
 
     public function sendLog($request)

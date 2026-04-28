@@ -23,6 +23,7 @@ use App\Http\Controllers\LogDataChatbot\LogDataChatbot as LogDataChatbotControll
 use App\Http\Controllers\LogDataChatbot\LogChatbotAdaptive as LogChatbotAdaptiveController;
 use App\Http\Controllers\Overlapping\OverlappingController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
+// use App\Models\Setting;
 use App\Http\Controllers\Chatbot\ChatbotController;
 
 Route::get('/', function () {
@@ -92,6 +93,8 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::post('/send', [ChatbotController::class, 'send'])->name('send');
             Route::post('/open', [ChatbotController::class, 'open'])->name('open');
             Route::post('/close', [ChatbotController::class, 'close'])->name('close');
+            Route::post('/check-performance', [ChatbotController::class, 'checkPerformance'])->name('check-performance');
+            Route::post('/adaptive-guide', [ChatbotController::class, 'adaptiveGuide'])->name('adaptive-guide');
         });
     });
 
@@ -237,7 +240,6 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::post('/export', [LogDataChatbotController::class, 'export'])->name('export');
         });
 
-        // log-chatbot-adaptive
         Route::prefix('log-chatbot-adaptive')->name('log-chatbot-adaptive.')->group(function() {
             Route::get('/', [LogChatbotAdaptiveController::class, 'index'])->name('index');
             Route::post('/table', [LogChatbotAdaptiveController::class, 'table'])->name('table');

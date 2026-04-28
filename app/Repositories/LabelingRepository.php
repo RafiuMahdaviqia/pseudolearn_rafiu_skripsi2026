@@ -287,42 +287,40 @@ class LabelingRepository extends BaseRepository
      * @param int $totalWaktuDetik
      * @return array [label, skor]
      */
-    private function determineLabelAndScore($totalDrag, $totalWaktuDetik)
-    {
-        if ($totalDrag <= 18 && $totalWaktuDetik < 53) {
-            return ['Ideal', 90];
-        } elseif ($totalDrag > 18 && $totalWaktuDetik >= 53) {
-            return ['Struggling', 30];
-        } elseif ($totalDrag <= 18 && $totalWaktuDetik >= 53) {
-            return ['Normal', 70];
-        } elseif ($totalDrag >= 18 && $totalWaktuDetik < 53) {
-            return ['Gaming the System', 50];
-        } else {
-            return [null, null];
-        }
-    }
-
-
-    //     private function determineLabelAndScore($totalDrag, $totalWaktuDetik)
+    // private function determineLabelAndScore($totalDrag, $totalWaktuDetik)
     // {
-    //     // Definisi label dan skor
-    //     $ideal = ['Ideal', 90];
-    //     $struggling = ['Struggling', 30];
-    //     $normal = ['Normal', 70];
-    //     $gamingTheSystem = ['Gaming the System', 50];
-
     //     if ($totalDrag <= 18 && $totalWaktuDetik < 53) {
-    //         return $ideal;
+    //         return ['Ideal', 90];
     //     } elseif ($totalDrag > 18 && $totalWaktuDetik >= 53) {
-    //         return $struggling;
+    //         return ['Struggling', 30];
     //     } elseif ($totalDrag <= 18 && $totalWaktuDetik >= 53) {
-    //         return $normal;
+    //         return ['Normal', 70];
     //     } elseif ($totalDrag >= 18 && $totalWaktuDetik < 53) {
-    //         return $gamingTheSystem;
+    //         return ['Gaming the System', 50];
     //     } else {
     //         return [null, null];
     //     }
     // }
+        public function determineLabelAndScore($totalDrag, $totalWaktuDetik)
+    {
+        // Definisi label dan skor
+        $ideal = ['Ideal', 90];
+        $struggling = ['Struggling', 30];
+        $normal = ['Normal', 70];
+        $gamingTheSystem = ['Gaming the System', 50];
+
+        if ($totalDrag <= 18 && $totalWaktuDetik < 53) {
+            return $ideal;
+        } elseif ($totalDrag > 18 && $totalWaktuDetik >= 53) {
+            return $struggling;
+        } elseif ($totalDrag <= 18 && $totalWaktuDetik >= 53) {
+            return $normal;
+        } elseif ($totalDrag >= 18 && $totalWaktuDetik < 53) {
+            return $gamingTheSystem;
+        } else {
+            return [null, null];
+        }
+    }
 
     public function calculateAverage($data)
     {

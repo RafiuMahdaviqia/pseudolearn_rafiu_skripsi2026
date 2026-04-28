@@ -20,15 +20,14 @@ class LogChatbotAdaptiveExport implements FromCollection, WithHeadings, WithTitl
 	protected ?string $idKelas;
 	protected ?string $idLevel;
 	protected ?string $idSoal;
-	protected string $search;
-
-	public function __construct($idKelas = null, $idLevel = null, $idSoal = null, string $search = '')
+	protected ?string $search;
+	public function __construct($idKelas = null, $idLevel = null, $idSoal = null, $search = null)
 	{
 		$this->service = app(LogChatbotAdaptiveService::class);
 		$this->idKelas = $idKelas;
 		$this->idLevel = $idLevel;
 		$this->idSoal = $idSoal;
-		$this->search = trim($search);
+		$this->search = $search;
 	}
 
 	public function collection()

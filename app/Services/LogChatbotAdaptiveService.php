@@ -39,7 +39,7 @@ class LogChatbotAdaptiveService
         $kelas = $request->input('kelas');
         $level = $request->input('level');
         $soal = $request->input('soal');
-        $search = $this->resolveSearchTerm($request);
+        $search = trim((string) ($request->input('search_custom') ?? $request->input('search.value') ?? ''));
 
         $recordsTotal = $this->buildMahasiswaQuery('', '')->count();
         $recordsFiltered = $this->buildMahasiswaQuery($kelas, $search)->count();
@@ -48,16 +48,19 @@ class LogChatbotAdaptiveService
             ->orderBy('name', 'asc')
             ->get(['id', 'nim', 'name', 'id_kelas', 'kelas_name']);
 
+        $rows = $this->buildRowsFromStudents($students, $kelas, $level, $soal);
+
         return [
             'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
-            'data' => $this->buildRowsFromStudents($students, $kelas, $level, $soal),
+            'data' => $rows,
         ];
     }
 
     public function detail(string $studentId): array
     {
         $mahasiswa = $this->mahasiswaModel->setView('v_mahasiswa')->find($studentId);
+
         if (!$mahasiswa) {
             return [
                 'success' => false,
@@ -66,6 +69,7 @@ class LogChatbotAdaptiveService
         }
 
         $history = $this->buildHistoryFromAdaptiveLogs($studentId);
+
         if ($history->isEmpty()) {
             return [
                 'success' => false,
@@ -103,46 +107,35 @@ class LogChatbotAdaptiveService
             ->get(['id', 'judul']);
     }
 
-    public function exportRows(?string $idKelas = null, ?string $idLevel = null, ?string $idSoal = null, string $search = ''): Collection
+    public function exportRows(
+        ?string $idKelas = null,
+        ?string $idLevel = null,
+        ?string $idSoal = null,
+        ?string $search = null
+    ): Collection
     {
-        $students = $this->buildMahasiswaQuery($idKelas, trim($search))
-            ->orderBy('name', 'asc')
-            ->get(['id', 'nim', 'name', 'id_kelas', 'kelas_name']);
+        $searchValue = trim((string) ($search ?? ''));
+        $logs = $this->buildAdaptiveLogQuery($idKelas, $idLevel, $idSoal, $searchValue)
+            ->orderBy('waktu_mulai', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        return $this->buildRowsFromStudents($students, $idKelas, $idLevel, $idSoal)->values();
-    }
-
-    private function resolveSearchTerm(Request $request): string
-    {
-        $dataTablesSearch = trim((string) ($request->input('search.value') ?? ''));
-        if ($dataTablesSearch !== '') {
-            return $dataTablesSearch;
-        }
-
-        $customSearch = trim((string) ($request->input('search_mahasiswa') ?? ''));
-        if ($customSearch !== '') {
-            return $customSearch;
-        }
-
-        $genericSearch = $request->input('search');
-        if (is_array($genericSearch)) {
-            return trim((string) ($genericSearch['value'] ?? ''));
-        }
-
-        return trim((string) ($genericSearch ?? ''));
+        return $this->buildRowsFromLogs($logs)->values();
     }
 
     private function buildMahasiswaQuery(?string $kelas = null, string $search = '')
     {
-        $query = $this->mahasiswaModel->setView('v_mahasiswa')->newQuery();
+        $query = $this->mahasiswaModel->setView('v_mahasiswa');
 
         if (!empty($kelas)) {
-            $query = $query->where('id_kelas', $kelas);
+            $query->where('id_kelas', $kelas);
         }
 
         if ($search !== '') {
-            $keyword = '%' . $search . '%';
-            $query = $query->whereRaw('(name LIKE ? OR nim LIKE ?)', [$keyword, $keyword]);
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('nim', 'like', '%' . $search . '%');
+            });
         }
 
         return $query;
@@ -165,15 +158,38 @@ class LogChatbotAdaptiveService
         }
 
         if ($search !== '') {
-            $keyword = '%' . $search . '%';
-            $query->whereRaw('(nama LIKE ? OR nim LIKE ?)', [$keyword, $keyword]);
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('nama', 'like', '%' . $search . '%')
+                    ->orWhere('nim', 'like', '%' . $search . '%');
+            });
         }
 
         return $query;
     }
 
-    private function buildRowsFromStudents(Collection $students, ?string $kelas = null, ?string $level = null, ?string $soal = null): Collection
+    private function buildRowsFromLogs(Collection $logs): Collection
     {
+        return $logs
+            ->groupBy('id_mahasiswa')
+            ->map(function (Collection $studentLogs) {
+                return $this->buildStudentSummaryFromAdaptiveLogs($studentLogs);
+            })
+            ->filter(function (?array $summary) {
+                return !is_null($summary);
+            })
+            ->values()
+            ->sortBy(function (array $summary) {
+                return mb_strtolower((string) ($summary['name'] ?? ''));
+            })
+            ->values();
+    }
+
+    private function buildRowsFromStudents(
+        Collection $students,
+        ?string $kelas = null,
+        ?string $level = null,
+        ?string $soal = null
+    ): Collection {
         if ($students->isEmpty()) {
             return collect();
         }
@@ -262,6 +278,12 @@ class LogChatbotAdaptiveService
         $totalDurasiDetik = $history->sum(function (array $session) {
             return (int) ($session['durasi_detik'] ?? 0);
         });
+        $waktuTotal = $history->isNotEmpty()
+            ? $this->formatSecondsDuration($totalWaktuDetik)
+            : '-';
+        $durasiTotal = $history->isNotEmpty()
+            ? $this->formatSecondsDuration($totalDurasiDetik)
+            : '-';
 
         /** @var ChatbotAdaptiveLog $firstLog */
         $firstLog = $studentLogs->first();
@@ -285,9 +307,9 @@ class LogChatbotAdaptiveService
             'level_name' => $latestSession['level_name'] ?? '-',
             'jenis_soal' => $latestSession['soal_title'] ?? '-',
             'jumlah_langkah' => max(0, (int) $totalLangkah),
-            'waktu' => $history->isNotEmpty() ? $this->formatSecondsDuration($totalWaktuDetik) : '-',
+            'waktu' => $waktuTotal,
             'labeling' => $latestSession['labeling'] ?? '-',
-            'durasi' => $history->isNotEmpty() ? $this->formatSecondsDuration($totalDurasiDetik) : '-',
+            'durasi' => $durasiTotal,
             'total_akses_adaptive' => $history->count(),
             'total_messages' => $history->sum('total_messages'),
             'history' => $history->values()->all(),
@@ -312,13 +334,16 @@ class LogChatbotAdaptiveService
         $detail = $this->normalizeDetailPayload($log->detail);
         $messages = $this->extractMessagesFromDetail($detail, (string) ($log->pesan_bimbingan ?? ''));
         $totalMessages = $this->extractTotalMessages($detail, count($messages));
-        $labeling = $this->resolveAdaptiveLabeling($log);
+        $resolvedLabeling = $this->resolveAdaptiveLabeling($log);
 
-        $startAt = $this->resolveAttemptStartAtFromAdaptiveLog($log, $detail);
-        $endAt = $this->resolveCompletionEndAt($log, $detail, $startAt);
-        $waktuDetik = $this->resolveDurationBetween($startAt, $endAt, $detail, $log);
-        $durasiDetik = $this->resolvePopupDuration($log, $detail, $startAt, $endAt);
-        $jumlahLangkah = $this->resolveJumlahLangkah($log, $detail, $startAt, $endAt);
+        $strictWaktuDetik = $this->resolveStrictWaktuDetikFromDetail($detail);
+        $completionProgress = is_null($strictWaktuDetik)
+            ? $this->resolveCompletionProgress($log, $detail)
+            : null;
+
+        $waktuDetik = $strictWaktuDetik ?? ($completionProgress['waktu_detik'] ?? $this->resolveWaktuDetik($log, $detail));
+        $durasiDetik = $this->resolveDurasiDetik($log, $detail, $waktuDetik);
+        $jumlahLangkah = (int) ($detail['jumlah_langkah'] ?? ($completionProgress['jumlah_langkah'] ?? ($log->jumlah_langkah ?? 0)));
 
         return [
             'id' => $log->id,
@@ -326,18 +351,14 @@ class LogChatbotAdaptiveService
             'id_soal' => $log->id_soal,
             'level_name' => $log->level_soal ?? '-',
             'soal_title' => $log->jenis_soal ?? '-',
-            'waktu_mulai_label' => $this->formatDateTimeLabel($startAt),
-            'waktu_selesai_label' => $this->formatDateTimeLabel($endAt),
-            'selesai_karena' => $this->resolveEndReason($log, $detail, $endAt),
             'waktu_akses' => $this->formatSecondsDuration($waktuDetik),
-            'waktu_pengerjaan' => $this->formatSecondsDuration($waktuDetik),
             'waktu_akses_detik' => $waktuDetik,
             'durasi' => $this->formatSecondsDuration($durasiDetik),
             'durasi_detik' => $durasiDetik,
             'jumlah_langkah' => $jumlahLangkah,
             'waktu' => $this->formatSecondsDuration($waktuDetik),
             'waktu_detik' => $waktuDetik,
-            'labeling' => $labeling,
+            'labeling' => $resolvedLabeling,
             'total_messages' => $totalMessages,
             'messages' => $messages,
         ];
@@ -345,23 +366,98 @@ class LogChatbotAdaptiveService
 
     private function resolveAdaptiveLabeling(ChatbotAdaptiveLog $log): string
     {
-        $label = trim((string) ($log->labeling ?? ''));
-        if ($label === '') {
-            $label = trim((string) ($log->pesan_bimbingan ?? ''));
+        $fromColumn = $this->normalizeLabeling($log->labeling);
+        if ($fromColumn !== '-') {
+            return $fromColumn;
         }
 
-        if ($label === '') {
-            return '-';
+        return $this->normalizeLabeling($log->pesan_bimbingan);
+    }
+
+    private function resolveCompletionProgress(ChatbotAdaptiveLog $log, array $detail): ?array
+    {
+        if (empty($log->id_mahasiswa) || empty($log->id_soal)) {
+            return null;
         }
 
-        if (preg_match('/\[ADAPTIVE\s*-\s*(.*?)\]/i', $label, $matches) === 1) {
-            $parsed = trim((string) ($matches[1] ?? ''));
-            if ($parsed !== '') {
-                return $parsed;
+        $startAt = $this->resolveAttemptStartAtFromAdaptiveLog($log, $detail);
+        if (!$startAt) {
+            return null;
+        }
+
+        $triggeredAt = $this->resolveTriggeredAt($log, $detail) ?? $startAt;
+        $endAt = null;
+
+        $correctSubmission = $this->ujianModel->newQuery()
+            ->where('id_mahasiswa', $log->id_mahasiswa)
+            ->where('id_soal', $log->id_soal)
+            ->where('status', 1)
+            ->where('created_at', '>=', $triggeredAt)
+            ->orderBy('created_at', 'asc')
+            ->first();
+
+        if ($correctSubmission && $correctSubmission->created_at) {
+            $endAt = $correctSubmission->created_at->copy();
+        }
+
+        if (is_null($endAt) && !empty($detail['submit_benar_at'])) {
+            try {
+                $parsedSubmitAt = Carbon::parse((string) $detail['submit_benar_at']);
+                $endAt = $parsedSubmitAt;
+            } catch (\Throwable $e) {
             }
         }
 
-        return $label;
+        if (is_null($endAt) && $log->waktu_selesai) {
+            $endAt = $log->waktu_selesai->copy();
+        }
+
+        if (is_null($endAt)) {
+            $lastSubmit = $this->ujianModel->newQuery()
+                ->where('id_mahasiswa', $log->id_mahasiswa)
+                ->where('id_soal', $log->id_soal)
+                ->where('created_at', '>=', $startAt)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($lastSubmit && $lastSubmit->created_at) {
+                $endAt = $lastSubmit->created_at->copy();
+            }
+        }
+
+        if (is_null($endAt)) {
+            $lastInteractionAt = $this->logDataModel->newQuery()
+                ->where('id_mahasiswa', $log->id_mahasiswa)
+                ->where('id_soal', $log->id_soal)
+                ->where('created_at', '>=', $startAt)
+                ->max('created_at');
+
+            if (!empty($lastInteractionAt)) {
+                try {
+                    $endAt = Carbon::parse((string) $lastInteractionAt);
+                } catch (\Throwable $e) {
+                }
+            }
+        }
+
+        if (!$endAt) {
+            return null;
+        }
+
+        if ($startAt->gt($endAt)) {
+            return null;
+        }
+
+        $jumlahLangkah = $this->logDataModel->newQuery()
+            ->where('id_mahasiswa', $log->id_mahasiswa)
+            ->where('id_soal', $log->id_soal)
+            ->whereBetween('created_at', [$startAt, $endAt])
+            ->count();
+
+        return [
+            'waktu_detik' => $startAt->diffInSeconds($endAt),
+            'jumlah_langkah' => max(0, (int) $jumlahLangkah),
+        ];
     }
 
     private function resolveAttemptStartAtFromAdaptiveLog(ChatbotAdaptiveLog $log, array $detail): ?Carbon
@@ -377,92 +473,38 @@ class LogChatbotAdaptiveService
             }
         }
 
+        $triggeredAt = $this->resolveTriggeredAt($log, $detail);
+        if (!$triggeredAt) {
+            return null;
+        }
+
+        $elapsed = $this->resolveElapsedSecondsFromDetail($detail);
+        if (is_null($elapsed)) {
+            return null;
+        }
+
+        return $triggeredAt->copy()->subSeconds($elapsed);
+    }
+
+    private function resolveTriggeredAt(ChatbotAdaptiveLog $log, array $detail): ?Carbon
+    {
         if (!empty($detail['triggered_at'])) {
             try {
-                $triggeredAt = Carbon::parse((string) $detail['triggered_at']);
-                $elapsed = $this->resolveElapsedSecondsFromDetail($detail);
-                if (!is_null($elapsed)) {
-                    return $triggeredAt->copy()->subSeconds($elapsed);
-                }
-                return $triggeredAt;
+                return Carbon::parse((string) $detail['triggered_at']);
             } catch (\Throwable $e) {
             }
         }
 
-        return $log->created_at ? $log->created_at->copy() : null;
+        if ($log->created_at) {
+            return $log->created_at->copy();
+        }
+
+        return null;
     }
 
-    private function resolveCompletionEndAt(ChatbotAdaptiveLog $log, array $detail, ?Carbon $startAt): ?Carbon
+    private function resolveElapsedSecondsFromDetail(array $detail): ?int
     {
-        if (!empty($detail['submit_benar_at'])) {
-            try {
-                $submitAt = Carbon::parse((string) $detail['submit_benar_at']);
-                if (!$startAt || $submitAt->gte($startAt)) {
-                    return $submitAt;
-                }
-            } catch (\Throwable $e) {
-            }
-        }
-
-        if (!empty($detail['popup_closed_at'])) {
-            try {
-                $closedAt = Carbon::parse((string) $detail['popup_closed_at']);
-                if (!$startAt || $closedAt->gte($startAt)) {
-                    return $closedAt;
-                }
-            } catch (\Throwable $e) {
-            }
-        }
-
-        if ($log->waktu_selesai) {
-            return $log->waktu_selesai->copy();
-        }
-
-        return $log->created_at ? $log->created_at->copy() : null;
-    }
-
-    private function resolveEndReason(ChatbotAdaptiveLog $log, array $detail, ?Carbon $endAt): string
-    {
-        if ($endAt && !empty($detail['submit_benar_at'])) {
-            return 'submit benar';
-        }
-
-        if ($endAt && !empty($detail['popup_closed_at'])) {
-            return 'close soal';
-        }
-
-        if ($log->waktu_selesai) {
-            return 'close soal';
-        }
-
-        return '-';
-    }
-
-    private function resolveDurationBetween(?Carbon $startAt, ?Carbon $endAt, array $detail, ChatbotAdaptiveLog $log): int
-    {
-        if (!is_null($detail['waktu_detik_submit'] ?? null)) {
-            $seconds = $this->parseDurationValueToSeconds($detail['waktu_detik_submit']);
-            if (!is_null($seconds)) {
-                return $seconds;
-            }
-        }
-
-        if (!is_null($detail['waktu_detik_saat_close'] ?? null)) {
-            $seconds = $this->parseDurationValueToSeconds($detail['waktu_detik_saat_close']);
-            if (!is_null($seconds)) {
-                return $seconds;
-            }
-        }
-
-        if ($startAt && $endAt && !$startAt->gt($endAt)) {
-            return max(0, $startAt->diffInSeconds($endAt));
-        }
-
-        if ($log->waktu_mulai && $log->waktu_selesai && !$log->waktu_mulai->gt($log->waktu_selesai)) {
-            return max(0, $log->waktu_mulai->diffInSeconds($log->waktu_selesai));
-        }
-
-        foreach (['waktu_detik', 'waktu_akses_detik', 'total_waktu_detik', 'waktu'] as $key) {
+        foreach (['waktu_detik_submit', 'waktu_detik_saat_close', 'waktu_detik', 'waktu_akses_detik', 'total_waktu_detik', 'waktu'] as $key) {
             if (array_key_exists($key, $detail)) {
                 $seconds = $this->parseDurationValueToSeconds($detail[$key]);
                 if (!is_null($seconds)) {
@@ -471,60 +513,12 @@ class LogChatbotAdaptiveService
             }
         }
 
-        return 0;
+        return null;
     }
 
-    private function resolvePopupDuration(ChatbotAdaptiveLog $log, array $detail, ?Carbon $startAt, ?Carbon $endAt): int
+    private function resolveStrictWaktuDetikFromDetail(array $detail): ?int
     {
-        if (!empty($detail['durasi_detik'])) {
-            $seconds = $this->parseDurationValueToSeconds($detail['durasi_detik']);
-            if (!is_null($seconds)) {
-                return $seconds;
-            }
-        }
-
-        if (!empty($detail['popup_opened_at']) && !empty($detail['popup_closed_at'])) {
-            try {
-                return max(0, Carbon::parse((string) $detail['popup_opened_at'])->diffInSeconds(Carbon::parse((string) $detail['popup_closed_at'])));
-            } catch (\Throwable $e) {
-            }
-        }
-
-        if ($log->durasi_menit !== null) {
-            return max(0, (int) $log->durasi_menit) * 60;
-        }
-
-        if ($startAt && $endAt) {
-            return max(0, $startAt->diffInSeconds($endAt));
-        }
-
-        return 0;
-    }
-
-    private function resolveJumlahLangkah(ChatbotAdaptiveLog $log, array $detail, ?Carbon $startAt, ?Carbon $endAt): int
-    {
-        if (!empty($detail['jumlah_langkah'])) {
-            return max(0, (int) $detail['jumlah_langkah']);
-        }
-
-        if ($log->jumlah_langkah !== null) {
-            return max(0, (int) $log->jumlah_langkah);
-        }
-
-        if ($startAt && $endAt && !empty($log->id_mahasiswa) && !empty($log->id_soal)) {
-            return $this->logDataModel->newQuery()
-                ->where('id_mahasiswa', $log->id_mahasiswa)
-                ->where('id_soal', $log->id_soal)
-                ->whereBetween('created_at', [$startAt, $endAt])
-                ->count();
-        }
-
-        return 0;
-    }
-
-    private function resolveElapsedSecondsFromDetail(array $detail): ?int
-    {
-        foreach (['waktu_detik', 'waktu_akses_detik', 'total_waktu_detik'] as $key) {
+        foreach (['waktu_detik_submit', 'waktu_detik_saat_close', 'waktu_detik', 'waktu_akses_detik', 'total_waktu_detik', 'waktu'] as $key) {
             if (array_key_exists($key, $detail)) {
                 $seconds = $this->parseDurationValueToSeconds($detail[$key]);
                 if (!is_null($seconds)) {
@@ -604,6 +598,78 @@ class LogChatbotAdaptiveService
         return $messages;
     }
 
+    private function normalizeLabeling(?string $labeling): string
+    {
+        $label = trim((string) $labeling);
+
+        if ($label === '') {
+            return '-';
+        }
+
+        if (preg_match('/\[ADAPTIVE\s*-\s*(.*?)\]/i', $label, $matches) === 1) {
+            $parsed = trim((string) ($matches[1] ?? ''));
+            if ($parsed !== '') {
+                return $parsed;
+            }
+        }
+
+        return $label;
+    }
+
+    private function resolveWaktuDetik(ChatbotAdaptiveLog $log, array $detail): ?int
+    {
+        if ($log->waktu_mulai && $log->waktu_selesai && !$log->waktu_mulai->gt($log->waktu_selesai)) {
+            return (int) $log->waktu_mulai->diffInSeconds($log->waktu_selesai);
+        }
+
+        foreach (['waktu_detik_submit', 'waktu_detik_saat_close', 'waktu_detik', 'waktu_akses_detik', 'total_waktu_detik', 'waktu'] as $key) {
+            if (array_key_exists($key, $detail)) {
+                $seconds = $this->parseDurationValueToSeconds($detail[$key]);
+                if (!is_null($seconds)) {
+                    return $seconds;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveDurasiDetik(ChatbotAdaptiveLog $log, array $detail, ?int $fallbackWaktuDetik = null): ?int
+    {
+        if (array_key_exists('durasi_detik', $detail)) {
+            $seconds = $this->parseDurationValueToSeconds($detail['durasi_detik']);
+            if (!is_null($seconds)) {
+                return $seconds;
+            }
+        }
+
+        if (!empty($detail['popup_opened_at']) && !empty($detail['popup_closed_at'])) {
+            try {
+                $openedAt = Carbon::parse((string) $detail['popup_opened_at']);
+                $closedAt = Carbon::parse((string) $detail['popup_closed_at']);
+                if (!$openedAt->gt($closedAt)) {
+                    return $openedAt->diffInSeconds($closedAt);
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+
+        if (!is_null($log->durasi_menit)) {
+            return max(0, (int) $log->durasi_menit) * 60;
+        }
+
+        foreach (['durasi_detik', 'durasi'] as $key) {
+            if (array_key_exists($key, $detail)) {
+                $seconds = $this->parseDurationValueToSeconds($detail[$key]);
+                if (!is_null($seconds)) {
+                    return $seconds;
+                }
+            }
+        }
+
+        return null;
+    }
+
     private function parseDurationValueToSeconds($value): ?int
     {
         if (is_null($value)) {
@@ -621,24 +687,6 @@ class LogChatbotAdaptiveService
         $text = trim($value);
         if ($text === '') {
             return null;
-        }
-
-        if (preg_match('/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/', $text, $timeParts) === 1) {
-            if (isset($timeParts[3]) && $timeParts[3] !== '') {
-                return max(0, ((int) $timeParts[1] * 3600) + ((int) $timeParts[2] * 60) + (int) $timeParts[3]);
-            }
-
-            return max(0, ((int) $timeParts[1] * 60) + (int) $timeParts[2]);
-        }
-
-        if (preg_match('/^(\d+)\s*m(?:enit)?\s*(\d+)?\s*(?:d|detik|s|sec(?:ond)?s?)?$/i', $text, $compactMatches) === 1) {
-            $minutes = (int) ($compactMatches[1] ?? 0);
-            $seconds = isset($compactMatches[2]) && $compactMatches[2] !== '' ? (int) $compactMatches[2] : 0;
-            return max(0, ($minutes * 60) + $seconds);
-        }
-
-        if (preg_match('/^(\d+)\s*(?:d|detik|s|sec(?:ond)?s?)$/i', $text, $secondsOnlyMatch) === 1) {
-            return max(0, (int) ($secondsOnlyMatch[1] ?? 0));
         }
 
         if (preg_match('/(\d+)\s*menit/i', $text, $minuteMatch) !== 1 && preg_match('/(\d+)\s*detik/i', $text, $secondMatch) !== 1) {
@@ -670,18 +718,5 @@ class LogChatbotAdaptiveService
         $sisaDetik = $detik % 60;
 
         return $menit . ' menit ' . $sisaDetik . ' detik';
-    }
-
-    private function formatDateTimeLabel($dateTime): string
-    {
-        if (!$dateTime) {
-            return '-';
-        }
-
-        try {
-            return Carbon::parse($dateTime)->setTimezone('Asia/Jakarta')->format('d/m/Y H:i:s') . ' WIB';
-        } catch (\Throwable $e) {
-            return '-';
-        }
     }
 }

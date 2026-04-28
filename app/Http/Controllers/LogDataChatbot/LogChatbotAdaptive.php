@@ -28,7 +28,7 @@ class LogChatbotAdaptive extends Controller
 	{
 		$list_kelas = $this->kelasModel->get(['id', 'name', 'angkatan'])->toArray();
 
-		// $list_kelas = collect($list_kelas)->prepend(['id' => '', 'name' => 'Semua Kelas', 'angkatan' => '']);
+		$list_kelas = collect($list_kelas)->prepend(['id' => '', 'name' => 'Semua Kelas', 'angkatan' => '']);
 
 		$list_kelas = collect($list_kelas)->map(function ($item) {
 			return [
@@ -91,8 +91,7 @@ class LogChatbotAdaptive extends Controller
 			new LogChatbotAdaptiveExport(
 				$request->input('kelas'),
 				$request->input('level'),
-				$request->input('soal'),
-				trim((string) $request->input('search', ''))
+				$request->input('soal')
 			),
 			$filename
 		);

@@ -33,6 +33,84 @@
             color: #60a5fa;
         }
 
+        .adaptive-modal-header {
+            background: #f6f8fc;
+            border-bottom: 1px solid #e4e9f2;
+            padding: 16px 20px;
+        }
+
+        .adaptive-modal-title {
+            font-weight: 700;
+            color: #1f2a44;
+            margin-bottom: 2px;
+        }
+
+        .adaptive-modal-subtitle {
+            font-size: 0.85rem;
+            color: #7a8699;
+            margin: 0;
+        }
+
+        .adaptive-modal-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #eaf1ff;
+            color: #3b82f6;
+        }
+
+        .adaptive-summary-card {
+            background: #f5f7fb;
+            border: 1px solid #e4e9f2;
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-height: 76px;
+        }
+
+        .adaptive-summary-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .adaptive-icon-primary {
+            background: #eaf1ff;
+            color: #3b82f6;
+        }
+
+        .adaptive-icon-success {
+            background: #e9f9f2;
+            color: #2bb784;
+        }
+
+        .adaptive-summary-label {
+            color: #7a8699;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .adaptive-summary-value {
+            color: #1f2a44;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .adaptive-summary-value--big {
+            font-size: 1.35rem;
+        }
+
+        /* Chat Container Styles */
         .adaptive-chat-container {
             display: flex;
             flex-direction: column;
@@ -55,17 +133,18 @@
                 opacity: 0;
                 transform: translateY(10px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
+        /* Student Message - Right Side */
         .adaptive-message-user {
             justify-content: flex-end;
         }
 
+        /* Bot Message - Left Side */
         .adaptive-message-bot {
             justify-content: flex-start;
         }
@@ -78,12 +157,14 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
         }
 
+        /* Student Bubble - Blue */
         .adaptive-bubble-user {
             background: linear-gradient(135deg, #0a3a71 0%, #1565c0 100%);
             color: #ffffff;
             border-radius: 16px 16px 4px 16px;
         }
 
+        /* Bot Bubble - White */
         .adaptive-bubble-bot {
             background: #ffffff;
             border: 1px solid #e0e0e0;
@@ -105,23 +186,21 @@
         }
 
         .adaptive-message-time {
-            font-size: 0.82rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            opacity: 1;
+            opacity: 0.85;
             text-align: right;
-            margin-top: 6px;
-            letter-spacing: 0.2px;
         }
 
         .adaptive-message-user .adaptive-message-time {
-            color: #f8fbff;
-            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+            color: #ffffff;
         }
 
         .adaptive-message-bot .adaptive-message-time {
-            color: #4b5563;
+            color: #999999;
         }
 
+        /* System Note */
         .adaptive-system-note {
             background: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -130,22 +209,6 @@
             margin: 8px 0;
             font-size: 0.95rem;
             color: #856404;
-        }
-
-        .adaptive-system-note-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 6px;
-            font-weight: 700;
-        }
-
-        .adaptive-system-note-time {
-            font-size: 0.82rem;
-            font-weight: 800;
-            color: #7c5b00;
-            white-space: nowrap;
         }
 
         .adaptive-message-group {
@@ -159,15 +222,20 @@
         <div class="row">
             <div class="col-12 px-0">
                 <div class="bg-white rounded-4 shadow-sm p-8">
+
                     <div class="d-flex justify-content-between align-items-center mb-10">
+                        {{-- 🔹 Cari Mahasiswa --}}
                         <div class="d-flex gap-2">
-                            <input type="text" class="form-control form-control-sm w-250px" placeholder="Cari Mahasiswa"
-                                id="search-mahasiswa" />
+                            <input type="text" class="form-control form-control-sm w-250px"
+                                placeholder="Cari Mahasiswa" id="search-mahasiswa" />
                         </div>
 
+                        {{-- 🔹 Filter Kelas + Export --}}
                         <div class="d-flex gap-3 align-items-center">
-                            <select class="form-select form-select-sm" id="filter-kelas" data-control="select2"
-                                data-hide-search="true" data-allow-clear="false">
+                            <select class="form-select form-select-sm" id="filter-kelas"
+                                data-control="select2"
+                                data-hide-search="true"
+                                data-allow-clear="false">
                                 <option value="">Semua Kelas</option>
                                 @foreach ($list_kelas ?? [] as $kelas)
                                     <option value="{{ $kelas['id'] }}">
@@ -186,6 +254,7 @@
                         </div>
                     </div>
 
+                    {{-- 🔹 TABLE --}}
                     <div class="table-responsive">
                         <table class="table table-striped align-middle" id="table-log-chatbot-adaptive">
                             <thead>
@@ -203,62 +272,84 @@
                             <tbody></tbody>
                         </table>
                     </div>
+
                 </div>
             </div>
         </div>
     </div>
 
+    {{-- Modal Detail Adaptive --}}
     <div class="modal fade" tabindex="-1" id="modal-detail-adaptive">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Detail Log Chatbot Adaptive</h3>
+                <div class="modal-header adaptive-modal-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="adaptive-modal-icon">
+                            <i class="ki-outline ki-message-text-2 fs-3"></i>
+                        </span>
+                        <div>
+                            <h3 class="modal-title adaptive-modal-title mb-0">Detail Log Chatbot Adaptive</h3>
+                            <p class="adaptive-modal-subtitle">Ringkasan akses dan pesan bimbingan</p>
+                        </div>
+                    </div>
                     <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">
                         <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
                     </div>
                 </div>
                 <div class="modal-body">
-                    <div class="row g-3 mb-6">
+                    <div class="row g-4 mb-6">
                         <div class="col-md-4">
-                            <div class="bg-light rounded-2 px-4 py-3">
-                                <p class="text-muted fs-7 mb-1">NIM</p>
-                                <p id="detail-nim" class="fw-semibold fs-6 mb-0 text-gray-800">-</p>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="bg-light rounded-2 px-4 py-3">
-                                <p class="text-muted fs-7 mb-1">Nama</p>
-                                <p id="detail-nama" class="fw-semibold fs-6 mb-0 text-gray-800">-</p>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="bg-light rounded-2 px-4 py-3">
-                                <p class="text-muted fs-7 mb-1">Kelas</p>
-                                <p id="detail-kelas" class="fw-semibold fs-6 mb-0 text-gray-800">-</p>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="bg-light rounded-2 px-4 py-3 d-flex align-items-center gap-4">
-                                <div
-                                    class="w-40px h-40px rounded-2 bg-light-primary d-flex align-items-center justify-content-center flex-shrink-0">
-                                    <i class="ki-outline ki-profile-user fs-2 text-primary"></i>
-                                </div>
+                            <div class="adaptive-summary-card">
+                                <span class="adaptive-summary-icon adaptive-icon-primary">
+                                    <i class="ki-outline ki-id-card fs-3"></i>
+                                </span>
                                 <div>
-                                    <p class="text-muted fs-7 mb-1">Total Akses Chatbot Adaptive</p>
-                                    <p id="detail-total-akses" class="fw-semibold fs-3 mb-0 text-primary">0</p>
+                                    <div class="adaptive-summary-label">NIM</div>
+                                    <p id="detail-nim" class="adaptive-summary-value">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="adaptive-summary-card">
+                                <span class="adaptive-summary-icon adaptive-icon-primary">
+                                    <i class="ki-outline ki-user fs-3"></i>
+                                </span>
+                                <div>
+                                    <div class="adaptive-summary-label">Nama</div>
+                                    <p id="detail-nama" class="adaptive-summary-value">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="adaptive-summary-card">
+                                <span class="adaptive-summary-icon adaptive-icon-primary">
+                                    <i class="ki-outline ki-home fs-3"></i>
+                                </span>
+                                <div>
+                                    <div class="adaptive-summary-label">Kelas</div>
+                                    <p id="detail-kelas" class="adaptive-summary-value">-</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="bg-light rounded-2 px-4 py-3 d-flex align-items-center gap-4">
-                                <div
-                                    class="w-40px h-40px rounded-2 bg-light-success d-flex align-items-center justify-content-center flex-shrink-0">
-                                    <i class="ki-outline ki-message-text-2 fs-2 text-success"></i>
-                                </div>
+                            <div class="adaptive-summary-card">
+                                <span class="adaptive-summary-icon adaptive-icon-primary">
+                                    <i class="ki-outline ki-profile-user fs-3"></i>
+                                </span>
                                 <div>
-                                    <p class="text-muted fs-7 mb-1">Total Pesan Chatbot Adaptive</p>
-                                    <p id="detail-total-pesan" class="fw-semibold fs-3 mb-0 text-success">0</p>
+                                    <div class="adaptive-summary-label">Total Akses Chatbot Adaptive</div>
+                                    <p id="detail-total-akses" class="adaptive-summary-value adaptive-summary-value--big">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="adaptive-summary-card">
+                                <span class="adaptive-summary-icon adaptive-icon-success">
+                                    <i class="ki-outline ki-message-text-2 fs-3"></i>
+                                </span>
+                                <div>
+                                    <div class="adaptive-summary-label">Total Pesan Chatbot Adaptive</div>
+                                    <p id="detail-total-pesan" class="adaptive-summary-value adaptive-summary-value--big">0</p>
                                 </div>
                             </div>
                         </div>
@@ -274,7 +365,7 @@
                                     <th class="text-center">No</th>
                                     <th class="text-center">Level</th>
                                     <th class="text-start">Soal</th>
-                                    <th class="text-center">Waktu Pengerjaan</th>
+                                    <th class="text-center">Waktu Akses</th>
                                     <th class="text-center">Durasi Popup</th>
                                     <th class="text-center">Jumlah Langkah</th>
                                     <th class="text-center">Labeling</th>
@@ -297,6 +388,7 @@
         </div>
     </div>
 
+    {{-- Modal Pesan Adaptive --}}
     <div class="modal fade" tabindex="-1" id="modal-adaptive-messages">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">

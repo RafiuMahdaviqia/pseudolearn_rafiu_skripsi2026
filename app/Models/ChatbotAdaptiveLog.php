@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ChatbotAdaptiveLog extends Model
 {
@@ -15,19 +15,22 @@ class ChatbotAdaptiveLog extends Model
 
     protected $fillable = [
         'id_mahasiswa',
-        'id_level',
-        'id_soal',
         'nim',
         'nama',
+        'id_kelas',
         'kelas',
+        'id_level',
         'level_soal',
+        'id_soal',
         'jenis_soal',
-        'labeling',
-        'pesan_bimbingan',
         'jumlah_langkah',
         'waktu_mulai',
         'waktu_selesai',
+        'id_label_skor',
+        'labeling',
         'durasi_menit',
+        'total_akses_chatbot_adaptive',
+        'pesan_bimbingan',
         'detail',
     ];
 

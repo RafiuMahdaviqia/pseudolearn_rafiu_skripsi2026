@@ -4,11 +4,11 @@
 namespace App\Http\Controllers\Nyawa;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Services\KonversiService;
-use App\Models\Level as LevelModel;
-use App\Models\Soal as SoalModel;
-use App\Models\Konversi;
+// use Illuminate\Http\Request;
+// use App\Services\KonversiService;
+// use App\Models\Level as LevelModel;
+// use App\Models\Soal as SoalModel;
+// use App\Models\Konversi;
 use App\Models\Nyawa;
 use Illuminate\Support\Facades\Auth;
 
