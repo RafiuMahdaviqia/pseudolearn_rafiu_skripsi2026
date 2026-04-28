@@ -83,6 +83,17 @@
             font-size: 1.1rem;
         }
 
+        .adaptive-summary-icon--logo {
+            overflow: hidden;
+        }
+
+        .adaptive-summary-logo {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            display: block;
+        }
+
         .adaptive-icon-primary {
             background: #eaf1ff;
             color: #3b82f6;
@@ -300,8 +311,9 @@
                     <div class="row g-4 mb-6">
                         <div class="col-md-4">
                             <div class="adaptive-summary-card">
-                                <span class="adaptive-summary-icon adaptive-icon-primary">
-                                    <i class="ki-outline ki-id-card fs-3"></i>
+                                <span class="adaptive-summary-icon adaptive-icon-primary adaptive-summary-icon--logo">
+                                    <img src="{{ asset('assets/media/logos/logo-polinema.ico') }}" alt="Logo"
+                                        class="adaptive-summary-logo">
                                 </span>
                                 <div>
                                     <div class="adaptive-summary-label">NIM</div>
@@ -365,7 +377,7 @@
                                     <th class="text-center">No</th>
                                     <th class="text-center">Level</th>
                                     <th class="text-start">Soal</th>
-                                    <th class="text-center">Waktu Akses</th>
+                                    <th class="text-center">Waktu Pengerjaan</th>
                                     <th class="text-center">Durasi Popup</th>
                                     <th class="text-center">Jumlah Langkah</th>
                                     <th class="text-center">Labeling</th>

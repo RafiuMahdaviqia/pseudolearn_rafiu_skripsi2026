@@ -604,7 +604,7 @@ class LogChatbotAdaptiveService
 
     private function resolveElapsedSecondsFromDetail(array $detail): ?int
     {
-        foreach (['waktu_detik_submit', 'waktu_detik_saat_close', 'waktu_detik', 'waktu_akses_detik', 'total_waktu_detik', 'waktu'] as $key) {
+        foreach (['waktu_detik_submit', 'waktu_detik', 'total_waktu_detik', 'waktu_akses_detik', 'waktu_detik_saat_close', 'waktu'] as $key) {
             if (array_key_exists($key, $detail)) {
                 $seconds = $this->parseDurationValueToSeconds($detail[$key]);
                 if (!is_null($seconds)) {
@@ -618,7 +618,7 @@ class LogChatbotAdaptiveService
 
     private function resolveStrictWaktuDetikFromDetail(array $detail): ?int
     {
-        foreach (['waktu_detik_submit', 'waktu_detik_saat_close', 'waktu_detik', 'waktu_akses_detik', 'total_waktu_detik', 'waktu'] as $key) {
+        foreach (['waktu_detik_submit', 'waktu_detik', 'total_waktu_detik', 'waktu_akses_detik', 'waktu_detik_saat_close', 'waktu'] as $key) {
             if (array_key_exists($key, $detail)) {
                 $seconds = $this->parseDurationValueToSeconds($detail[$key]);
                 if (!is_null($seconds)) {
@@ -718,17 +718,38 @@ class LogChatbotAdaptiveService
 
     private function resolveWaktuDetik(ChatbotAdaptiveLog $log, array $detail): ?int
     {
-        if ($log->waktu_mulai && $log->waktu_selesai && !$log->waktu_mulai->gt($log->waktu_selesai)) {
-            return (int) $log->waktu_mulai->diffInSeconds($log->waktu_selesai);
+        $attemptStart = null;
+        $attemptEnd = null;
+
+        if (!empty($detail['attempt_start_at'])) {
+            try {
+                $attemptStart = Carbon::parse((string) $detail['attempt_start_at']);
+            } catch (\Throwable $e) {
+            }
         }
 
-        foreach (['waktu_detik_submit', 'waktu_detik_saat_close', 'waktu_detik', 'waktu_akses_detik', 'total_waktu_detik', 'waktu'] as $key) {
+        if (!empty($detail['submit_benar_at'])) {
+            try {
+                $attemptEnd = Carbon::parse((string) $detail['submit_benar_at']);
+            } catch (\Throwable $e) {
+            }
+        }
+
+        if ($attemptStart && $attemptEnd && !$attemptStart->gt($attemptEnd)) {
+            return (int) $attemptStart->diffInSeconds($attemptEnd);
+        }
+
+        foreach (['waktu_detik_submit', 'waktu_detik', 'total_waktu_detik', 'waktu_akses_detik', 'waktu_detik_saat_close', 'waktu'] as $key) {
             if (array_key_exists($key, $detail)) {
                 $seconds = $this->parseDurationValueToSeconds($detail[$key]);
                 if (!is_null($seconds)) {
                     return $seconds;
                 }
             }
+        }
+
+        if ($log->waktu_mulai && $log->waktu_selesai && !$log->waktu_mulai->gt($log->waktu_selesai)) {
+            return (int) $log->waktu_mulai->diffInSeconds($log->waktu_selesai);
         }
 
         return null;
@@ -789,12 +810,8 @@ class LogChatbotAdaptiveService
             return null;
         }
 
-        if (preg_match('/(\d+)\s*menit/i', $text, $minuteMatch) !== 1 && preg_match('/(\d+)\s*detik/i', $text, $secondMatch) !== 1) {
-            return null;
-        }
-
-        $minutes = 0;
-        $seconds = 0;
+        $minutes = null;
+        $seconds = null;
 
         if (preg_match('/(\d+)\s*menit/i', $text, $minuteMatch) === 1) {
             $minutes = (int) ($minuteMatch[1] ?? 0);
@@ -803,6 +820,23 @@ class LogChatbotAdaptiveService
         if (preg_match('/(\d+)\s*detik/i', $text, $secondMatch) === 1) {
             $seconds = (int) ($secondMatch[1] ?? 0);
         }
+
+        if (is_null($minutes) && is_null($seconds)) {
+            if (preg_match('/(\d+)\s*m/i', $text, $minuteMatch) === 1) {
+                $minutes = (int) ($minuteMatch[1] ?? 0);
+            }
+
+            if (preg_match('/(\d+)\s*d/i', $text, $secondMatch) === 1) {
+                $seconds = (int) ($secondMatch[1] ?? 0);
+            }
+        }
+
+        if (is_null($minutes) && is_null($seconds)) {
+            return null;
+        }
+
+        $minutes = $minutes ?? 0;
+        $seconds = $seconds ?? 0;
 
         return max(0, ($minutes * 60) + $seconds);
     }
