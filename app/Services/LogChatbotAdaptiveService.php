@@ -42,11 +42,13 @@ class LogChatbotAdaptiveService
         $search = trim((string) ($request->input('search_custom') ?? $request->input('search.value') ?? ''));
 
         $recordsTotal = $this->buildMahasiswaQuery('', '')->count();
-        $recordsFiltered = $this->buildMahasiswaQuery($kelas, $search)->count();
-
         $students = $this->buildMahasiswaQuery($kelas, $search)
             ->orderBy('name', 'asc')
-            ->get(['id', 'nim', 'name', 'id_kelas', 'kelas_name']);
+            ->get(['id', 'nim', 'name', 'id_kelas', 'kelas_name', 'angkatan']);
+
+        $students = $this->filterStudentsByKelas($students, $kelas);
+        $students = $this->filterStudentsBySearch($students, $search);
+        $recordsFiltered = $students->count();
 
         $rows = $this->buildRowsFromStudents($students, $kelas, $level, $soal);
 
@@ -128,7 +130,20 @@ class LogChatbotAdaptiveService
         $query = $this->mahasiswaModel->setView('v_mahasiswa');
 
         if (!empty($kelas)) {
-            $query->where('id_kelas', $kelas);
+            $kelasValue = trim((string) $kelas);
+            $kelasParts = $this->parseKelasLabel($kelasValue);
+
+            $query->where(function ($kelasQuery) use ($kelasValue, $kelasParts) {
+                $kelasQuery->where('id_kelas', $kelasValue)
+                    ->orWhere('kelas_name', $kelasValue);
+
+                if (!empty($kelasParts)) {
+                    $kelasQuery->orWhere(function ($subQuery) use ($kelasParts) {
+                        $subQuery->where('kelas_name', $kelasParts['name'])
+                            ->where('angkatan', $kelasParts['angkatan']);
+                    });
+                }
+            });
         }
 
         if ($search !== '') {
@@ -146,7 +161,17 @@ class LogChatbotAdaptiveService
         $query = $this->chatbotAdaptiveLogModel->newQuery();
 
         if (!empty($kelas)) {
-            $query->where('id_kelas', $kelas);
+            $kelasValue = trim((string) $kelas);
+            $kelasParts = $this->parseKelasLabel($kelasValue);
+
+            $query->where(function ($kelasQuery) use ($kelasValue, $kelasParts) {
+                $kelasQuery->where('id_kelas', $kelasValue)
+                    ->orWhere('kelas', $kelasValue);
+
+                if (!empty($kelasParts)) {
+                    $kelasQuery->orWhere('kelas', $kelasParts['name']);
+                }
+            });
         }
 
         if (!empty($level)) {
@@ -484,6 +509,81 @@ class LogChatbotAdaptiveService
         }
 
         return $triggeredAt->copy()->subSeconds($elapsed);
+    }
+
+    private function parseKelasLabel(string $kelas): ?array
+    {
+        if ($kelas === '') {
+            return null;
+        }
+
+        if (preg_match('/^(.*?)\s*\((\d+)\)\s*$/', $kelas, $matches) !== 1) {
+            return null;
+        }
+
+        $name = trim((string) ($matches[1] ?? ''));
+        $angkatan = trim((string) ($matches[2] ?? ''));
+
+        if ($name === '' || $angkatan === '') {
+            return null;
+        }
+
+        return [
+            'name' => $name,
+            'angkatan' => $angkatan,
+        ];
+    }
+
+    private function filterStudentsByKelas(Collection $students, ?string $kelas): Collection
+    {
+        $kelasValue = trim((string) ($kelas ?? ''));
+        if ($kelasValue === '') {
+            return $students->values();
+        }
+
+        $kelasParts = $this->parseKelasLabel($kelasValue);
+
+        return $students
+            ->filter(function ($student) use ($kelasValue, $kelasParts) {
+                $idKelas = trim((string) ($student->id_kelas ?? ''));
+                $kelasName = trim((string) ($student->kelas_name ?? ''));
+                $angkatan = trim((string) ($student->angkatan ?? ''));
+
+                if ($idKelas !== '' && $idKelas === $kelasValue) {
+                    return true;
+                }
+
+                if ($kelasName !== '' && $kelasName === $kelasValue) {
+                    return true;
+                }
+
+                if (!empty($kelasParts)) {
+                    return $kelasName === $kelasParts['name'] && $angkatan === $kelasParts['angkatan'];
+                }
+
+                return false;
+            })
+            ->values();
+    }
+
+    private function filterStudentsBySearch(Collection $students, ?string $search): Collection
+    {
+        $searchValue = trim((string) ($search ?? ''));
+        if ($searchValue === '') {
+            return $students->values();
+        }
+
+        $needle = mb_strtolower($searchValue);
+
+        return $students
+            ->filter(function ($student) use ($needle) {
+                $name = mb_strtolower((string) ($student->name ?? ''));
+                $nim = mb_strtolower((string) ($student->nim ?? ''));
+
+                return ($name !== '' && str_contains($name, $needle))
+                    || ($nim !== '' && str_contains($nim, $needle));
+            })
+            ->values();
     }
 
     private function resolveTriggeredAt(ChatbotAdaptiveLog $log, array $detail): ?Carbon
