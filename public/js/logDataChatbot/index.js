@@ -165,6 +165,9 @@ function showDetail(idMahasiswa) {
                 let tbody = '';
                 if (data.history && data.history.length > 0) {
                     data.history.forEach((item, index) => {
+                        let typeBadge = item.type === 'adaptive'
+                            ? '<span class="badge badge-light-info">Adaptive</span>'
+                            : '<span class="badge badge-light-primary">Biasa</span>';
                         let levelBadge = renderLevelBadge(item.level);
 
                         tbody += `
