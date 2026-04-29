@@ -19,6 +19,7 @@ use App\Http\Controllers\Confidence\ConfidenceController;
 use App\Http\Controllers\Ujian\UjianCodeProgramController;
 use App\Http\Controllers\Leaderboard\LeaderboardController;
 use App\Http\Controllers\LogActivity\LogActivityController;
+use App\Http\Controllers\LogChatbot\LogChatbotController;
 use App\Http\Controllers\LogDataChatbot\LogDataChatbot as LogDataChatbotController;
 use App\Http\Controllers\LogDataChatbot\LogChatbotAdaptive as LogChatbotAdaptiveController;
 use App\Http\Controllers\Overlapping\OverlappingController;
@@ -246,6 +247,16 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::get('/detail/{id}', [LogChatbotAdaptiveController::class, 'detail'])->name('detail');
             Route::get('/getSoalByLevel', [LogChatbotAdaptiveController::class, 'getSoalByLevel'])->name('getSoalByLevel');
             Route::post('/export', [LogChatbotAdaptiveController::class, 'export'])->name('export');
+        });
+
+        // log-chatbot
+        Route::prefix('log-chatbot')->name('log-chatbot.')->group(function() {
+            Route::get('/', [LogChatbotController::class, 'index'])->name('index');
+            Route::post('/table', [LogChatbotController::class, 'table'])->name('table');
+            Route::get('/detail/{id}', [LogChatbotController::class, 'detail'])->name('detail');
+            Route::get('/detail-pesan/{id}', [LogChatbotController::class, 'detailPesan'])->name('detailPesan');
+            Route::get('/getSoalByLevel', [LogChatbotController::class, 'getSoalByLevel'])->name('getSoalByLevel');
+            Route::post('/export', [LogChatbotController::class, 'export'])->name('export');
         });
 
         // labeling

@@ -33,7 +33,7 @@
         body {
             background: #f5f5f5;
         }
-        
+
         .input-panel {
             border: 4px solid #022349;
             border-radius: 12px;
@@ -125,7 +125,7 @@
         .heart-beat {
             animation: heartBeat 1s infinite;
         }
-        
+
         @keyframes heartBeat {
             0% { transform: scale(1); }
             10% { transform: scale(1.1); }
@@ -284,7 +284,10 @@
     @extends('pages.ujian.modal')
     
     {{-- Chatbot Component --}}
-    @include('components.chatbot')
+    @include('components.chatbot', [
+        'id_soal' => $soal->id ?? null,
+        'id_level' => $soal->id_level ?? null
+    ])
     
     <script>
         var hostUrl = "assets/";

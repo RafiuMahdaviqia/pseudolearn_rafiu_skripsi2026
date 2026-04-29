@@ -27,10 +27,10 @@ class ChatbotController extends Controller
     public function send(Request $request): JsonResponse
     {
         $request->validate([
-            'message'  => 'required|string|max:1000',
-            'id_soal'  => 'nullable|string',
-            'id_level' => 'nullable|string',
+            'message'   => 'required|string|max:1000',
             'access_id' => 'nullable|string',
+            'id_soal'   => 'nullable|string',
+            'id_level'  => 'nullable|string',
         ]);
  
         // Ambil mahasiswa dari user yang sedang login
@@ -47,6 +47,7 @@ class ChatbotController extends Controller
         $respons = $this->chatbotService->chat(
             idMahasiswa: $mahasiswa->id,
             pesan:       $request->input('message'),
+            accessId:    $request->input('access_id'),
             idSoal:      $request->input('id_soal'),
             idLevel:     $request->input('id_level'),
         );
@@ -144,7 +145,9 @@ class ChatbotController extends Controller
     public function open(Request $request): JsonResponse
     {
         $request->validate([
-            'type' => 'nullable|in:biasa,adaptive',
+            'type'     => 'nullable|in:biasa,adaptive',
+            'id_soal'  => 'nullable|string',
+            'id_level' => 'nullable|string',
         ]);
 
         $user = Auth::user();
@@ -156,6 +159,8 @@ class ChatbotController extends Controller
 
         $log = ChatbotAccessLog::create([
             'id_mahasiswa' => $mahasiswa->id,
+            'id_level'     => $request->input('id_level'),
+            'id_soal'      => $request->input('id_soal'),
             'type'         => $request->input('type', 'biasa'),
             'opened_at'    => Carbon::now(),
         ]);

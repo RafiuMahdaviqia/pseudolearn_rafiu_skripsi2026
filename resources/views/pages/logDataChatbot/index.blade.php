@@ -126,7 +126,8 @@
                                 <th class="text-center">Tipe Chatbot</th>
                                 <th class="text-center">Level</th>
                                 <th class="text-center">Waktu Akses</th>
-                                <th class="text-center">Durasi (menit)</th>
+                                <th class="text-center">Jenis Soal</th>
+                                <th class="text-center">Durasi (Menit)</th>
                             </tr>
                         </thead>
                         <tbody id="detail-chatbot-body">

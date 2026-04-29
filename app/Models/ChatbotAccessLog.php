@@ -15,6 +15,8 @@ class ChatbotAccessLog extends Model
 
     protected $fillable = [
         'id_mahasiswa',
+        'id_level',
+        'id_soal',
         'type',
         'opened_at',
         'closed_at',
@@ -29,5 +31,15 @@ class ChatbotAccessLog extends Model
     public function mahasiswa(): BelongsTo
     {
         return $this->belongsTo(Mahasiswa::class, 'id_mahasiswa', 'id');
+    }
+
+    public function level(): BelongsTo
+    {
+        return $this->belongsTo(Level::class, 'id_level', 'id');
+    }
+
+    public function soal(): BelongsTo
+    {
+        return $this->belongsTo(Soal::class, 'id_soal', 'id');
     }
 }
