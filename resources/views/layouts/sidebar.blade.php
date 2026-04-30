@@ -161,21 +161,21 @@
                     </a>
                 </div>
                 <div
-                    class="menu-item menu-accordion {{ $isLogDataChatbotPage || $isLogChatbotAdaptivePage ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ $isLogDataChatbotPage || $isLogChatbotAdaptivePage || request()->is('log-chatbot*') ? 'show' : '' }}">
                     <span
-                        class="menu-link{{ $isLogDataChatbotPage ? ' active' : '' }}{{ $isLogChatbotAdaptivePage ? ' menu-link-no-hover' : '' }}"
+                        class="menu-link{{ $isLogDataChatbotPage ? ' active' : '' }}{{ $isLogChatbotAdaptivePage || request()->is('log-chatbot*') ? ' menu-link-no-hover' : '' }}"
                         data-bs-toggle="collapse" data-bs-target="#submenu-chatbot"
-                        aria-expanded="{{ $isLogDataChatbotPage || $isLogChatbotAdaptivePage ? 'true' : 'false' }}"
+                        aria-expanded="{{ $isLogDataChatbotPage || $isLogChatbotAdaptivePage || request()->is('log-chatbot*') ? 'true' : 'false' }}"
                         onclick="window.location='{{ url('log-data-chatbot') }}'">
                         <span class="menu-icon me-2">
                             <i class="ki-solid ki-message-text-2 fs-2"></i>
                         </span>
-                        <span
-                            class="menu-title {{ $isLogDataChatbotPage ? 'fw-bold' : 'fw-semibold' }}">Log
+                        <span class="menu-title {{ $isLogDataChatbotPage ? 'fw-bold' : 'fw-semibold' }}">Log
                             Data Chatbot</span>
                         <span class="menu-arrow"></span>
                     </span>
-                    <div class="collapse {{ $isLogDataChatbotPage || $isLogChatbotAdaptivePage ? 'show' : '' }}"
+
+                    <div class="collapse {{ $isLogDataChatbotPage || $isLogChatbotAdaptivePage || request()->is('log-chatbot*') ? 'show' : '' }}"
                         id="submenu-chatbot">
                         <div class="menu-sub menu-sub-accordion">
                             <div class="menu-item">
@@ -184,20 +184,21 @@
                                     <span class="menu-icon me-2">
                                         <i class="ki-solid ki-message-edit fs-2"></i>
                                     </span>
-                                    <span
-                                        class="menu-title {{ $isLogChatbotAdaptivePage ? 'fw-bold' : 'fw-semibold' }}">Log Adaptive</span>
+                                    <span class="menu-title {{ $isLogChatbotAdaptivePage ? 'fw-bold' : 'fw-semibold' }}">Log Adaptive</span>
+                                </a>
+                            </div>
+
+                            <div class="menu-item">
+                                <a class="menu-link{{ request()->is('log-chatbot*') ? ' active' : '' }}"
+                                    href="{{ url('log-chatbot') }}">
+                                    <span class="menu-icon me-2">
+                                        <i class="ki-solid ki-message-text-2 fs-2"></i>
+                                    </span>
+                                    <span class="menu-title {{ request()->is('log-chatbot*') ? 'fw-bold' : 'fw-semibold' }}">Log Chatbot</span>
                                 </a>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="menu-item">
-                    <a class="menu-link{{ request()->is('log-chatbot*') ? ' active' : '' }}" href="{{ url('log-chatbot') }}">
-                        <span class="menu-icon me-2">
-                            <i class="ki-solid ki-message-text-2 fs-2"></i>
-                        </span>
-                        <span class="menu-title {{ request()->is('log-chatbot*') ? 'fw-bold' : 'fw-semibold' }}">Log Chatbot</span>
-                    </a>
                 </div>
                 <div class="menu-item">
                     <a class="menu-link{{ request()->is('confidence*') ? ' active' : '' }}" href="{{ url('confidence') }}">
