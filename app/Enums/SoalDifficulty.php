@@ -10,6 +10,19 @@ enum SoalDifficulty: string
     case MEDIUM = 'Medium';
     case HARD = 'Hard';
 
+    public function index(): int
+    {
+        return array_search($this, self::cases(), true);
+    }
+
+    public static function fromIndex(int $index): ?self
+    {
+        $cases = self::cases();
+        $clampedIndex = max(0, min($index, count($cases) - 1));
+
+        return $cases[$clampedIndex];
+    }
+
     public static function options(): array
     {
         return array_map(function (self $difficulty) {
