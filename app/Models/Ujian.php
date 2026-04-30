@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
 use App\Core\BaseModel;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Ujian extends BaseModel
 {
@@ -39,5 +40,20 @@ class Ujian extends BaseModel
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function soal() : BelongsTo
+    {
+        return $this->belongsTo(Soal::class, 'id_soal', 'id');
+    }
+
+    public function level() : BelongsTo
+    {
+        return $this->belongsTo(Level::class, 'id_level');
+    }
+
+    public function mahasiswa() : BelongsTo
+    {
+        return $this->belongsTo(Mahasiswa::class, 'id_mahasiswa');
     }
 }
