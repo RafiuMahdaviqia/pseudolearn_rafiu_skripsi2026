@@ -3,6 +3,8 @@
 
 namespace App\Http\Controllers\Quiz;
 
+use App\Enums\ClusterLabel;
+use App\Enums\SoalDifficulty;
 use App\Models\Soal;
 use App\Models\Level;
 use App\Models\Nyawa;
@@ -16,6 +18,7 @@ use App\Services\SoalService;
 use App\Services\LevelService;
 use App\Services\KonversiService;
 use App\Http\Controllers\Controller;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 
 
@@ -219,6 +222,7 @@ class QuizController extends Controller
             ->get()
             ->toArray();
 
+        // 3) Hitung algopoin level dari record agregat (id_soal null, label null).
         $algopoin = $this->labelSkorModel
             ->where('id_mahasiswa', $idMahasiswa)
             ->whereNull('id_soal')
@@ -400,5 +404,114 @@ class QuizController extends Controller
             $this->labelSkorModel->insert($insertData);
             return response()->json(['message' => 'Skor berhasil disimpan.', 'avgSkor' => $averageSkor]);
         }
+    }
+
+    public function listQuestion(Request $request): View
+    {
+        $validated = $request->validate([
+            'level' => ['required'],
+        ]);
+
+        $level = Level::find($validated['level']);
+
+        $user = Auth::getUser();
+        abort_if($user === null, 401);
+
+        $mahasiswa = $user->mahasiswa()->first();
+        abort_if($mahasiswa === null, 404, 'Mahasiswa not found.');
+
+        $difficulty = "Easy";
+
+        $latestUjian = LabelSkor::query()
+            ->where('id_level', $level->id)
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        dd($latestUjian->soal()->first()->difficulty);
+        if ($latestUjian) {
+            $indexOfOldDifficulty = SoalDifficulty::from($latestUjian->soal()->first()->difficulty)->index();
+
+            // if (ClusterLabel::from($latestUjian->label)->index() > 1) {
+            //     $difficulty = SoalDifficulty::fromIndex($indexOfOldDifficulty)->value;
+            // } else {
+            //     $difficulty = SoalDifficulty::fromIndex($indexOfOldDifficulty + 1)->value;
+            // }
+
+            $difficulty = ClusterLabel::from($latestUjian->label)->index() > 1 ? SoalDifficulty::fromIndex($indexOfOldDifficulty)->value : SoalDifficulty::fromIndex($indexOfOldDifficulty + 1)->value;
+        }
+
+        $data['soal'] = [];
+        $data['konversi'] = [];
+        $data['ujian'] = [];
+
+        dd(
+            Ujian::query()
+                // ->with('soal')
+                ->select('id_soal')
+                ->where('id_level', $level->id)
+                ->where('id_mahasiswa', $mahasiswa->id)
+                ->groupBy('id_soal')
+                // ->orderBy('created_at', 'asc') // Keep them in the order they were answered
+                ->orderByRaw('MAX(created_at) DESC')
+                ->get()
+                ->toArray()
+        );
+
+        $dataSoal = Soal::query()
+            ->where('id_level', $level->id)
+            ->where('status', 1)
+            ->where('difficulty', $difficulty)
+            ->get()
+            ->toArray();
+        $dataKonversi = Konversi::query()
+            ->setView('v_konversi')
+            ->where('id_level', $level->id)
+            ->where('status', 1)
+            ->orderBy('order', 'asc')
+            ->get()
+            ->toArray();
+        $dataUjian = Ujian::query()
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->where('id_level', $level->id)
+            ->where('status', 1)
+            ->get()
+            ->toArray();
+
+        $algopoin = LabelSkor::query()
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->whereNull('id_soal')
+            ->whereNull('label')
+            ->where('id_level', $level->id)
+            ->sum('skor');
+
+        $nilaiKonversiList = $this->ujianKonversiModel
+            ->setView('v_ujian_konversi')
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->where('id_level', $level->id)
+            // ->whereIn('id_soal_konversi', $konversiIds)
+            ->whereNotNull('nilai')
+            ->orderBy('created_at', 'asc')
+            ->pluck('nilai', 'judul_soal') // atau 'judul_soal' jika tetap ingin pakai judul
+            ->toArray();
+
+        // $jumlahSoalKonversi = Konversi::query()->where('id_level', $level->id)->where('status', 1)->count();
+        $nyawa = Nyawa::where('id_user', $user->id)->first();
+
+        // Check and regenerate lives (1 life per 10 minutes)
+        $nyawa->checkAndRegenerate();
+
+        return view('pages.quiz.question-list', [
+            'title' => 'List Soal',
+            // 'dataSoal' => $result,
+            'algopoin' => $algopoin,
+            'levelId' => $level->id,
+            'dataLevel' => $level,
+            'nilaiKonversiList' => $nilaiKonversiList,
+            // 'jumlahSoalKonversi' => $jumlahSoalKonversi,
+            'lives' => $nyawa->nyawa,
+            'max_lives' => $nyawa->max_nyawa,
+            'next_regen_at' => $nyawa->next_regen_at
+        ]);
     }
 }
