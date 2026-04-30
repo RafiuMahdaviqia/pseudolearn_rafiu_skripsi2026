@@ -95,10 +95,10 @@ class QuizController extends Controller
                 ->where('status', 1)
                 ->whereNotIn('id', function ($q) use ($mahasiswa, $levelId) {
                     $q->select('id_soal')
-                      ->from((new Ujian)->getTable())
-                      ->where('id_mahasiswa', $mahasiswa->id)
-                      ->where('id_level', $levelId)
-                      ->where('status', 1);
+                        ->from((new Ujian)->getTable())
+                        ->where('id_mahasiswa', $mahasiswa->id)
+                        ->where('id_level', $levelId)
+                        ->where('status', 1);
                 })
                 ->orderBy('order', 'asc')
                 ->first();
@@ -109,9 +109,9 @@ class QuizController extends Controller
                 ->where('status', 1)
                 ->whereNotIn('id', function ($q) use ($mahasiswa, $levelId) {
                     $q->select('id_soal_konversi')
-                      ->from((new UjianKonversi)->getTable())
-                      ->where('id_mahasiswa', $mahasiswa->id)
-                      ->where('id_level', $levelId);
+                        ->from((new UjianKonversi)->getTable())
+                        ->where('id_mahasiswa', $mahasiswa->id)
+                        ->where('id_level', $levelId);
                 })
                 ->orderBy('order', 'asc')
                 ->first();
@@ -181,9 +181,9 @@ class QuizController extends Controller
             ->where('id_mahasiswa', $mahasiswa->id)
             ->whereNotNull('id_soal')
             ->whereIn('id_soal', function ($q) {
-            $q->select('id')
-              ->from((new Soal)->getTable())
-              ->where('status', 1);
+                $q->select('id')
+                    ->from((new Soal)->getTable())
+                    ->where('status', 1);
             })
             ->count();
 
@@ -205,10 +205,12 @@ class QuizController extends Controller
 
     public function questionList(Request $request)
     {
+        // 1) Ambil level dari query string, lalu muat semua soal aktif dan konversi aktif pada level itu.
         $levelId = $request->query('level');
         $dataSoal = $this->soalModel->where('id_level', $levelId)->where('status', 1)->orderBy('order', 'asc')->get()->toArray();
         $dataKonversi = $this->konversiModel->setView('v_konversi')->where('id_level', $levelId)->where('status', 1)->orderBy('order', 'asc')->get()->toArray();
-        
+
+        // 2) Ambil mahasiswa dari user yang login, lalu ambil ujian pseudocode yang sudah selesai di level ini.
         $idUser = Auth::id();
         $idMahasiswa = $this->mahasiswaModel->where('id_user', $idUser)->value('id');
         $dataUjian = $this->ujianModel->where('id_mahasiswa', $idMahasiswa)
@@ -218,16 +220,18 @@ class QuizController extends Controller
             ->toArray();
 
         $algopoin = $this->labelSkorModel
-                            ->where('id_mahasiswa', $idMahasiswa)
-                            ->whereNull('id_soal')
-                            ->whereNull('label')
-                            ->where('id_level', $levelId)
-                            ->sum('skor');
+            ->where('id_mahasiswa', $idMahasiswa)
+            ->whereNull('id_soal')
+            ->whereNull('label')
+            ->where('id_level', $levelId)
+            ->sum('skor');
 
-        // Index konversi by id_soal (single, not array)
+        // 4) Buat index konversi berdasarkan id_soal agar mudah dipasangkan ke soal utama.
         $konversiBySoal = [];
         foreach ($dataKonversi as $konversi) {
             $konversiBySoal[$konversi['id_soal']] = $konversi;
+
+            // Simpan hasil ujian konversi (jika ada) untuk menentukan status done/locked per item konversi.
             $dataUjianKonversi = $this->ujianKonversiModel->where('id_mahasiswa', $idMahasiswa)
                 ->where('id_level', $levelId)
                 ->where('id_soal_konversi', $konversi['id'])
@@ -239,24 +243,25 @@ class QuizController extends Controller
             }
         }
 
-        // Index ujian by id_soal for quick lookup
+        // 5) Ubah list ujian jadi map cepat: id_soal => true.
         $ujianBySoal = [];
         foreach ($dataUjian as $ujian) {
             $ujianBySoal[$ujian['id_soal']] = true;
         }
 
-        // Gabungkan soal dan konversi sebagai dua entri berbeda dalam result
+        // 6) Bentuk payload final: soal utama + item konversi (sebagai entri terpisah).
         $result = [];
         foreach ($dataSoal as $soal) {
             $soalId = $soal['id'];
-            // Soal pseudocode
+
+            // Entri soal utama (pseudocode).
             $soalEntry = $soal;
             $soalEntry['type'] = 'soal';
             $soalEntry['konversi'] = $konversiBySoal[$soalId] ?? null;
             $soalEntry['ujianKonversi'] = null; // hanya untuk konversi
             $soalEntry['status'] = isset($ujianBySoal[$soalId]) ? 'done' : 'locked';
 
-            // Ambil badge berdasarkan id_mahasiswa, id_level, id_soal
+            // Badge diambil dari label skor berdasarkan mahasiswa + level + soal.
             $badge = $this->labelSkorModel
                 ->where('id_mahasiswa', $idMahasiswa)
                 ->where('id_level', $levelId)
@@ -266,7 +271,7 @@ class QuizController extends Controller
 
             $result[] = $soalEntry;
 
-            // Soal konversi (jika ada)
+            // Tambahkan entri konversi milik soal ini (jika tersedia).
             if (isset($konversiBySoal[$soalId])) {
                 $konversi = $konversiBySoal[$soalId];
                 $konversiEntry = $konversi;
@@ -278,10 +283,10 @@ class QuizController extends Controller
             }
         }
 
-        // Atur status final: 
-        // 1. Semua 'done' tetap done
-        // 2. Satu soal/konversi pertama yang tidak done => active
-        // 3. Sisanya => locked
+        // 7) Normalisasi status agar progres linear:
+        //    - status done tetap done,
+        //    - item pertama yang belum done menjadi active,
+        //    - sisanya locked.
         $firstActiveSet = false;
         foreach ($result as $i => $row) {
             if ($row['status'] === 'done') {
@@ -295,7 +300,7 @@ class QuizController extends Controller
             }
         }
 
-        // Ambil hanya nilai konversi untuk id konversi yang ada di $dataKonversi
+        // 8) Ambil nilai konversi yang valid untuk level ini (berdasarkan id konversi yang tampil di list).
         $konversiIds = array_column($dataKonversi, 'id');
 
         if (empty($konversiIds)) {
@@ -312,15 +317,17 @@ class QuizController extends Controller
                 ->toArray();
         }
 
+        // 9) Siapkan metadata level dan jumlah soal konversi untuk ditampilkan di header/summary halaman.
         $dataLevel = $this->levelModel->find($levelId);
         $jumlahSoalKonversi = $this->konversiModel->where('id_level', $levelId)->where('status', 1)->count();
 
         $idUser = Auth::id();
         $nyawa = Nyawa::where('id_user', $idUser)->first();
 
-        // Check and regenerate lives (1 life per 10 minutes)
+        // 10) Regenerasi nyawa jika sudah waktunya (1 nyawa per 10 menit).
         $nyawa->checkAndRegenerate();
 
+        // 11) Kirim data akhir ke halaman daftar soal.
         return view('pages.quiz.question-list', [
             'title' => 'List Soal',
             'dataSoal' => $result,
