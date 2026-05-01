@@ -99,7 +99,10 @@ class LogUjianKodeController extends Controller
         $idLevel     = request()->query('id_level');
         $idSoal      = request()->query('id_soal');
 
-        $dataMahasiswa = $this->mahasiswaModel->setView('v_mahasiswa')->find($idMahasiswa);
+        $dataMahasiswa = $this->mahasiswaModel
+            ->setView('v_mahasiswa')
+            ->where('id_user', $idMahasiswa)
+            ->first();
 
         if (!$dataMahasiswa) {
             return redirect()->back()->with('error', 'Data mahasiswa tidak ditemukan.');

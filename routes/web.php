@@ -23,6 +23,7 @@ use App\Http\Controllers\Leaderboard\LeaderboardController;
 use App\Http\Controllers\LogActivity\LogActivityController;
 use App\Http\Controllers\Overlapping\OverlappingController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
+use App\Http\Controllers\LogUjianKode\LogUjianKodeController;
 use App\Models\Setting;
 
 Route::get('/', function () {
@@ -292,6 +293,15 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
         Route::prefix('setting-admin')->name('setting-admin.')->group(function () {
             Route::get('/', [MahasiswaController::class, 'settingAdmin'])->name('index');
             Route::post('/update', [MahasiswaController::class, 'updateSettingAdmin'])->name('updateSettingAdmin');
+        });
+
+        // log ujian kode (admin)
+        Route::prefix('log-ujian-kode')->name('log-ujian-kode.')->group(function () {
+            Route::get('/', [LogUjianKodeController::class, 'index'])->name('index');
+            Route::post('/table', [LogUjianKodeController::class, 'table'])->name('table');
+            Route::get('/detail/{id}', [LogUjianKodeController::class, 'detail'])->name('detail');
+            Route::post('/table-detail', [LogUjianKodeController::class, 'tableDetail'])->name('tableDetail');
+            Route::get('/detail-kode/{id}', [LogUjianKodeController::class, 'detailKode'])->name('detailKode');
         });
     });
 });

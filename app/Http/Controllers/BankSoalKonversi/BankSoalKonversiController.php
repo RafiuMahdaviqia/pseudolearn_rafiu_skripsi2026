@@ -14,14 +14,11 @@ class BankSoalKonversiController extends Controller
     protected $levelModel;
     protected $bankSoalModel;
 
-    public function __construct(
-        BankSoalKonversiService $bankSoalService,
-        LevelModel $levelModel,
-        BankSoalKonversi $bankSoalModel
-    ) {
-        $this->bankSoalService = $bankSoalService;
-        $this->levelModel      = $levelModel;
-        $this->bankSoalModel   = $bankSoalModel;
+    public function __construct()
+    {
+        $this->bankSoalService = new BankSoalKonversiService();
+        $this->levelModel      = new LevelModel();
+        $this->bankSoalModel   = new BankSoalKonversi();
     }
 
     public function index()
