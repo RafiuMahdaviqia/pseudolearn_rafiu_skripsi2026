@@ -1,0 +1,149 @@
+$(document).ready(function () {
+    const idMahasiswa = $("#idMahasiswa").val();
+
+    $("#filter-level, #filter-soal").select2({
+        minimumResultsForSearch: Infinity,
+    });
+
+    // DataTables
+    const table = $("#table-detail-log-ujian-kode").DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "/log-ujian-kode/table-detail",
+            type: "POST",
+            data: function (d) {
+                d._token = $('meta[name="csrf-token"]').attr("content");
+                d.id_mahasiswa = idMahasiswa;
+                d.id_level = $("#filter-level").val() || "";
+                d.id_soal = $("#filter-soal").val() || "";
+            },
+        },
+        columns: [
+            {
+                data: null,
+                className: "text-center",
+                render: function (data, type, row, meta) {
+                    return meta.row + meta.settings._iDisplayStart + 1;
+                },
+                orderable: false,
+            },
+            { data: "judul_soal", className: "text-start" },
+            {
+                data: "created_at",
+                className: "text-start",
+                render: function (data) {
+                    if (!data) return "-";
+                    const d = new Date(data);
+                    return d.toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                    });
+                },
+            },
+            {
+                data: "nilai",
+                className: "text-center",
+                render: function (data) {
+                    if (data === null || data === undefined) return "-";
+                    let cls = "badge-danger";
+                    if (data >= 80) cls = "badge-success";
+                    else if (data >= 60) cls = "badge-warning";
+                    return `<span class="badge ${cls}">${data}</span>`;
+                },
+            },
+            {
+                data: "waktu",
+                className: "text-center",
+                render: function (data) {
+                    if (!data && data !== 0) return "-";
+                    const sec = parseInt(data);
+                    const h = Math.floor(sec / 3600);
+                    const m = Math.floor((sec % 3600) / 60);
+                    const s = sec % 60;
+                    const parts = [];
+                    if (h > 0) parts.push(h + " jam");
+                    if (m > 0) parts.push(m + " mnt");
+                    parts.push(s + " dtk");
+                    return parts.join(" ");
+                },
+            },
+            {
+                data: null,
+                className: "text-center",
+                orderable: false,
+                render: function (data) {
+                    const levelId = $("#filter-level").val() || "";
+                    const soalId = $("#filter-soal").val() || "";
+                    const url = `/log-ujian-kode/detail-kode/${data.id}?id_mahasiswa=${idMahasiswa}&id_level=${levelId}&id_soal=${data.id_bank_soal_konversi}`;
+                    return `<a href="${url}" class="btn btn-sm btn-info">
+                                <i class="ki-outline ki-code fs-5"></i> Lihat Kode
+                            </a>`;
+                },
+            },
+        ],
+        language: { url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json" },
+        pageLength: 10,
+        dom: "lrtip",
+        order: [[2, "desc"]],
+    });
+
+    // Card info Level & Nama Soal
+    function updateInfoCard(levelName, soalName) {
+        $("#info-level").html(
+            levelName
+                ? `<span class="badge badge-primary">${levelName}</span>`
+                : "-",
+        );
+        $("#info-soal").text(soalName || "-");
+    }
+
+    // Pilih level
+    $("#filter-level").on("change", function () {
+        const levelId = $(this).val();
+        const levelName = $(this).find("option:selected").text();
+        const $soalSelect = $("#filter-soal");
+
+        // Reset soal
+        $soalSelect.empty().append('<option value="">Pilih Soal</option>');
+
+        // Reset card info
+        updateInfoCard(levelId ? levelName : "", "");
+
+        // Reload tabel
+        table.ajax.reload();
+
+        if (!levelId) return;
+
+        // Load soal sesuai level
+        $.ajax({
+            url: "/bank-soal-konversi/getSoalByLevel",
+            method: "GET",
+            data: { level_id: levelId },
+            success: function (data) {
+                $.each(data, function (i, soal) {
+                    $soalSelect.append(
+                        `<option value="${soal.id}">${soal.judul}</option>`,
+                    );
+                });
+
+                $soalSelect.select2("destroy");
+                $soalSelect.select2({
+                    minimumResultsForSearch: Infinity,
+                });
+            },
+        });
+    });
+
+    // Pilih soal
+    $(document).on("change", "#filter-soal", function () {
+        const soalName = $(this).find("option:selected").text();
+        const levelName = $("#filter-level").find("option:selected").text();
+        const levelId = $("#filter-level").val();
+
+        updateInfoCard(levelId ? levelName : "", $(this).val() ? soalName : "");
+
+        table.ajax.reload();
+    });
+});
