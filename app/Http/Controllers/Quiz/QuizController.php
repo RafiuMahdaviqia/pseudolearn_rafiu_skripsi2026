@@ -422,61 +422,42 @@ class QuizController extends Controller
 
         $difficulty = "Easy";
 
-        $latestUjian = LabelSkor::query()
+        $latestUjian = Ujian::query()
             ->where('id_level', $level->id)
             ->where('id_mahasiswa', $mahasiswa->id)
             ->orderBy('created_at', 'desc')
             ->first();
 
-        dd($latestUjian->soal()->first()->difficulty);
         if ($latestUjian) {
             $indexOfOldDifficulty = SoalDifficulty::from($latestUjian->soal()->first()->difficulty)->index();
 
-            // if (ClusterLabel::from($latestUjian->label)->index() > 1) {
-            //     $difficulty = SoalDifficulty::fromIndex($indexOfOldDifficulty)->value;
-            // } else {
-            //     $difficulty = SoalDifficulty::fromIndex($indexOfOldDifficulty + 1)->value;
-            // }
-
-            $difficulty = ClusterLabel::from($latestUjian->label)->index() > 1 ? SoalDifficulty::fromIndex($indexOfOldDifficulty)->value : SoalDifficulty::fromIndex($indexOfOldDifficulty + 1)->value;
+            if (ClusterLabel::from($latestUjian->soal()->first()->labelSkor()->first()->label)->index() > 1) {
+                $difficulty = SoalDifficulty::fromIndex($indexOfOldDifficulty)->value;
+            } else {
+                $difficulty = SoalDifficulty::fromIndex($indexOfOldDifficulty + 1)->value;
+            }
         }
 
-        $data['soal'] = [];
-        $data['konversi'] = [];
-        $data['ujian'] = [];
-
-        dd(
-            Ujian::query()
-                // ->with('soal')
-                ->select('id_soal')
-                ->where('id_level', $level->id)
-                ->where('id_mahasiswa', $mahasiswa->id)
-                ->groupBy('id_soal')
-                // ->orderBy('created_at', 'asc') // Keep them in the order they were answered
-                ->orderByRaw('MAX(created_at) DESC')
-                ->get()
-                ->toArray()
-        );
-
-        $dataSoal = Soal::query()
-            ->where('id_level', $level->id)
-            ->where('status', 1)
-            ->where('difficulty', $difficulty)
-            ->get()
-            ->toArray();
-        $dataKonversi = Konversi::query()
-            ->setView('v_konversi')
-            ->where('id_level', $level->id)
-            ->where('status', 1)
-            ->orderBy('order', 'asc')
-            ->get()
-            ->toArray();
-        $dataUjian = Ujian::query()
+        $ujianBySoal = Ujian::query()
             ->where('id_mahasiswa', $mahasiswa->id)
             ->where('id_level', $level->id)
-            ->where('status', 1)
+            ->orderBy('created_at', 'asc')
             ->get()
-            ->toArray();
+            ->groupBy('id_soal');
+
+        $firstAttemptBySoal = $ujianBySoal->map(fn($items) => $items->first()->created_at);
+
+        $soalById = Soal::query()
+            ->whereIn('id', $firstAttemptBySoal->keys())
+            ->get()
+            ->keyBy('id');
+
+        $soalHistory = $firstAttemptBySoal
+            ->sort() // oldest first
+            ->keys()
+            ->map(fn($soalId) => $soalById->get($soalId))
+            ->filter()
+            ->values();
 
         $algopoin = LabelSkor::query()
             ->where('id_mahasiswa', $mahasiswa->id)
@@ -503,7 +484,7 @@ class QuizController extends Controller
 
         return view('pages.quiz.question-list', [
             'title' => 'List Soal',
-            // 'dataSoal' => $result,
+            'dataSoal' => $soalHistory,
             'algopoin' => $algopoin,
             'levelId' => $level->id,
             'dataLevel' => $level,
