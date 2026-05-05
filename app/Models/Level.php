@@ -22,6 +22,8 @@ class Level extends BaseModel
         'image',
         'feedback_data_type',
         'feedback_algorithm',
+        'limit_soal',
+        'limit_ars',
         'order',
         'manual_active' // 0: nonaktif, 1: aktif
     ];
