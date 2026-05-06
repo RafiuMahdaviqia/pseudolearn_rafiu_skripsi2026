@@ -416,6 +416,7 @@ class QuizController extends Controller
         ]);
 
         $level = Level::find($validated['level']);
+        abort_if($level === null, 404, 'Level not found.');
 
         $user = Auth::getUser();
         abort_if($user === null, 401);
@@ -423,23 +424,45 @@ class QuizController extends Controller
         $mahasiswa = $user->mahasiswa()->first();
         abort_if($mahasiswa === null, 404, 'Mahasiswa not found.');
 
-        $difficulty = "Easy";
+        $targetDifficulty = SoalDifficulty::EASY;
 
         $latestUjian = Ujian::query()
             ->where('id_level', $level->id)
             ->where('id_mahasiswa', $mahasiswa->id)
+            ->whereNotNull('id_soal')
             ->orderBy('created_at', 'desc')
-            ->first();
+            ->first(['id_soal']);
 
-        if ($latestUjian) {
-            $indexOfOldDifficulty = SoalDifficulty::from($latestUjian->soal()->first()->difficulty)->index();
+        if ($latestUjian !== null && !empty($latestUjian->id_soal)) {
+            $latestSoalDifficulty = Soal::query()
+                ->whereKey($latestUjian->id_soal)
+                ->value('difficulty');
 
-            if (ClusterLabel::from($latestUjian->soal()->first()->labelSkor()->first()->label)->index() > 1) {
-                $difficulty = SoalDifficulty::fromIndex($indexOfOldDifficulty)->value;
+            $currentDifficulty = SoalDifficulty::tryFrom((string) $latestSoalDifficulty) ?? SoalDifficulty::EASY;
+
+            $latestLabel = LabelSkor::query()
+                ->where('id_mahasiswa', $mahasiswa->id)
+                ->where('id_level', $level->id)
+                ->where('id_soal', $latestUjian->id_soal)
+                ->whereNotNull('label')
+                ->orderBy('created_at', 'desc')
+                ->value('label');
+
+            $clusterLabel = ClusterLabel::tryFrom((string) $latestLabel);
+
+            if ($clusterLabel === null) {
+                $targetDifficulty = $currentDifficulty;
             } else {
-                $difficulty = SoalDifficulty::fromIndex($indexOfOldDifficulty + 1)->value;
+                $nextDifficultyIndex = match ($clusterLabel) {
+                    ClusterLabel::IDEAL, ClusterLabel::NORMAL => $currentDifficulty->index() + 1,
+                    ClusterLabel::STRUGGLING, ClusterLabel::GAMING_THE_SYSTEM => $currentDifficulty->index(),
+                };
+
+                $targetDifficulty = SoalDifficulty::fromIndex($nextDifficultyIndex) ?? $currentDifficulty;
             }
         }
+
+        $difficulty = $targetDifficulty->value;
 
         $allSoal = Soal::query()
             ->where('id_level', $level->id)
@@ -448,7 +471,21 @@ class QuizController extends Controller
             ->get();
 
         $allSoalById = $allSoal->keyBy('id');
-        $allSoalIdsOrdered = $allSoal->pluck('id')->values();
+
+        $doneSoalIds = Ujian::query()
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->where('id_level', $level->id)
+            ->whereNotNull('id_soal')
+            ->where('status', 1)
+            ->pluck('id_soal')
+            ->all();
+
+        $doneSoalMap = $doneSoalIds === [] ? [] : array_fill_keys($doneSoalIds, true);
+
+        $shouldIncreaseLimit = false;
+        $baseLimit = (int) ($level->limit_soal ?? 0);
+        $extraLimit = $shouldIncreaseLimit ? (int) ($level->limit_ars ?? 0) : 0;
+        $effectiveLimit = max(0, $baseLimit + $extraLimit);
 
         $ujianBySoal = Ujian::query()
             ->where('id_mahasiswa', $mahasiswa->id)
@@ -460,18 +497,68 @@ class QuizController extends Controller
 
         $firstAttemptBySoal = $ujianBySoal->map(fn($items) => $items->first()->created_at);
 
-        $attemptedSoalIdsOrdered = $firstAttemptBySoal
+        $historySoalIdsOrdered = $firstAttemptBySoal
             ->sortBy(fn($createdAt) => $createdAt ? $createdAt->getTimestamp() : 0) // oldest first
             ->keys()
             ->values();
 
-        $remainingSoalIds = $allSoalIdsOrdered
-            ->reject(fn($soalId) => $attemptedSoalIdsOrdered->contains($soalId))
-            ->values();
+        if ($historySoalIdsOrdered->count() > $effectiveLimit) {
+            $historySoalIdsOrdered = $historySoalIdsOrdered
+                ->take($effectiveLimit)
+                ->values();
+        }
 
-        $orderedSoalIds = $attemptedSoalIdsOrdered
-            ->concat($remainingSoalIds)
-            ->values();
+        $historyCount = $historySoalIdsOrdered->count();
+        $shouldAppendNew = $historyCount < $effectiveLimit;
+
+        $appendSoalId = null;
+        if ($shouldAppendNew) {
+            $candidateSoalIds = $allSoal
+                ->where('difficulty', $difficulty)
+                ->pluck('id')
+                ->values();
+
+            $historySoalIdSet = $historySoalIdsOrdered->flip();
+
+            if ($candidateSoalIds->isNotEmpty()) {
+                $availableSoalIds = $candidateSoalIds
+                    ->reject(fn($soalId) => $historySoalIdSet->has($soalId))
+                    ->values();
+
+                if ($availableSoalIds->isNotEmpty()) {
+                    $appendSoalId = $availableSoalIds->shuffle()->first();
+                } else {
+                    $repeatCandidates = $candidateSoalIds
+                        ->filter(fn($soalId) => isset($doneSoalMap[$soalId]))
+                        ->values();
+
+                    if ($repeatCandidates->isEmpty()) {
+                        $repeatCandidates = $historySoalIdsOrdered
+                            ->filter(fn($soalId) => isset($doneSoalMap[$soalId]))
+                            ->values();
+                    }
+
+                    if ($repeatCandidates->isNotEmpty()) {
+                        $appendSoalId = $repeatCandidates->shuffle()->first();
+                    }
+                }
+            } else {
+                $repeatCandidates = $historySoalIdsOrdered
+                    ->filter(fn($soalId) => isset($doneSoalMap[$soalId]))
+                    ->values();
+
+                if ($repeatCandidates->isNotEmpty()) {
+                    $appendSoalId = $repeatCandidates->shuffle()->first();
+                }
+            }
+        }
+
+        $orderedSoalIds = $historySoalIdsOrdered;
+        if ($appendSoalId !== null) {
+            $orderedSoalIds = $orderedSoalIds
+                ->concat([$appendSoalId])
+                ->values();
+        }
 
         $orderedSoalIdsArray = $orderedSoalIds->all();
 
@@ -524,20 +611,6 @@ class QuizController extends Controller
             $konversiBySoal[$konversi['id_soal']] = $konversi;
             $konversiById[$konversi['id']] = $konversi;
         }
-
-        $doneSoalIds = [];
-        if ($orderedSoalIdsArray !== []) {
-            $doneSoalIds = Ujian::query()
-                ->where('id_mahasiswa', $mahasiswa->id)
-                ->where('id_level', $level->id)
-                ->whereNotNull('id_soal')
-                ->where('status', 1)
-                ->whereIn('id_soal', $orderedSoalIdsArray)
-                ->pluck('id_soal')
-                ->all();
-        }
-
-        $doneSoalMap = $doneSoalIds === [] ? [] : array_fill_keys($doneSoalIds, true);
 
         $badgeBySoal = [];
         if ($orderedSoalIdsArray !== []) {
@@ -624,11 +697,13 @@ class QuizController extends Controller
             }
         }
 
-        // $jumlahSoalKonversi = Konversi::query()->where('id_level', $level->id)->where('status', 1)->count();
+        $jumlahSoalKonversi = count($dataKonversi);
         $nyawa = Nyawa::where('id_user', $user->id)->first();
 
         // Check and regenerate lives (1 life per 10 minutes)
-        $nyawa->checkAndRegenerate();
+        if ($nyawa) {
+            $nyawa->checkAndRegenerate();
+        }
 
         return view('pages.quiz.question-list', [
             'title' => 'List Soal',
@@ -637,10 +712,10 @@ class QuizController extends Controller
             'levelId' => $level->id,
             'dataLevel' => $level,
             'nilaiKonversiList' => $nilaiKonversiList,
-            // 'jumlahSoalKonversi' => $jumlahSoalKonversi,
-            'lives' => $nyawa->nyawa,
-            'max_lives' => $nyawa->max_nyawa,
-            'next_regen_at' => $nyawa->next_regen_at
+            'jumlahSoalKonversi' => $jumlahSoalKonversi,
+            'lives' => $nyawa?->nyawa ?? 0,
+            'max_lives' => $nyawa?->max_nyawa ?? 0,
+            'next_regen_at' => $nyawa?->next_regen_at
         ]);
     }
 }
