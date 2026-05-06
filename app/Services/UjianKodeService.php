@@ -76,6 +76,25 @@ class UjianKodeService
             ->limit($length)
             ->get();
 
+        // ── Tambah kolom drag_drop & total_submit per baris ──
+        $data = $data->map(function ($row) use ($idMahasiswa) {
+            // Total drag & drop untuk soal ini
+            $row->drag_drop = DB::table('log_ujian_kode')
+                ->where('id_mahasiswa', $idMahasiswa)
+                ->where('id_bank_soal_konversi', $row->id_bank_soal_konversi)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Total submit untuk soal ini
+            $row->total_submit = DB::table('v_ujian_kode')
+                ->where('id_mahasiswa', $idMahasiswa)
+                ->where('id_bank_soal_konversi', $row->id_bank_soal_konversi)
+                ->whereNull('deleted_at')
+                ->count();
+
+            return $row;
+        });
+
         return response()->json([
             'draw'            => intval($request->input('draw')),
             'recordsTotal'    => $total,

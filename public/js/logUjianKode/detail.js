@@ -43,14 +43,19 @@ $(document).ready(function () {
                 },
             },
             {
-                data: "nilai",
+                data: "drag_drop",
                 className: "text-center",
                 render: function (data) {
                     if (data === null || data === undefined) return "-";
-                    let cls = "badge-danger";
-                    if (data >= 80) cls = "badge-success";
-                    else if (data >= 60) cls = "badge-warning";
-                    return `<span class="badge ${cls}">${data}</span>`;
+                    return `<span class="badge badge-info">${data}</span>`;
+                },
+            },
+            {
+                data: "total_submit",
+                className: "text-center",
+                render: function (data) {
+                    if (data === null || data === undefined) return "-";
+                    return `<span class="badge badge-primary">${data}</span>`;
                 },
             },
             {
@@ -88,6 +93,24 @@ $(document).ready(function () {
         dom: "lrtip",
         order: [[2, "desc"]],
     });
+
+    // Refresh stats di card
+    function refreshStats() {
+        $.ajax({
+            url: "/log-ujian-kode/summary-stats",
+            method: "GET",
+            data: {
+                id_mahasiswa: idMahasiswa,
+                id_level: $("#filter-level").val() || "",
+                id_soal: $("#filter-soal").val() || "",
+            },
+            success: function (res) {
+                $("#stat-drag").text(res.total_drag);
+                $("#stat-submit").text(res.total_submit);
+                $("#stat-waktu").text(res.total_waktu);
+            },
+        });
+    }
 
     // Card info Level & Nama Soal
     function updateInfoCard(levelName, soalName) {
@@ -145,5 +168,15 @@ $(document).ready(function () {
         updateInfoCard(levelId ? levelName : "", $(this).val() ? soalName : "");
 
         table.ajax.reload();
+    });
+
+    // Export excel
+    $("#btn-export").on("click", function () {
+        const params = new URLSearchParams({
+            id_mahasiswa: idMahasiswa,
+            id_level: $("#filter-level").val() || "",
+            id_soal: $("#filter-soal").val() || "",
+        });
+        window.location.href = `/log-ujian-kode/export-detail?${params.toString()}`;
     });
 });

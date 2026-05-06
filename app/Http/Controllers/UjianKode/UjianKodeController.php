@@ -5,6 +5,7 @@ namespace App\Http\Controllers\UjianKode;
 use App\Models\Soal;
 use App\Models\Nyawa;
 use App\Models\BankSoalKonversi;
+use App\Models\LogUjianKode;
 use Illuminate\Http\Request;
 use App\Services\UjianKodeService;
 use App\Http\Controllers\Controller;
@@ -82,5 +83,19 @@ class UjianKodeController extends Controller
         $opr = $this->ujianKodeService->submitKonversi($request);
 
         return $opr;
+    }
+
+    public function logDrag(Request $request)
+    {
+        $data = $request->json()->all();
+        LogUjianKode::create([
+            'id_mahasiswa' => Auth::id(),
+            'id_bank_soal_konversi' => $data['id_bank_soal_konversi'],
+            'id_level'              => $data['id_level'],
+            'index'                 => $data['index'],
+            'item_text'             => $data['item_text'],
+        ]);
+
+        return response()->json(['success' => true]);
     }
 }

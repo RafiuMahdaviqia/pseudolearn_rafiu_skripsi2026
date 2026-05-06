@@ -88,6 +88,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
             Route::get('/', [UjianKodeController::class, 'index'])->name('index');
             Route::post('submit-konversi', [UjianKodeController::class, 'submitKonversi'])->name('submit-konversi');
             Route::post('run-scanner', [UjianKodeController::class, 'runScanner'])->name('run-scanner');
+            Route::post('/log-drag', [UjianKodeController::class, 'logDrag'])->name('logDrag');
         });
         Route::prefix('nyawa')->name('nyawa.')->group(function () {
             Route::get('status', [NyawaController::class, 'status'])->name('nyawa.status');
@@ -302,6 +303,8 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
             Route::get('/detail/{id}', [LogUjianKodeController::class, 'detail'])->name('detail');
             Route::post('/table-detail', [LogUjianKodeController::class, 'tableDetail'])->name('tableDetail');
             Route::get('/detail-kode/{id}', [LogUjianKodeController::class, 'detailKode'])->name('detailKode');
+            Route::get('/summary-stats', [LogUjianKodeController::class, 'summaryStats'])->name('summaryStats');
+            Route::get('/export-detail', [LogUjianKodeController::class, 'exportDetail'])->name('exportDetail');
         });
     });
 });

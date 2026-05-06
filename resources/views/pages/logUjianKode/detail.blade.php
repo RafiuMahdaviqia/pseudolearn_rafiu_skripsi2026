@@ -22,9 +22,12 @@
                                 data-hide-search="true" data-allow-clear="true" data-placeholder="Pilih Soal">
                                 <option value="">Pilih Level dulu</option>
                             </select>
+                            <button class="btn btn-sm btn-success" id="btn-export">
+                                <i class="ki-outline ki-exit-down fs-2"></i>
+                                Export
+                            </button>
                         </div>
                     </div>
-
 
                     <div class="mb-6">
                         <div class="row g-4">
@@ -84,6 +87,30 @@
                         </div>
                     </div>
 
+                    <div class="row g-4 mb-6">
+                        <div class="col-md-4 col-12">
+                            <div class="bg-light-success rounded-4 p-4 text-center">
+                                <i class="ki-outline ki-mouse-square fs-2 text-success mb-2"></i>
+                                <div class="fs-2 fw-bold text-gray-900" id="stat-drag">{{ $totalDrag }}</div>
+                                <div class="text-gray-600 fs-7 mt-1">Total Drag &amp; Drop</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-12">
+                            <div class="bg-light-warning rounded-4 p-4 text-center">
+                                <i class="ki-outline ki-send fs-2 text-warning mb-2"></i>
+                                <div class="fs-2 fw-bold text-gray-900" id="stat-submit">{{ $totalSubmit }}</div>
+                                <div class="text-gray-600 fs-7 mt-1">Total Submit</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-12">
+                            <div class="bg-light-danger rounded-4 p-4 text-center">
+                                <i class="ki-outline ki-time fs-2 text-danger mb-2"></i>
+                                <div class="fs-2 fw-bold text-gray-900" id="stat-waktu">{{ $totalWaktu }}</div>
+                                <div class="text-gray-600 fs-7 mt-1">Total Waktu</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <input type="hidden" id="idMahasiswa" value="{{ $id_user }}">
                     <input type="hidden" id="levelId" value="{{ $level->id ?? '' }}">
                     <input type="hidden" id="soalId" value="{{ $soal->id ?? '' }}">
@@ -95,7 +122,8 @@
                                     <th class="text-center">No</th>
                                     <th class="text-start">Soal</th>
                                     <th class="text-start">Tanggal Ujian</th>
-                                    <th class="text-center">Nilai</th>
+                                    <th class="text-center">Drag and Drop</th>
+                                    <th class="text-center">Total Submit</th>
                                     <th class="text-center">Waktu</th>
                                     <th class="text-center">Aksi</th>
                                 </tr>

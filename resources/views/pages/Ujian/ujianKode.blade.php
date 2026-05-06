@@ -525,7 +525,6 @@
                 const dragged = document.querySelector('.drag-item.dragging');
                 if (!dragged) return;
 
-                // Jika box sudah terisi → kocok & tolak
                 const existing = this.querySelector('.drag-item');
                 if (existing) {
                     this.classList.add('shake');
@@ -533,10 +532,33 @@
                     return;
                 }
 
-                // Pindahkan item ke box
                 this.appendChild(dragged);
                 dragged.classList.remove('dragging');
                 startTimer();
+
+                // ── Log drag & drop ──
+                const index = this.getAttribute('data-index');
+                const itemText = dragged.innerText.trim();
+                const idSoal = document.getElementById('id-soal-konversi').value;
+                const idLevel = document.getElementById('id-level').value;
+
+                fetch(APP_URL + 'ujian-kode/log-drag', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                                'content'),
+                        },
+                        body: JSON.stringify({
+                            id_bank_soal_konversi: idSoal,
+                            id_level: idLevel,
+                            index: index,
+                            item_text: itemText,
+                        }),
+                    })
+                    .then(res => res.json())
+                    .then(data => console.log('Log drag berhasil:', data))
+                    .catch(err => console.error('Log drag gagal:', err));
             });
         }
 
