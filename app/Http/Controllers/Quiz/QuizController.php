@@ -31,6 +31,7 @@ class QuizController extends Controller
     protected $labelSkorModel;
     protected $ujianKonversiModel;
     protected $levelModel;
+    protected $visibleLimit = 5;
 
     public function __construct()
     {
@@ -64,9 +65,18 @@ class QuizController extends Controller
             $levelId = $level['id'];
 
             // Total aktif (status = 1)
-            $totalSoal     = $this->soalModel->where('id_level', $levelId)->where('status', 1)->count();
-            $totalKonversi = $this->konversiModel->setView('v_konversi')->where('id_level', $levelId)->where('status', 1)->count();
+            $totalSoal = min(
+                $this->soalModel->where('id_level', $levelId)->where('status', 1)->count(),
+                $this->visibleLimit
+            );
 
+            $totalKonversi = min(
+                $this->konversiModel->setView('v_konversi')
+                    ->where('id_level', $levelId)
+                    ->where('status', 1)
+                    ->count(),
+                $this->visibleLimit
+            );
             // Selesai (distinct)
             $completedSoal = $this->ujianModel
                 ->where('id_mahasiswa', $mahasiswa->id)
@@ -217,9 +227,11 @@ class QuizController extends Controller
         ->get();
 
     $result = [];
-    $visibleLimit = 5;
+    $visibleLimit = $this->visibleLimit;
     $firstActiveSet = false;
     $pairCount = 0;
+
+    $unlockNext = true;
 
     foreach ($soalList as $soal) {
         if ($pairCount >= $visibleLimit) break;
@@ -231,14 +243,45 @@ class QuizController extends Controller
             ->first();
 
         // cek status soal
-        $isDone = $this->ujianModel
+        $isPseudoDone = $this->ujianModel
             ->where('id_mahasiswa', $idMahasiswa)
             ->where('id_soal', $soal->id)
             ->where('status', 1)
             ->exists();
 
+        // cek konversi
+        $isKonversiDone = false;
+        if ($konversi) {
+            $isKonversiDone = $this->ujianKonversiModel
+                ->where('id_mahasiswa', $idMahasiswa)
+                ->where('id_soal_konversi', $konversi->id)
+                ->exists();
+        }
+
+        // =======================
+        // STATUS PSEUDOCODE
+        // =======================
+        if (!$unlockNext) {
+            $pseudoStatus = 'locked';
+        } elseif ($isPseudoDone) {
+            $pseudoStatus = 'done';
+        } else {
+            $pseudoStatus = 'active';
+        }
+
+        // =======================
+        // STATUS KONVERSI
+        // =======================
+        if (!$isPseudoDone) {
+            $konversiStatus = 'locked';
+        } elseif ($isKonversiDone) {
+            $konversiStatus = 'done';
+        } else {
+            $konversiStatus = 'active';
+        }
+
         // tentukan status
-        if ($isDone) {
+        /*if ($isDone) {
             $status = 'done';
         } else {
             if (!$firstActiveSet) {
@@ -247,7 +290,7 @@ class QuizController extends Controller
             } else {
                 $status = 'locked';
             }
-        }
+        }*/
 
         // ambil badge
         $badge = $this->labelSkorModel
@@ -262,9 +305,9 @@ class QuizController extends Controller
         $result[] = [
             'type' => 'soal',
             'id' => $soal->id,
-            'judul' => ($status === 'locked') ? null : $soal->judul,
+            'judul' => ($pseudoStatus === 'locked') ? null : $soal->judul,
             'difficulty' => $soal->difficulty,
-            'status' => $status,
+            'status' => $pseudoStatus,
             'badge' => $badge
         ];
 
@@ -275,13 +318,14 @@ class QuizController extends Controller
             $result[] = [
                 'type' => 'konversi',
                 'id' => $konversi->id,
-                'judul' => ($status === 'locked')
+                'judul' => ($konversiStatus === 'locked')
                     ? null
                     : ($konversi->judul_soal ?? $konversi->judul ?? null),
                 'difficulty' => $soal->difficulty,
-                'status' => $status
+                'status' => $konversiStatus
             ];
-        } else {
+        }
+        /*    } else {
             // fallback biar zigzag tidak rusak
             $result[] = [
                 'type' => 'konversi',
@@ -290,6 +334,13 @@ class QuizController extends Controller
                 'difficulty' => $soal->difficulty,
                 'status' => 'locked'
             ];
+        }*/
+
+        // =======================
+        // LOCK NEXT
+        // =======================
+        if (!$isPseudoDone || !$isKonversiDone) {
+            $unlockNext = false;
         }
 
         $pairCount++;
