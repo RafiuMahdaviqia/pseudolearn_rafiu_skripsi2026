@@ -23,13 +23,48 @@ class UjianKodeService
     public function tableUjianKode($request)
     {
         try {
-            $query = DB::table('v_ujian_kode')
-                ->selectRaw('id_mahasiswa, nim, name, MAX(id_kelas) as id_kelas, MAX(kelas_name) as kelas_name')
-                ->whereNull('deleted_at')
-                ->groupBy('id_mahasiswa', 'nim', 'name');
+            $search = $request->input('search.value', '');
+            $kelas  = $request->input('kelas', '');
+            $level  = $request->input('level', '');
+            $soal   = $request->input('soal', '');
 
-            $total = (clone $query)->get()->count();
+            $query = DB::table('v_mahasiswa as m')
+                ->selectRaw('
+                m.id_user   as id_mahasiswa,
+                m.nim,
+                m.name,
+                m.id_kelas,
+                m.kelas_name
+            ')
+                ->whereNull('m.deleted_at');
+
+            // Kalau ada filter level/soal, hanya tampilkan mahasiswa
+            // yang punya record di v_ujian_kode sesuai filter tsb
+            if (!empty($level) || !empty($soal)) {
+                $query->whereExists(function ($sub) use ($level, $soal) {
+                    $sub->from('v_ujian_kode as u')
+                        ->whereColumn('u.id_mahasiswa', 'm.id_user')
+                        ->whereNull('u.deleted_at');
+
+                    if (!empty($level)) $sub->where('u.id_level', $level);
+                    if (!empty($soal))  $sub->where('u.id_bank_soal_konversi', $soal);
+                });
+            }
+
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('m.name', 'like', "%{$search}%")
+                        ->orWhere('m.nim',  'like', "%{$search}%");
+                });
+            }
+
+            if (!empty($kelas)) {
+                $query->where('m.id_kelas', $kelas);
+            }
+
+            $total = (clone $query)->count();
             $data  = (clone $query)
+                ->orderBy('m.name', 'asc')
                 ->offset($request->input('start', 0))
                 ->limit($request->input('length', 10))
                 ->get();
