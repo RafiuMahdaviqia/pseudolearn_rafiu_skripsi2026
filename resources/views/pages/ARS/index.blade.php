@@ -13,28 +13,32 @@
     <div class="row">
         <div class="col-12 px-0">
             <div class="bg-white rounded-4 shadow-sm p-8">
-                
                 <div class="d-flex justify-content-between align-items-center mb-10">
-                   
                     <div class="d-flex gap-2">
+                        <a href="#" id="btn-export-ars" class="btn btn-success btn-sm">
+                            <i class="ki-outline ki-file-down"></i>
+                            Export Excel
+                        </a>
                         <input type="text" class="form-control form-control-sm w-250px" placeholder="Cari Mahasiswa" id="search-ars" />
                     </div>
-
                     <div class="d-flex gap-3 align-items-center">
-                        <select class="form-select form-select-sm" id="filter-kelas" data-control="select2"
-                            data-hide-search="true"> data-allow-clear="false">
+                        <select class="form-select form-select-sm"
+                                id="filter-kelas"
+                                data-control="select2"
+                                data-hide-search="true"
+                                data-allow-clear="false">
+                            <option value="">Semua Kelas</option>
                             @foreach ($list_kelas as $kelas)
                                 <option value="{{ $kelas['id'] }}">
                                     {{ $kelas['name'] }}
-                                    @if (!empty($kelas['angkatan'])) 
+                                    @if (!empty($kelas['angkatan']))
                                         ({{ $kelas['angkatan'] }})
                                     @endif
                                 </option>
                             @endforeach
-                            </select>
+                        </select>
                     </div>
                 </div>
-
                 <div class="table-responsive">
                     <table class="table table-striped" id="table-ars">
                         <thead>

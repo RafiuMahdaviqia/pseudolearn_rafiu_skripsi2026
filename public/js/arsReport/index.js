@@ -6,153 +6,111 @@ $(() => {
     blockUI.block();
     initTable();
     blockUI.release();
+
+    $('#filter-kelas').on('select2:select select2:unselect', function () {
+    reloadTable();
 });
 
-initTable = () => {
+    // search debounce
+    let debounceTimer;
+    $('#search-ars').on('keyup', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            tableArs.search(this.value).draw();
+        }, 300);
+    });
+
+    // EXPORT
+    $('#btn-export-ars').on('click', function () {
+
+        const kelas = $('#filter-kelas').val() || '';
+
+        window.location.href =
+            APP_URL + 'ars/export?kelas=' + kelas;
+    });
+});
+
+var tableArs;
+
+function initTable() {
     let kelas = $('#filter-kelas').val();
     return new Promise((resolve, reject) => {
-        var table = $("#table-ars").DataTable({
-            ajax: {
-                url: APP_URL + "ars/table",
-                type: "POST",
-                data: function (d) {
-                    d._token = $('meta[name="csrf-token"]').attr("content"),
-                    d.kelas = kelas || null;
-                },
+
+    window.tableArs = $("#table-ars").DataTable({
+        ajax: {
+    url: APP_URL + "ars/table",
+    type: "POST",
+    headers: {
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    },
+    data: function (d) {
+        d.kelas = $('#filter-kelas').val();
+    },
+    error: function (xhr) {
+        console.log("AJAX ERROR:", xhr.responseText);
+    }
+},
+        processing: true,
+        serverSide: true,
+        destroy: true,
+        responsive: false,
+        order: [[0, "desc"]],
+        columns: [
+            { data: null },
+            { data: "nim" },
+            { data: "name" },
+            { data: "kelas" },
+            { data: "total_ars" },
+            { data: "total_soal" },
+            { data: "total_waktu" },
+            { data: "id" }
+        ],
+        columnDefs: [
+            {
+                targets: 0,
+                render: (d, t, r, m) => m.row + 1
             },
-            processing: true,
-            serverSide: true,
-            destroy: true,
-            responsive: false,
-            order: [[0, "desc"]],
-            columns: [
-                {
-                    data: null,
-                    className: "text-center",
-                    orderable: true,
-                    searchable: false,
-                },
-                { 
-                    data: "nim", 
-                    orderable: true, 
-                    searchable: true
-                },
-                { 
-                    data: "name", 
-                    orderable: true, 
-                    searchable: true 
-                },
-                { 
-                    data: "kelas_name", 
-                    orderable: true, 
-                    searchable: true,
-                    className: "text-center"
-                },
-                { 
-                    data: "totalArs", 
-                    orderable: true, 
-                    searchable: true,
-                    className: "text-center"
-                },
-                { 
-                    data: "jumlahSoalTambahan", 
-                    orderable: true, 
-                    searchable: true,
-                    className: "text-center"
-                },
-                { 
-                    data: "totalWaktu", 
-                    orderable: true, 
-                    searchable: true,
-                    className: "text-center"
-                },
-                {
-                    data: "id",
-                    orderable: false,
-                    searchable: false,
-                    className: "text-center"
-                },
-            ],
-            columnDefs: [
-                {
-                    targets: 0,
-                    render: function (data, type, row, meta) {
-                        return meta.row + 1;
-                    },
-                },
-                {
-                    targets: 1,
-                    render: function (data, type, row) {
-                        return row.nim ?? '';
-                    },
-                },
-                {
-                    targets: 2,
-                    render: function (data, type, row) {
-                        return row.name ?? '';
-                    },
-                },
-                {
-                    targets: 3,
-                    render: function (data, type, row) {
-                        return row.kelas_name ?? '';
-                    },
-                },
-                {
-                    targets: 4,
-                    render: function (data, type, row) {
-                        return row.totalArs ?? '';
-                    },
-                },
-                {
-                    targets: 5,
-                    render: function (data, type, row) {
-                        return row.jumlahSoalTambahan ?? '';
-                    },
-                },
-                {
-                    targets: 6,
-                    render: function (data, type, row) {
-                        return row.totalWaktu ?? '';
-                    },
-                },
-                {
-                    targets: 7,
-                    render: function (data, type, row, meta) {
-                        return `
-                            <div class="d-flex justify-content-center">
-                                <button type="button" class="btn btn-sm btn-outline btn-outline-primary d-flex align-items-center gap-1 p-2" onclick="detail('${row.id}')">
-                                    <i class="ki-outline ki-eye"></i>
-                                    <span>Detail</span>
-                                </button>
-                            </div>
-                        `;
-                    },
-                },
-            ],
-            createdRow: function (row, data, dataIndex) {
-                $(row).attr("id", data.id || data[0]);
-            },
-            initComplete: function (settings, json) {
-                var debounceTimer;
-                $("#search-ars").on("keyup", function () {
-                    clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(function () {
-                        table.search($("#search-ars").val()).draw();
-                    }, 300);
-                });
-                if (table.state && table.state.loaded()) {
-                    $("#search-ars").val(table.state.loaded().search.search);
+            { targets: 1, render: (d) => d ?? '' },
+            { targets: 2, render: (d) => d ?? '' },
+            { targets: 3, render: (d, t, row) => row.kelas ?? '' },
+            { targets: 4, className: "text-center" },
+            { targets: 5, className: "text-center" },
+            {
+                targets: 6,
+                className: "text-center",
+                render: function (d, t, r) {
+                    const sec = parseInt(d || 0);
+
+                    const h = String(Math.floor(sec / 3600)).padStart(2, '0');
+                    const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+                    const s = String(sec % 60).padStart(2, '0');
+
+                    return `${h}:${m}:${s}`;
+                }},
+            {
+                targets: 7,
+                orderable: false,
+                render: function (d, t, row) {
+                    return `
+                        <div class="d-flex justify-content-center">
+                            <button class="btn btn-sm btn-outline-primary"
+                                onclick="detail('${row.id}')">
+                                <i class="ki-outline ki-eye"></i> Detail
+                            </button>
+                        </div>
+                    `;
                 }
-                resolve(true);
-            },
-        });
+            }
+        ]
     });
+});
 };
 
-$('#filter-kelas').on('change', function() {
-   initTable();
-});
+function reloadTable() {
+    if (tableArs) {
+        tableArs.ajax.reload();
+    }
+}
 
 function detail(id) {
     window.location.href = APP_URL + "ars/detail/" + id;
