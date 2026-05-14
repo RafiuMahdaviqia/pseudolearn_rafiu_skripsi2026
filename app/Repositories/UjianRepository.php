@@ -17,6 +17,7 @@ use App\Models\HistoryConfidence;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Prettus\Repository\Eloquent\BaseRepository;
+use App\Models\ArsResult;
     
 /**
  * Class KelasRepository.
@@ -90,7 +91,6 @@ class UjianRepository extends BaseRepository
 
                 $clean = trim($raw);
 
-                // jika string diawali & diakhiri tanda kutip → hapus
                 if ((Str::startsWith($clean, '"') && Str::endsWith($clean, '"')) ||
                     (Str::startsWith($clean, "'") && Str::endsWith($clean, "'"))) {
                     $clean = substr($clean, 1, -1);
@@ -98,14 +98,12 @@ class UjianRepository extends BaseRepository
 
                 $decoded = json_decode($clean, true);
 
-                // kalau masih gagal, coba sekali lagi (data bisa escaped)
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     $decoded = json_decode(stripslashes($clean), true);
                 }
 
                 return is_array($decoded) ? $decoded : [];
             };
-
 
             $kunciTipe = collect($decodeJson($soal->kunci_tipe_data))
                 ->filter(fn($r) => ($r['variabel'] ?? null) !== null)
@@ -116,7 +114,6 @@ class UjianRepository extends BaseRepository
                 ->values()
                 ->toArray();
 
-            // --- Bandingkan Tipe Data (urutan & nilai) ---
             $tipeMismatch = [];
             $isCorrectTipe = true;
 
@@ -140,7 +137,6 @@ class UjianRepository extends BaseRepository
                         ];
                     }
 
-                    // Simpan history jawaban tipe data
                     $historyJawabanTipe[] = [
                         'id' => (string) Str::uuid(),
                         'id_level' => $soal->id_level,
@@ -158,11 +154,9 @@ class UjianRepository extends BaseRepository
                 }
             }
 
-            // --- Bandingkan Algoritma (urutan & langkah) ---
             $algoMismatch = [];
             $isCorrectAlgo = true;
 
-            // Ambil hanya langkah dari kunci (semua, clue apapun)
             $kunciLangkah = array_map(fn($r)=>trim($r['langkah'] ?? ''), $kunciAlgo);
             $jawabLangkah = array_map(fn($r)=>trim($r['langkah'] ?? ''), $jawabanAlgo);
 
@@ -181,7 +175,6 @@ class UjianRepository extends BaseRepository
                         ];
                     }
 
-                    // Simpan history jawaban algoritma
                     $historyJawabanAlgo[] = [
                         'id' => (string) Str::uuid(),
                         'id_level' => $soal->id_level,
@@ -213,7 +206,6 @@ class UjianRepository extends BaseRepository
                 'deleted_at' => null,
             ];
 
-            // Simpan history confidence
             $dataHistoryConfidence = [
                 'id_level' => $soal->id_level,
                 'id_soal' => $soal->id,
@@ -264,7 +256,6 @@ class UjianRepository extends BaseRepository
 
                 [$label, $skor] = $this->determineLabelAndScore($totalDrag, $totalWaktuDetik);
 
-                // Cek apakah sudah ada data
                 $existing = $this->labelSkorModel
                     ->where('id_level', $soal->id_level)
                     ->where('id_soal', $soal->id)
@@ -272,14 +263,12 @@ class UjianRepository extends BaseRepository
                     ->first();
 
                 if ($existing) {
-                    // Update jika sudah ada
                     $existing->update([
                         'label' => $label,
                         'skor' => $skor,
                         'updated_at' => now(),
                     ]);
                 } else {
-                    // Insert jika belum ada
                     $this->labelSkorModel->create([
                         'id' => (string) Str::uuid(),
                         'id_level' => $soal->id_level,
@@ -289,6 +278,20 @@ class UjianRepository extends BaseRepository
                         'skor' => $skor,
                         'created_at' => now(),
                         'updated_at' => now(),
+                    ]);
+                }
+
+                $arsResult = ArsResult::where('id_mahasiswa', $idMahasiswa)
+                    ->where('id_level', $soal->id_level)
+                    ->where('id_soal', $soal->id)
+                    ->first();
+
+                if ($arsResult) {
+                    $arsResult->update([
+                        'pseudo_label'   => $label,
+                        'pseudo_score'   => $skor,
+                        'pseudo_langkah' => $totalDrag,      
+                        'pseudo_durasi'  => $totalWaktuDetik,
                     ]);
                 }
                     
@@ -327,7 +330,6 @@ class UjianRepository extends BaseRepository
                 if ($nyawa->nyawa > 0) {
                     $nyawa->nyawa -= 1;
 
-                    // kalau nyawa belum penuh dan tidak ada timer → set regen
                     if ($nyawa->next_regen_at === null && $nyawa->nyawa < $nyawa->max_nyawa) {
                         $nyawa->next_regen_at = now()->addMinutes(10);
                     }
