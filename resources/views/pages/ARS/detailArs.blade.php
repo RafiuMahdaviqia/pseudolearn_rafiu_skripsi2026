@@ -72,16 +72,17 @@
                                 <tr class="fw-semibold fs-6 text-gray-800 border-bottom border-gray-200">
                                     <th class="text-center">No</th>
                                     <th class="text-center">Level</th>
-                                    <th class="text-center">Soal</th>
-                                    <th class="text-center">Jenis Soal</th>
+                                    <th class="text-center">Soal Tambahan</th>
+                                    <th class="text-center">Batch</th>
                                     <th class="text-center">Difficulty</th>
-                                    <th class="text-center">Label</th>
-                                    <th class="text-center">Durasi</th>
-                                    <th class="text-center">Tanggal Pengerjaan</th>
+                                    <th class="text-center">Label Pseudo</th>
+                                    <th class="text-center">Durasi Pseudo</th>
+                                    <th class="text-center">Label Konversi</th>
+                                    <th class="text-center">Durasi Konversi</th>
+                                    <th class="text-center">Total Durasi</th>
+                                    <th class="text-center">Tanggal</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                            </tbody>
                         </table>
                     </div>
                 </div>
