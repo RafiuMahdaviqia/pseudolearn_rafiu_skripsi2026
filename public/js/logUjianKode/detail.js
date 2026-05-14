@@ -124,8 +124,8 @@ $(document).ready(function () {
         $("#info-soal").text(soalName || "-");
     }
 
-    function initFilters() {
-        if (initLevelId) return;
+    function initFiltersFromHiddenInputs() {
+        if (!initLevelId) return;
 
         // Pre-select level
         $("#filter-level").val(initLevelId).trigger("change.select2");
