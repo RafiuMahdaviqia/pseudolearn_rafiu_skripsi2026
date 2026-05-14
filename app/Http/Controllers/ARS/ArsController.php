@@ -5,18 +5,16 @@ namespace App\Http\Controllers\ARS;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\ArsReportService;
-use App\Models\Soal;
-use App\Models\Konversi;
-use App\Models\ArsResult;
 use App\Models\Level;
 use App\Models\Kelas;
 use App\Models\Mahasiswa;
+use App\Exports\ArsExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ArsController extends Controller
 {
     protected $arsReportService;
     protected $levelModel;
-    protected $soalModel;
     protected $kelasModel;
     protected $mahasiswaModel;
 
@@ -24,7 +22,6 @@ class ArsController extends Controller
     {
         $this->arsReportService = new ArsReportService();
         $this->levelModel = new Level();
-        $this->soalModel = new Soal();
         $this->kelasModel = new Kelas();
         $this->mahasiswaModel = new Mahasiswa();
     }
@@ -32,7 +29,6 @@ class ArsController extends Controller
     public function index()
     {
         $list_kelas = $this->kelasModel->get(['id', 'name', 'angkatan'])->toArray();
-        $list_kelas = collect($list_kelas)->prepend(['id' => '', 'name' => 'Semua Kelas', 'angkatan' => '']);
         $list_kelas = collect($list_kelas)->map(function ($item) {
             return [
                 'id' => $item['id'],
@@ -61,42 +57,88 @@ class ArsController extends Controller
 
     public function table(Request $request)
     {
-        $data = $this->arsReportService->table($request);
-        return $data;
+        try {
+            $data = $this->arsReportService->table($request);
+
+            return response()->json($this->arsReportService->table($request));
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                "error" => $e->getMessage(),
+                "line" => $e->getLine()
+            ], 500);
+        }
     }
 
     public function detail($id)
     {
-        // ambil data mahasiswa
         $mahasiswa = $this->mahasiswaModel
             ->setView('v_mahasiswa')
             ->where('id', $id)
             ->first();
 
-        // list level untuk dropdown
         $list_level = $this->levelModel
             ->orderBy('order', 'asc')
-            ->get(['id', 'name'])
-            ->toArray();
+            ->get(['id', 'name']);
 
-        // sementara default (nanti bisa dihitung dari query ARS)
-        $totalArs = 0;
-        $jumlahSoalTambahan = 0;
-        $totalWaktu = "00:00:00";
+        //ARS Summary
+        $ars = $this->arsReportService->getDetailArs($id, null);
 
         return view('pages.ARS.detailArs', [
             'title' => 'Detail ARS',
             'mahasiswa' => $mahasiswa,
             'list_level' => $list_level,
-            'totalArs' => $totalArs,
-            'jumlahSoalTambahan' => $jumlahSoalTambahan,
-            'totalWaktu' => $totalWaktu
+
+            'totalArs' => $ars['summary']['totalArs'],
+            'jumlahSoalTambahan' => $ars['summary']['jumlahSoalTambahan'],
+            'totalWaktu' => $ars['summary']['totalWaktu'],
         ]);
     }
 
     public function tableArsLog(Request $request)
     {
-        $data = $this->arsReportService->tableArsLog($request);
-        return $data;
+        return response()->json(
+            $this->arsReportService->tableArsLog($request)
+        );
+    }
+
+    public function runArs($idMahasiswa, Request $request)
+    {
+        $idLevel = $request->input('id_level');
+        $ars = $this->arsReportService->processArs($idMahasiswa, $idLevel);
+
+        return response()->json($ars);
+    }
+
+    public function getDetailArs(Request $request, $idMahasiswa)
+    {
+        $idLevel = $request->input('id_level');
+
+        return response()->json(
+            $this->arsReportService->getDetailArs($idMahasiswa, $idLevel)
+        );
+    }
+
+    public function export(Request $request)
+    {
+        $kelasNama = null;
+
+        if ($request->kelas) {
+            $kelas = Kelas::find($request->kelas);
+            if ($kelas) {
+                $kelasNama = str_replace(' ', '_', $kelas->name);
+            }
+        }
+        
+        if ($kelasNama) {
+            $filename = 'ARS_REPORT_' . $kelasNama . '_' . now()->timezone('Asia/Jakarta')->format('d-m-Y_H-i-s') . '.xlsx';
+        } else {
+            $filename = 'ARS_REPORT_' . now()->timezone('Asia/Jakarta')->format('d-m-Y_H-i-s') . '.xlsx';
+        }
+
+        return Excel::download(
+            new ArsExport($request->kelas),
+            $filename
+        );
     }
 }
