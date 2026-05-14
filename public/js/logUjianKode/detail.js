@@ -1,5 +1,7 @@
 $(document).ready(function () {
     const idMahasiswa = $("#idMahasiswa").val();
+    const initLevelId = $("#levelId").val();
+    const initSoalId = $("#soalId").val();
 
     $("#filter-level, #filter-soal").select2({
         minimumResultsForSearch: Infinity,
@@ -80,8 +82,8 @@ $(document).ready(function () {
                 orderable: false,
                 render: function (data) {
                     const levelId = $("#filter-level").val() || "";
-                    const soalId = $("#filter-soal").val() || "";
-                    const url = `/log-ujian-kode/detail-kode/${data.id}?id_mahasiswa=${idMahasiswa}&id_level=${levelId}&id_soal=${data.id_bank_soal_konversi}`;
+                    const filterSoalId = $("#filter-soal").val() || "";
+                    const url = `/log-ujian-kode/detail-kode/${data.id}?id_mahasiswa=${idMahasiswa}&id_level=${levelId}&id_soal=${filterSoalId}`;
                     return `<a href="${url}" class="btn btn-sm btn-info">
                                 <i class="ki-outline ki-code fs-5"></i> Lihat Kode
                             </a>`;
@@ -121,6 +123,53 @@ $(document).ready(function () {
         );
         $("#info-soal").text(soalName || "-");
     }
+
+    function initFilters() {
+        if (initLevelId) return;
+
+        // Pre-select level
+        $("#filter-level").val(initLevelId).trigger("change.select2");
+
+        // Load opsi soal untuk level tersebut
+        $.ajax({
+            url: "/bank-soal-konversi/getSoalByLevel",
+            method: "GET",
+            data: { level_id: initLevelId },
+            success: function (data) {
+                const $soalSelect = $("#filter-soal");
+                $soalSelect.empty().append('<option value="">Pilih Soal</option>');
+
+                $.each(data, function (i, soal) {
+                    $soalSelect.append(
+                        `<option value="${soal.id}">${soal.judul}</option>`,
+                    );
+                });
+
+                $soalSelect.select2("destroy").select2({
+                    minimumResultsForSearch: Infinity,
+                });
+
+                // Pre-select soal jika ada
+                if (initSoalId) {
+                    $soalSelect.val(initSoalId).trigger("change.select2");
+                }
+
+                // Update info card
+                const levelName = $("#filter-level").find("option:selected").text();
+                const soalName  = initSoalId
+                    ? $soalSelect.find("option:selected").text()
+                    : "";
+                updateInfoCard(levelName, soalName);
+
+                // Reload tabel dan stat dengan filter yang sudah ter-restore
+                table.ajax.reload();
+                refreshStats();
+            },
+        });
+    }
+
+    // Jalankan restore filter setelah DOM siap
+    initFiltersFromHiddenInputs();
 
     // Pilih level
     $("#filter-level").on("change", function () {
