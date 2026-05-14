@@ -28,7 +28,6 @@ Route::get('/', function () {
     return Auth::check() ? redirect('/dashboard') : redirect('/login');
 });
 
-        //Route::get('/test-ars', [SoalController::class, 'testArs']);
 Route::get('/login', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'authenticate'])->name('login.authenticate');
 
@@ -250,13 +249,14 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::get('/detail-konversi/{id}', [UjianKonversiController::class, 'detailKonversi'])->name('detailKonversi');
         });
 
-        //ARS
-        Route::prefix('ars')->name('ars.')->group(function() {
+        Route::prefix('ars')->name('ars.')->group(function () {
             Route::get('/', [ArsController::class, 'index'])->name('index');
-            Route::post('/table', [ArsController::class, 'table'])->name('table');
-            Route::get('/detail/{id}', [ArsController::class, 'detail'])->name('detail');
-            Route::post('/tableDetail', [ArsController::class, 'tableDetail'])->name('tableDetail');
-            Route::post('/tableArsLog', [ArsController::class, 'tableArsLog'])->name('tableArsLog');
+            Route::post('table', [ArsController::class, 'table'])->name('table');
+            Route::post('tableArsLog', [ArsController::class, 'tableArsLog'])->name('tableArsLog');
+            Route::get('detail/{id}', [ArsController::class, 'detail'])->name('detail');
+            Route::post('detail/table', [ArsController::class, 'getDetailArs'])->name('detail.table');
+            Route::post('run', [ArsController::class, 'runArs'])->name('run');
+            Route::get('/export', [ArsController::class, 'export'])->name('ars.export');
         });
 
         // Guide
