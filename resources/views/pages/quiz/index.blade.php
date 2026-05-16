@@ -103,14 +103,14 @@
                             $isLocked = $level['isLocked'] ?? true; // ambil status per level
                         @endphp
 
-                        <div class="col-md-3 col-6 mb-8">
+                        <div class="col-md-4 col-6 mb-8">
                             @if(!$isLocked)
                                 <a href="{{ route('quiz.question-list', ['level' => $level['id']]) }}"
                                     class="card hover-elevate-up border border-1 border-gray-100 parent-hover bg-light-success h-100">
                             @else
                                 <div class="card border bg-gray-200 h-100 position-relative">
                             @endif
-                                <div class="card-body p-6 mb-7">
+                                <div class="card-body p-6 mb-0">
                                     <div class="img-thumbnail mx-auto rounded-3 overflow-hidden d-flex justify-content-center align-items-center" style="width: 100%; height: 100%;">
                                         <img src="{{ $img }}" alt="{{ $level['name'] }}" style="object-fit:cover;max-width:60%;">
                                         @if($isLocked)
@@ -120,22 +120,42 @@
                                             </div>
                                         @endif
                                     </div>
-                                    <span class="text-primary-emphasis fs-4 fw-bold mt-5 d-flex justify-content-center">
-                                        Level {{ $level['order'] }}: {{ $level['name'] }}
+
+                                    {{--header: level + algopoin--}}
+                                    <div class="d-flex justify-content-between align-items-center mt-3 mb-2 px-2">
+                                        <span class="fw-bold fs-4 text-primary-emphasis">
+                                            Level {{ $level['order'] }}: {{ $level['name'] }}
                                     </span>
-                                    <div class="mt-4 text-start d-flex flex-column gap-3 ms-3">
-                                        <span class="text-primary-emphasis fs-7 fw-semibold">
+                                        <span class="fw-semibold fs-7 text-warning">
                                             <img src="{{ asset('assets/media/img/star.png') }}" alt="Total AlgoPoin" class="me-2" style="width:20px;">
                                             AlgoPoin: {{ $level['algopoin'] ?? 0 }}
                                         </span>
-                                        <span class="text-primary-emphasis fs-7 fw-semibold d-flex align-items-center">
-                                            <i class="ki-outline ki-book fs-3 me-3 text-warning"></i>
-                                            Soal Pseudocode: {{ $level['jumlahSoalPseudocode'] ?? 0 }}
-                                        </span>
-                                        <span class="text-primary-emphasis fs-7 fw-semibold d-flex align-items-center">
-                                            <i class="ki-outline ki-book fs-3 me-3 text-warning"></i>
-                                            Soal Konversi: {{ $level['jumlahSoalKonversi'] ?? 0 }}
-                                        </span>
+                                    </div>
+
+                                        {{--list soal--}}
+                                    <div class="d-flex flex-column mt-3 mb-2 px-2">
+                                        
+                                        <div class="fw-semibold fs-7 mb-1 text-success">Soal Utama</div>
+                                        <div class="d-flex align-items-center gap-1 fs-7 fw-semibold">
+                                            <i class="ki-outline ki-book fs-4 text-warning"></i>
+                                            Pseudocode: {{ $level['jumlahSoalPseudocode'] ?? 0 }}
+                                        </div>
+                                        <div class="d-flex align-items-center gap-1 fs-7 fw-semibold">
+                                            <i class="ki-outline ki-book fs-4 text-warning"></i>
+                                            Konversi: {{ $level['jumlahSoalKonversi'] ?? 0 }}
+                                        </div>
+
+                                        @if($level['showTambahan'] ?? false)
+                                            <div class="col-6">
+                                                <div class="fw-semibold fs-7 mb-1 text-success">Soal Tambahan</div>
+                                                <div class=" d-flex align-items-center gap-1 fs-7 text-success">
+                                                    Pseudocode: {{ $level['jumlahSoalPseudocode'] ?? 0 }}
+                                                </div>
+                                                <div class=" d-flex align-items-center gap-1 fs-7 text-success">
+                                                    Konversi: {{ $level['jumlahSoalKonversi'] ?? 0 }}
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @if(!$isLocked)
@@ -150,156 +170,6 @@
                         </div>
                     @endforelse
                 </div>
-
-                {{-- <div class="row my-2 px-3">
-                    <div class="col-md-3 col-6 mb-8">
-                        <a href="{{ route('quiz.question-list') }}" class="card hover-elevate-up border border-1 border-gray-100 parent-hover bg-light-success">
-                            <div class="card-body p-5">
-                                <div class="img-thumbnail mx-auto rounded-3 overflow-hidden d-flex justify-content-center align-items-center" style="width: 100%; height: 100%;">
-                                    <img src="{{ asset('assets/media/img/level-tipe-data.png') }}" alt="Top Image" style="object-fit: cover; max-width: 60%">
-                                </div>
-                                <span class="text-primary-emphasis fs-4 fw-bold mt-5 d-flex justify-content-center">
-                                    Level 1: Tipe Data
-                                </span>
-                                <div class="mt-4 text-start d-flex flex-column gap-3 ms-3">
-                                    <span class="text-primary-emphasis fs-7 fw-semibold">
-                                        <img src="{{ asset('assets/media/img/star.png') }}" alt="Total AlgoPoin" class="me-2" style="width: 20px;">
-                                        AlgoPoin: 100
-                                    </span>
-                                    <span class="text-primary-emphasis fs-7 fw-semibold d-flex align-items-center">
-                                        <i class="ki-duotone ki-book fs-3 me-3 text-warning">
-                                            <span class="path1"></span>
-                                            <span class="path2"></span>
-                                            <span class="path3"></span>
-                                            <span class="path4"></span>
-                                        </i>
-                                        Jumlah Soal: 10
-                                    </span>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-6 mb-8">
-                        <a class="card border bg-gray-200">
-                            <div class="card-body p-5">
-                                <div class="img-thumbnail mx-auto rounded-3 overflow-hidden d-flex justify-content-center align-items-center position-relative" style="width: 100%; height: 100%;">
-                                    <img src="{{ asset('assets/media/img/level-kondisi.png') }}" alt="Top Image" style="object-fit: cover; max-width: 60%; filter: brightness(0.5);">
-                                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.5);">
-                                        <img src="{{ asset('assets/media/img/lock.png') }}" alt="Lock" style="max-width:40%;">
-                                    </div>
-                                </div>
-                                <span class="text-primary-emphasis fs-4 fw-bold mt-5 d-flex justify-content-center">
-                                    Level 2: Kondisi
-                                </span>
-                                <div class="mt-4 text-start d-flex flex-column gap-3 ms-3">
-                                    <span class="text-primary-emphasis fs-7 fw-semibold">
-                                        <img src="{{ asset('assets/media/img/star.png') }}" alt="Total AlgoPoin" class="me-2" style="width: 20px;">
-                                        AlgoPoin: 0
-                                    </span>
-                                    <span class="text-primary-emphasis fs-7 fw-semibold d-flex align-items-center">
-                                        <i class="ki-duotone ki-book fs-3 me-3 text-warning">
-                                            <span class="path1"></span>
-                                            <span class="path2"></span>
-                                            <span class="path3"></span>
-                                            <span class="path4"></span>
-                                        </i>
-                                        Jumlah Soal: 5
-                                    </span>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-6 mb-8">
-                        <a class="card border bg-gray-200">
-                            <div class="card-body p-5">
-                                <div class="img-thumbnail mx-auto rounded-3 overflow-hidden d-flex justify-content-center align-items-center position-relative" style="width: 100%; height: 100%;">
-                                    <img src="{{ asset('assets/media/img/level-perulangan.png') }}" alt="Top Image" style="object-fit: cover; max-width: 60%; filter: brightness(0.5);">
-                                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.5);">
-                                        <img src="{{ asset('assets/media/img/lock.png') }}" alt="Lock" style="max-width:40%;">
-                                    </div>
-                                </div>
-                                <span class="text-primary-emphasis fs-4 fw-bold mt-5 d-flex justify-content-center">
-                                    Level 3: Perulangan
-                                </span>
-                                <div class="mt-4 text-start d-flex flex-column gap-3 ms-3">
-                                    <span class="text-primary-emphasis fs-7 fw-semibold">
-                                        <img src="{{ asset('assets/media/img/star.png') }}" alt="Total AlgoPoin" class="me-2" style="width: 20px;">
-                                        AlgoPoin: 0
-                                    </span>
-                                    <span class="text-primary-emphasis fs-7 fw-semibold d-flex align-items-center">
-                                        <i class="ki-duotone ki-book fs-3 me-3 text-warning">
-                                            <span class="path1"></span>
-                                            <span class="path2"></span>
-                                            <span class="path3"></span>
-                                            <span class="path4"></span>
-                                        </i>
-                                        Jumlah Soal: 5
-                                    </span>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-6 mb-8">
-                        <a  class="card border bg-gray-200">
-                            <div class="card-body p-5">
-                                <div class="img-thumbnail mx-auto rounded-3 overflow-hidden d-flex justify-content-center align-items-center position-relative" style="width: 100%; height: 100%;">
-                                    <img src="{{ asset('assets/media/img/level-fungsi.png') }}" alt="Top Image" style="object-fit: cover; max-width: 60%; filter: brightness(0.5);">
-                                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.5);">
-                                        <img src="{{ asset('assets/media/img/lock.png') }}" alt="Lock" style="max-width:40%;">
-                                    </div>
-                                </div>
-                                <span class="text-primary-emphasis fs-4 fw-bold mt-5 d-flex justify-content-center">
-                                    Level 4: Fungsi
-                                </span>
-                                <div class="mt-4 text-start d-flex flex-column gap-3 ms-3">
-                                    <span class="text-primary-emphasis fs-7 fw-semibold">
-                                        <img src="{{ asset('assets/media/img/star.png') }}" alt="Total AlgoPoin" class="me-2" style="width: 20px;">
-                                        AlgoPoin: 0
-                                    </span>
-                                    <span class="text-primary-emphasis fs-7 fw-semibold d-flex align-items-center">
-                                        <i class="ki-duotone ki-book fs-3 me-3 text-warning">
-                                            <span class="path1"></span>
-                                            <span class="path2"></span>
-                                            <span class="path3"></span>
-                                            <span class="path4"></span>
-                                        </i>
-                                        Jumlah Soal: 5
-                                    </span>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-6 mb-8">
-                        <a  class="card border bg-gray-200">
-                            <div class="card-body p-5">
-                                <div class="img-thumbnail mx-auto rounded-3 overflow-hidden d-flex justify-content-center align-items-center position-relative" style="width: 100%; height: 100%;">
-                                    <img src="{{ asset('assets/media/img/level-array.png') }}" alt="Top Image" style="object-fit: cover; max-width: 60%; filter: brightness(0.5);">
-                                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.5);">
-                                        <img src="{{ asset('assets/media/img/lock.png') }}" alt="Lock" style="max-width:40%;">
-                                    </div>
-                                </div>
-                                <span class="text-primary-emphasis fs-4 fw-bold mt-5 d-flex justify-content-center">
-                                    Level 5: Array
-                                </span>
-                                <div class="mt-4 text-start d-flex flex-column gap-3 ms-3">
-                                    <span class="text-primary-emphasis fs-7 fw-semibold">
-                                        <img src="{{ asset('assets/media/img/star.png') }}" alt="Total AlgoPoin" class="me-2" style="width: 20px;">
-                                        AlgoPoin: 0
-                                    </span>
-                                    <span class="text-primary-emphasis fs-7 fw-semibold d-flex align-items-center">
-                                        <i class="ki-duotone ki-book fs-3 me-3 text-warning">
-                                            <span class="path1"></span>
-                                            <span class="path2"></span>
-                                            <span class="path3"></span>
-                                            <span class="path4"></span>
-                                        </i>
-                                        Jumlah Soal: 5
-                                    </span>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                </div> --}}
             </div>
         </div>
     </div>
