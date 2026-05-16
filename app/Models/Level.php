@@ -6,6 +6,7 @@ use App\Core\BaseModel;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Level extends BaseModel
@@ -17,9 +18,12 @@ class Level extends BaseModel
     protected $fillable = [
         'id',
         'name',
+        'jumlah_soal',
         'image',
         'feedback_data_type',
         'feedback_algorithm',
+        'limit_soal',
+        'limit_ars',
         'order',
         'manual_active' // 0: nonaktif, 1: aktif
     ];
@@ -33,5 +37,20 @@ class Level extends BaseModel
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function ujian() : HasMany
+    {
+        return $this->hasMany(Ujian::class);
+    }
+
+    public function labelSkor() : HasMany
+    {
+        return $this->hasMany(LabelSkor::class);
+    }
+
+    public function soal() : HasMany
+    {
+        return $this->hasMany(Soal::class);
     }
 }

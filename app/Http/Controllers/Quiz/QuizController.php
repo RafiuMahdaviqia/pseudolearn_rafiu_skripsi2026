@@ -3,6 +3,8 @@
 
 namespace App\Http\Controllers\Quiz;
 
+use App\Enums\ClusterLabel;
+use App\Enums\SoalDifficulty;
 use App\Models\Soal;
 use App\Models\Level;
 use App\Models\Nyawa;
@@ -16,6 +18,7 @@ use App\Services\SoalService;
 use App\Services\LevelService;
 use App\Services\KonversiService;
 use App\Http\Controllers\Controller;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Models\ArsResult;
@@ -109,10 +112,10 @@ class QuizController extends Controller
                 ->where('status', 1)
                 ->whereNotIn('id', function ($q) use ($mahasiswa, $levelId) {
                     $q->select('id_soal')
-                      ->from((new Ujian)->getTable())
-                      ->where('id_mahasiswa', $mahasiswa->id)
-                      ->where('id_level', $levelId)
-                      ->where('status', 1);
+                        ->from((new Ujian)->getTable())
+                        ->where('id_mahasiswa', $mahasiswa->id)
+                        ->where('id_level', $levelId)
+                        ->where('status', 1);
                 })
                 ->orderBy('order', 'asc')
                 ->first();
@@ -123,9 +126,9 @@ class QuizController extends Controller
                 ->where('status', 1)
                 ->whereNotIn('id', function ($q) use ($mahasiswa, $levelId) {
                     $q->select('id_soal_konversi')
-                      ->from((new UjianKonversi)->getTable())
-                      ->where('id_mahasiswa', $mahasiswa->id)
-                      ->where('id_level', $levelId);
+                        ->from((new UjianKonversi)->getTable())
+                        ->where('id_mahasiswa', $mahasiswa->id)
+                        ->where('id_level', $levelId);
                 })
                 ->orderBy('order', 'asc')
                 ->first();
@@ -194,9 +197,9 @@ class QuizController extends Controller
             ->where('id_mahasiswa', $mahasiswa->id)
             ->whereNotNull('id_soal')
             ->whereIn('id_soal', function ($q) {
-            $q->select('id')
-              ->from((new Soal)->getTable())
-              ->where('status', 1);
+                $q->select('id')
+                    ->from((new Soal)->getTable())
+                    ->where('status', 1);
             })
             ->count();
 
@@ -216,28 +219,34 @@ class QuizController extends Controller
 
     public function questionList(Request $request)
     {
+        // 1) Ambil level dari query string, lalu muat semua soal aktif dan konversi aktif pada level itu.
         $levelId = $request->query('level');
-
+        $dataSoal = $this->soalModel->where('id_level', $levelId)->where('status', 1)->orderBy('order', 'asc')->get()->toArray();
+        $dataKonversi = $this->konversiModel->setView('v_konversi')->where('id_level', $levelId)->where('status', 1)->orderBy('order', 'asc')->get()->toArray();
+        
         $idUser = Auth::id();
         $idMahasiswa = $this->mahasiswaModel->where('id_user', $idUser)->value('id');
 
         $soalList = $this->soalModel
             ->where('id_level', $levelId)
             ->where('status', 1)
-            ->orderBy('order', 'asc')
-            ->get();
+            ->get()
+            ->toArray();
 
-        $result = [];
-        $visibleLimit = $this->visibleLimit;
-        $pairCount = 0;
-        $unlockNext = true;
+        $algopoin = $this->labelSkorModel
+                            ->where('id_mahasiswa', $idMahasiswa)
+                            ->whereNull('id_soal')
+                            ->whereNull('label')
+                            ->where('id_level', $levelId)
+                            ->sum('skor');
 
-        foreach ($soalList as $soal) {
-            if ($pairCount >= $visibleLimit) break;
-
-            $konversi = $this->konversiModel
-                ->setView('v_konversi')
-                ->where('id_soal', $soal->id)
+        // Index konversi by id_soal (single, not array)
+        $konversiBySoal = [];
+        foreach ($dataKonversi as $konversi) {
+            $konversiBySoal[$konversi['id_soal']] = $konversi;
+            $dataUjianKonversi = $this->ujianKonversiModel->where('id_mahasiswa', $idMahasiswa)
+                ->where('id_level', $levelId)
+                ->where('id_soal_konversi', $konversi['id'])
                 ->first();
 
             $isPseudoDone = $this->ujianModel
@@ -261,244 +270,82 @@ class QuizController extends Controller
             } else {
                 $pseudoStatus = 'active';
             }
+        }
 
-            if (!$isPseudoDone) {
-                $konversiStatus = 'locked';
-            } elseif ($isKonversiDone) {
-                $konversiStatus = 'done';
-            } else {
-                $konversiStatus = 'active';
-            }
+        // Index ujian by id_soal for quick lookup
+        $ujianBySoal = [];
+        foreach ($dataUjian as $ujian) {
+            $ujianBySoal[$ujian['id_soal']] = true;
+        }
 
+        // Gabungkan soal dan konversi sebagai dua entri berbeda dalam result
+        $result = [];
+        foreach ($dataSoal as $soal) {
+            $soalId = $soal['id'];
+            // Soal pseudocode
+            $soalEntry = $soal;
+            $soalEntry['type'] = 'soal';
+            $soalEntry['konversi'] = $konversiBySoal[$soalId] ?? null;
+            $soalEntry['ujianKonversi'] = null; // hanya untuk konversi
+            $soalEntry['status'] = isset($ujianBySoal[$soalId]) ? 'done' : 'locked';
+
+            // Ambil badge berdasarkan id_mahasiswa, id_level, id_soal
             $badge = $this->labelSkorModel
                 ->where('id_mahasiswa', $idMahasiswa)
                 ->where('id_level', $levelId)
                 ->where('id_soal', $soal->id)
                 ->value('label');
+            $soalEntry['badge'] = $badge ? $badge : null;
 
-            $result[] = [
-                'type'       => 'soal',
-                'id'         => $soal->id,
-                'judul'      => ($pseudoStatus === 'locked') ? null : $soal->judul,
-                'difficulty' => $soal->difficulty,
-                'status'     => $pseudoStatus,
-                'badge'      => $badge
-            ];
+            $result[] = $soalEntry;
 
-            if ($konversi) {
-                $result[] = [
-                    'type'       => 'konversi',
-                    'id'         => $konversi->id,
-                    'judul'      => ($konversiStatus === 'locked') ? null : ($konversi->judul_soal ?? $konversi->judul ?? null),
-                    'difficulty' => $soal->difficulty,
-                    'status'     => $konversiStatus
-                ];
+            // Soal konversi (jika ada)
+            if (isset($konversiBySoal[$soalId])) {
+                $konversi = $konversiBySoal[$soalId];
+                $konversiEntry = $konversi;
+                $konversiEntry['type'] = 'konversi';
+                $konversiEntry['soal'] = $soal; // referensi soal
+                $konversiEntry['badge'] = null; // badge hanya untuk soal utama
+                $konversiEntry['status'] = $konversi['ujianKonversi'] ? 'done' : 'locked';
+                $result[] = $konversiEntry;
             }
-
-            if (!$isPseudoDone || !$isKonversiDone) {
-                $unlockNext = false;
-            }
-
-            $pairCount++;
         }
 
-        // Progress ARS
-        $allMainDone    = collect($result)->every(fn($r) => $r['status'] === 'done');
-        $totalMainPairs = collect($result)->where('type', 'soal')->count();
-
-        if ($allMainDone && $totalMainPairs >= $visibleLimit) {
-
-            $arsService = new \App\Services\ArsReportService();
-            $arsData    = $arsService->processArs($idMahasiswa, $levelId);
-
-            Log::info('ARS DEBUG', [
-                'total_pair'  => $arsData['total_pair'],
-                'total_ars'   => $arsData['total_ars'],
-                'lastDiff'    => collect($arsData['data'])->last()['difficulty'] ?? null,
-                'pseudoLabel' => collect($arsData['data'])->last()['pseudo']['label'] ?? null,
-            ]);
-
-            $lastPair       = collect($arsData['data'])->last();
-            $lastDifficulty = $lastPair['difficulty'] ?? 'easy';
-            $pseudoLabel    = $lastPair['pseudo']['label'] ?? 'Struggling';
-            $konversiLabel  = $lastPair['konversi']['label'] ?? 'Struggling';
-
-            $isStable = in_array($pseudoLabel, ['Ideal', 'Normal']) &&
-                        in_array($konversiLabel, ['Ideal', 'Normal']);
-
-            $result = array_values(collect($result)
-                ->filter(fn($r) => !isset($r['is_tambahan']) || $r['is_tambahan'] === false)
-                ->toArray());
-
-            // Soal ARS finish
-            $arsResultDone = \App\Models\ArsResult::where('id_mahasiswa', $idMahasiswa)
-                ->where('id_level', $levelId)
-                ->whereNotNull('pseudo_label')
-                ->whereNotNull('konversi_label')
-                ->orderBy('created_at', 'asc')
-                ->get();
-
-            foreach ($arsResultDone as $arsItem) {
-                $soalArs = $this->soalModel->find($arsItem->id_soal);
-                if (!$soalArs) continue;
-
-                $konversiArs = $this->konversiModel
-                    ->setView('v_konversi')
-                    ->where('id_soal', $soalArs->id)
-                    ->first();
-
-                $result[] = [
-                    'type'        => 'soal',
-                    'id'          => $soalArs->id,
-                    'judul'       => $soalArs->judul,
-                    'difficulty'  => $soalArs->difficulty,
-                    'status'      => 'done',
-                    'badge'       => null,
-                    'is_tambahan' => true,
-                    'batch'       => $arsItem->ars_batch,
-                ];
-
-                if ($konversiArs) {
-                    $result[] = [
-                        'type'        => 'konversi',
-                        'id'          => $konversiArs->id,
-                        'judul'       => $konversiArs->judul_soal ?? $konversiArs->judul ?? null,
-                        'difficulty'  => $soalArs->difficulty,
-                        'status'      => 'done',
-                        'is_tambahan' => true,
-                        'batch'       => $arsItem->ars_batch,
-                    ];
-                }
+        // Atur status final: 
+        // 1. Semua 'done' tetap done
+        // 2. Satu soal/konversi pertama yang tidak done => active
+        // 3. Sisanya => locked
+        $firstActiveSet = false;
+        foreach ($result as $i => $row) {
+            if ($row['status'] === 'done') {
+                continue;
             }
-
-            // Soal ARS belum selesai
-            $arsResultAktif = ArsResult::where('id_mahasiswa', $idMahasiswa)
-                ->where('id_level', $levelId)
-                ->whereNull('konversi_label')
-                ->orderBy('created_at', 'asc')
-                ->get();
-
-            foreach ($arsResultAktif as $arsItem) {
-                $soalArs = $this->soalModel->find($arsItem->id_soal);
-                if (!$soalArs) continue;
-
-                $konversiArs = $this->konversiModel
-                    ->setView('v_konversi')
-                    ->where('id_soal', $soalArs->id)
-                    ->first();
-
-                $isPseudoDone = $this->ujianModel
-                    ->where('id_mahasiswa', $idMahasiswa)
-                    ->where('id_soal', $soalArs->id)
-                    ->where('status', 1)
-                    ->exists();
-
-                $isKonversiDone = false;
-                if ($konversiArs) {
-                    $isKonversiDone = $this->ujianKonversiModel
-                        ->where('id_mahasiswa', $idMahasiswa)
-                        ->where('id_soal_konversi', $konversiArs->id)
-                        ->exists();
-                }
-
-                $result[] = [
-                    'type'        => 'soal',
-                    'id'          => $soalArs->id,
-                    'judul'       => $soalArs->judul,
-                    'difficulty'  => $soalArs->difficulty,
-                    'status'      => $isPseudoDone ? 'done' : 'active',
-                    'badge'       => null,
-                    'is_tambahan' => true,
-                    'batch'       => $arsItem->ars_batch,
-                ];
-
-                if ($konversiArs) {
-                    $result[] = [
-                        'type'        => 'konversi',
-                        'id'          => $konversiArs->id,
-                        'judul'       => $konversiArs->judul_soal ?? $konversiArs->judul ?? null,
-                        'difficulty'  => $soalArs->difficulty,
-                        'status'      => !$isPseudoDone ? 'locked' : ($isKonversiDone ? 'done' : 'active'),
-                        'is_tambahan' => true,
-                        'batch'       => $arsItem->ars_batch,
-                    ];
-                }
-            }
-
-            // Tahan soal baru jika belum selesai
-            $adaYangBelumSelesai = ArsResult::where('id_mahasiswa', $idMahasiswa)
-                ->where('id_level', $levelId)
-                ->whereNull('konversi_label')
-                ->exists();
-
-            if ($isStable && $lastDifficulty === 'hard') {
-
-            } elseif (!$adaYangBelumSelesai && !$isStable && $lastDifficulty === 'hard') {
-                $soalTambahan = $this->appendSoalTambahan($result, $idMahasiswa, $levelId, 'hard', true, $arsData['batch_count']);
-
-                if ($soalTambahan) {
-                    $exists = ArsResult::where('id_mahasiswa', $idMahasiswa)
-                        ->where('id_level', $levelId)
-                        ->where('id_soal', $soalTambahan['id'])
-                        ->exists();
-
-                    if (!$exists) {
-                        $jumlahSoalTambahan = ArsResult::where('id_mahasiswa', $idMahasiswa)
-                            ->where('id_level', $levelId)
-                            ->count();
-
-                        ArsResult::create([
-                            'id'           => Str::uuid(),
-                            'id_mahasiswa' => $idMahasiswa,
-                            'id_level'     => $levelId,
-                            'id_soal'      => $soalTambahan['id'],
-                            'ars_batch'    => floor($jumlahSoalTambahan / 5) + 1,
-                            'difficulty'   => $soalTambahan['difficulty'],
-                        ]);
-                    }
-                }
-
-            } elseif (!$adaYangBelumSelesai && $isStable && $lastDifficulty !== 'hard') {
-                $nextDifficulty = $this->getProgressDifficulty($lastDifficulty);
-                $this->appendSoalTambahan($result, $idMahasiswa, $levelId, $nextDifficulty, false, $arsData['batch_count']);
-
+            if (!$firstActiveSet) {
+                $result[$i]['status'] = 'active';
+                $firstActiveSet = true;
             } else {
-                if (!$adaYangBelumSelesai && $arsData['total_ars'] > 0) {
-                    $nextDifficulty = $this->getNextDifficulty($lastDifficulty);
-                    $soalTambahan   = $this->appendSoalTambahan($result, $idMahasiswa, $levelId, $nextDifficulty, true, $arsData['batch_count']);
-
-                    if ($soalTambahan) {
-                        $exists = ArsResult::where('id_mahasiswa', $idMahasiswa)
-                            ->where('id_level', $levelId)
-                            ->where('id_soal', $soalTambahan['id'])
-                            ->exists();
-
-                        if (!$exists) {
-                            $jumlahSoalTambahan = ArsResult::where('id_mahasiswa', $idMahasiswa)
-                                ->where('id_level', $levelId)
-                                ->count();
-
-                            ArsResult::create([
-                                'id'           => Str::uuid(),
-                                'id_mahasiswa' => $idMahasiswa,
-                                'id_level'     => $levelId,
-                                'id_soal'      => $soalTambahan['id'],
-                                'ars_batch'    => floor($jumlahSoalTambahan / 5) + 1,
-                                'difficulty'   => $soalTambahan['difficulty'],
-                            ]);
-                        }
-                    }
-                }
+                $result[$i]['status'] = 'locked';
             }
         }
 
-        $algopoin = $this->labelSkorModel
-            ->where('id_mahasiswa', $idMahasiswa)
-            ->whereNull('id_soal')
-            ->whereNull('label')
-            ->where('id_level', $levelId)
-            ->sum('skor');
+        // Ambil hanya nilai konversi untuk id konversi yang ada di $dataKonversi
+        $konversiIds = array_column($dataKonversi, 'id');
 
+        if (empty($konversiIds)) {
+            $nilaiKonversiList = [];
+        } else {
+            $nilaiKonversiList = $this->ujianKonversiModel
+                ->setView('v_ujian_konversi')
+                ->where('id_mahasiswa', $idMahasiswa)
+                ->where('id_level', $levelId)
+                ->whereIn('id_soal_konversi', $konversiIds)
+                ->whereNotNull('nilai')
+                ->orderBy('created_at', 'asc')
+                ->pluck('nilai', 'judul_soal') // atau 'judul_soal' jika tetap ingin pakai judul
+                ->toArray();
+        }
+
+        // 9) Siapkan metadata level dan jumlah soal konversi untuk ditampilkan di header/summary halaman.
         $dataLevel = $this->levelModel->find($levelId);
 
         $jumlahSoalKonversi = $this->konversiModel
@@ -507,7 +354,13 @@ class QuizController extends Controller
             ->count();
 
         $nyawa = Nyawa::where('id_user', $idUser)->first();
+
+        // Check and regenerate lives (1 life per 10 minutes)
         $nyawa->checkAndRegenerate();
+
+        // 11) Kirim data akhir ke halaman daftar soal.
+
+        // dd($result);
 
         return view('pages.quiz.question-list', [
             'title'             => 'List Soal',
@@ -688,5 +541,315 @@ class QuizController extends Controller
             $this->labelSkorModel->insert($insertData);
             return response()->json(['message' => 'Skor berhasil disimpan.', 'avgSkor' => $averageSkor]);
         }
+    }
+
+    public function listQuestion(Request $request): View
+    {
+        $validated = $request->validate([
+            'level' => ['required'],
+        ]);
+
+        $level = Level::find($validated['level']);
+        abort_if($level === null, 404, 'Level not found.');
+
+        $user = Auth::getUser();
+        abort_if($user === null, 401);
+
+        $mahasiswa = $user->mahasiswa()->first();
+        abort_if($mahasiswa === null, 404, 'Mahasiswa not found.');
+
+        $targetDifficulty = SoalDifficulty::EASY;
+
+        $latestUjian = Ujian::query()
+            ->where('id_level', $level->id)
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->whereNotNull('id_soal')
+            ->orderBy('created_at', 'desc')
+            ->first(['id_soal']);
+
+        if ($latestUjian !== null && !empty($latestUjian->id_soal)) {
+            $latestSoalDifficulty = Soal::query()
+                ->whereKey($latestUjian->id_soal)
+                ->value('difficulty');
+
+            $currentDifficulty = SoalDifficulty::tryFrom((string) $latestSoalDifficulty) ?? SoalDifficulty::EASY;
+
+            $latestLabel = LabelSkor::query()
+                ->where('id_mahasiswa', $mahasiswa->id)
+                ->where('id_level', $level->id)
+                ->where('id_soal', $latestUjian->id_soal)
+                ->whereNotNull('label')
+                ->orderBy('created_at', 'desc')
+                ->value('label');
+
+            $clusterLabel = ClusterLabel::tryFrom((string) $latestLabel);
+
+            if ($clusterLabel === null) {
+                $targetDifficulty = $currentDifficulty;
+            } else {
+                $nextDifficultyIndex = match ($clusterLabel) {
+                    ClusterLabel::IDEAL, ClusterLabel::NORMAL => $currentDifficulty->index() + 1,
+                    ClusterLabel::STRUGGLING, ClusterLabel::GAMING_THE_SYSTEM => $currentDifficulty->index(),
+                };
+
+                $targetDifficulty = SoalDifficulty::fromIndex($nextDifficultyIndex) ?? $currentDifficulty;
+            }
+        }
+
+        $difficulty = $targetDifficulty->value;
+
+        $allSoal = Soal::query()
+            ->where('id_level', $level->id)
+            ->where('status', 1)
+            ->orderBy('order', 'asc')
+            ->get();
+
+        $allSoalById = $allSoal->keyBy('id');
+
+        $doneSoalIds = Ujian::query()
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->where('id_level', $level->id)
+            ->whereNotNull('id_soal')
+            ->where('status', 1)
+            ->pluck('id_soal')
+            ->all();
+
+        $doneSoalMap = $doneSoalIds === [] ? [] : array_fill_keys($doneSoalIds, true);
+
+        $shouldIncreaseLimit = false;
+        $baseLimit = (int) ($level->limit_soal ?? 0);
+        $extraLimit = $shouldIncreaseLimit ? (int) ($level->limit_ars ?? 0) : 0;
+        $effectiveLimit = max(0, $baseLimit + $extraLimit);
+
+        $ujianBySoal = Ujian::query()
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->where('id_level', $level->id)
+            ->whereNotNull('id_soal')
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->groupBy('id_soal');
+
+        $firstAttemptBySoal = $ujianBySoal->map(fn($items) => $items->first()->created_at);
+
+        $historySoalIdsOrdered = $firstAttemptBySoal
+            ->sortBy(fn($createdAt) => $createdAt ? $createdAt->getTimestamp() : 0) // oldest first
+            ->keys()
+            ->values();
+
+        if ($historySoalIdsOrdered->count() > $effectiveLimit) {
+            $historySoalIdsOrdered = $historySoalIdsOrdered
+                ->take($effectiveLimit)
+                ->values();
+        }
+
+        $historyCount = $historySoalIdsOrdered->count();
+        $shouldAppendNew = $historyCount < $effectiveLimit;
+
+        $appendSoalId = null;
+        if ($shouldAppendNew) {
+            $candidateSoalIds = $allSoal
+                ->where('difficulty', $difficulty)
+                ->pluck('id')
+                ->values();
+
+            $historySoalIdSet = $historySoalIdsOrdered->flip();
+
+            if ($candidateSoalIds->isNotEmpty()) {
+                $availableSoalIds = $candidateSoalIds
+                    ->reject(fn($soalId) => $historySoalIdSet->has($soalId))
+                    ->values();
+
+                if ($availableSoalIds->isNotEmpty()) {
+                    $appendSoalId = $availableSoalIds->shuffle()->first();
+                } else {
+                    $repeatCandidates = $candidateSoalIds
+                        ->filter(fn($soalId) => isset($doneSoalMap[$soalId]))
+                        ->values();
+
+                    if ($repeatCandidates->isEmpty()) {
+                        $repeatCandidates = $historySoalIdsOrdered
+                            ->filter(fn($soalId) => isset($doneSoalMap[$soalId]))
+                            ->values();
+                    }
+
+                    if ($repeatCandidates->isNotEmpty()) {
+                        $appendSoalId = $repeatCandidates->shuffle()->first();
+                    }
+                }
+            } else {
+                $repeatCandidates = $historySoalIdsOrdered
+                    ->filter(fn($soalId) => isset($doneSoalMap[$soalId]))
+                    ->values();
+
+                if ($repeatCandidates->isNotEmpty()) {
+                    $appendSoalId = $repeatCandidates->shuffle()->first();
+                }
+            }
+        }
+
+        $orderedSoalIds = $historySoalIdsOrdered;
+        if ($appendSoalId !== null) {
+            $orderedSoalIds = $orderedSoalIds
+                ->concat([$appendSoalId])
+                ->values();
+        }
+
+        $orderedSoalIdsArray = $orderedSoalIds->all();
+
+        $dataKonversi = [];
+        if ($orderedSoalIdsArray !== []) {
+            $dataKonversi = $this->konversiModel
+                ->newQuery()
+                ->select([
+                    'konversi.id',
+                    'konversi.id_level',
+                    'konversi.id_soal',
+                    's.judul as judul_soal',
+                    's.soal as soal_name',
+                    'konversi.jawaban',
+                    'konversi.output',
+                    'konversi.bobot',
+                    'konversi.created_at',
+                    'konversi.updated_at',
+                    's.status',
+                    's.order',
+                ])
+                ->join('soal as s', 's.id', '=', 'konversi.id_soal')
+                ->where('konversi.id_level', $level->id)
+                ->where('s.status', 1)
+                ->whereIn('konversi.id_soal', $orderedSoalIdsArray)
+                ->orderBy('s.order', 'asc')
+                ->get()
+                ->toArray();
+        }
+
+        $konversiIds = array_values(array_unique(array_column($dataKonversi, 'id')));
+        $ujianKonversiById = [];
+
+        if ($konversiIds !== []) {
+            $ujianKonversiById = $this->ujianKonversiModel
+                ->where('id_mahasiswa', $mahasiswa->id)
+                ->where('id_level', $level->id)
+                ->whereIn('id_soal_konversi', $konversiIds)
+                ->orderBy('created_at', 'asc')
+                ->get()
+                ->keyBy('id_soal_konversi')
+                ->map(fn($item) => $item->toArray())
+                ->toArray();
+        }
+
+        $konversiBySoal = [];
+        $konversiById = [];
+        foreach ($dataKonversi as $konversi) {
+            $konversi['ujianKonversi'] = $ujianKonversiById[$konversi['id']] ?? null;
+            $konversiBySoal[$konversi['id_soal']] = $konversi;
+            $konversiById[$konversi['id']] = $konversi;
+        }
+
+        $badgeBySoal = [];
+        if ($orderedSoalIdsArray !== []) {
+            $badgeBySoal = LabelSkor::query()
+                ->where('id_mahasiswa', $mahasiswa->id)
+                ->where('id_level', $level->id)
+                ->whereIn('id_soal', $orderedSoalIdsArray)
+                ->pluck('label', 'id_soal')
+                ->toArray();
+        }
+
+        $result = [];
+        foreach ($orderedSoalIdsArray as $soalId) {
+            $soalModel = $allSoalById->get($soalId);
+            if (! $soalModel) {
+                continue;
+            }
+
+            $soalPayload = $soalModel->toArray();
+
+            $soalEntry = $soalPayload;
+            $soalEntry['type'] = 'soal';
+            $soalEntry['konversi'] = $konversiBySoal[$soalId] ?? null;
+            $soalEntry['ujianKonversi'] = null;
+            $soalEntry['status'] = isset($doneSoalMap[$soalId]) ? 'done' : 'locked';
+            $soalEntry['badge'] = $badgeBySoal[$soalId] ?? null;
+            $result[] = $soalEntry;
+
+            if (isset($konversiBySoal[$soalId])) {
+                $konversi = $konversiBySoal[$soalId];
+                $konversiEntry = $konversi;
+                $konversiEntry['type'] = 'konversi';
+                $konversiEntry['soal'] = $soalPayload;
+                $konversiEntry['badge'] = null;
+                $konversiEntry['status'] = $konversi['ujianKonversi'] ? 'done' : 'locked';
+                $result[] = $konversiEntry;
+            }
+        }
+
+        $firstActiveSet = false;
+        foreach ($result as $index => $row) {
+            if ($row['status'] === 'done') {
+                continue;
+            }
+
+            if (! $firstActiveSet) {
+                $result[$index]['status'] = 'active';
+                $firstActiveSet = true;
+                continue;
+            }
+
+            $result[$index]['status'] = 'locked';
+        }
+
+        $algopoin = LabelSkor::query()
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->whereNull('id_soal')
+            ->whereNull('label')
+            ->where('id_level', $level->id)
+            ->sum('skor');
+
+        $konversiIdsForNilai = array_keys($konversiById);
+        $nilaiKonversiList = [];
+
+        if ($konversiIdsForNilai !== []) {
+            $nilaiRows = $this->ujianKonversiModel
+                ->where('id_mahasiswa', $mahasiswa->id)
+                ->where('id_level', $level->id)
+                ->whereIn('id_soal_konversi', $konversiIdsForNilai)
+                ->whereNotNull('nilai')
+                ->orderBy('created_at', 'asc')
+                ->get(['id_soal_konversi', 'nilai']);
+
+            foreach ($nilaiRows as $row) {
+                $konversi = $konversiById[$row->id_soal_konversi] ?? null;
+                if ($konversi === null) {
+                    continue;
+                }
+
+                $judul = $konversi['judul_soal']
+                    ?? $konversi['judul']
+                    ?? ($konversi['soal']['judul'] ?? ('Konversi ' . $row->id_soal_konversi));
+                $nilaiKonversiList[$judul] = $row->nilai;
+            }
+        }
+
+        $jumlahSoalKonversi = count($dataKonversi);
+        $nyawa = Nyawa::where('id_user', $user->id)->first();
+
+        // Check and regenerate lives (1 life per 10 minutes)
+        if ($nyawa) {
+            $nyawa->checkAndRegenerate();
+        }
+
+        return view('pages.quiz.question-list', [
+            'title' => 'List Soal',
+            'dataSoal' => $result,
+            'algopoin' => $algopoin,
+            'levelId' => $level->id,
+            'dataLevel' => $level,
+            'nilaiKonversiList' => $nilaiKonversiList,
+            'jumlahSoalKonversi' => $jumlahSoalKonversi,
+            'lives' => $nyawa?->nyawa ?? 0,
+            'max_lives' => $nyawa?->max_nyawa ?? 0,
+            'next_regen_at' => $nyawa?->next_regen_at
+        ]);
     }
 }

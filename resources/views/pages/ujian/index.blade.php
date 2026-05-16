@@ -171,6 +171,7 @@
                                                         Waktu Pengerjaan <span class="fw-bolder" id="timer-ujian">00:00:00</span>
                                                     </div>
                                                     <div class="d-flex align-items-center gap-7">
+                                                        <span style="color: white">{{ $soal->difficulty }}</span>
                                                         <button class="btn btn-primary btn-sm d-flex align-items-center px-3 py-2 fw-semibold" 
                                                             style="font-size: 0.95rem; box-shadow: -2px 2px 8px #0000004d;" onclick="openModalGuide()">
                                                             <img src="{{ asset('assets/media/img/iconbook.png') }}" class="me-2" style="height: 1.3em;"> Lihat Panduan

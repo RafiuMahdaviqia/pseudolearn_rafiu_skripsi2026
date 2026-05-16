@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Core\BaseModel;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Mahasiswa extends BaseModel
 {
@@ -33,5 +35,25 @@ class Mahasiswa extends BaseModel
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function ujian() : HasMany
+    {
+        return $this->hasMany(Ujian::class);
+    }
+
+    public function labelSkor() : HasMany
+    {
+        return $this->hasMany(LabelSkor::class);
+    }
+
+    public function user() : BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function kelas() : BelongsTo
+    {
+        return $this->belongsTo(Kelas::class);
     }
 }

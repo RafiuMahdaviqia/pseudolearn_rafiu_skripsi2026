@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use App\Core\BaseModel;
+use App\Enums\SoalDifficulty;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Soal extends BaseModel
@@ -23,6 +26,7 @@ class Soal extends BaseModel
         'kunci_algoritma',
         'order',
         'status',
+        'difficulty',
     ];
 
     protected $casts = [
@@ -39,5 +43,25 @@ class Soal extends BaseModel
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function konversi() : HasMany
+    {
+        return $this->hasMany(Konversi::class, 'id_soal');
+    }
+
+    public function ujian() : HasMany
+    {
+        return $this->hasMany(Ujian::class, 'id_soal');
+    }
+
+    public function labelSkor() : HasMany
+    {
+        return $this->hasMany(LabelSkor::class, 'id_soal');
+    }
+
+    public function level() : BelongsTo
+    {
+        return $this->belongsTo(Level::class, 'id_level');
     }
 }

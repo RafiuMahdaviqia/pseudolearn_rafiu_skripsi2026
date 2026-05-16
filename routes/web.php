@@ -22,6 +22,7 @@ use App\Http\Controllers\LogActivity\LogActivityController;
 use App\Http\Controllers\LogChatbot\LogChatbotController;
 use App\Http\Controllers\LogDataChatbot\LogDataChatbot as LogDataChatbotController;
 use App\Http\Controllers\Overlapping\OverlappingController;
+use App\Http\Controllers\Quiz\QuestionListRefactorReferenceController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
 use App\Http\Controllers\ARS\ArsController;
 use App\Models\Setting;
@@ -49,8 +50,10 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
     Route::middleware('role:mahasiswa')->group(function() {
         Route::prefix('quiz')->name('quiz.')->group(function() {
             Route::get('/', [QuizController::class, 'index'])->name('index');
-            Route::get('/question-list', [QuizController::class, 'questionList'])->name('question-list');
+            Route::get('/question-list-z', [QuizController::class, 'questionList'])->name('question-list');
             Route::post('/calculateAvgSkor', [QuizController::class, 'calculateAvgSkor'])->name('calculateAvgSkor');
+            Route::get('/question-list', [QuizController::class, 'listQuestion'])->name('question-list-z');
+            Route::get('/question-list-v', [QuestionListRefactorReferenceController::class, 'questionList'])->name('question-list-v');
         });
 
         Route::prefix('leaderboard')->name('leaderboard.')->group(function() {

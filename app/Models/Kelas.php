@@ -6,6 +6,7 @@ use App\Core\BaseModel;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Kelas extends BaseModel
@@ -29,5 +30,10 @@ class Kelas extends BaseModel
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function mahasiswa() : HasMany
+    {
+        return $this->hasMany(Mahasiswa::class);
     }
 }
