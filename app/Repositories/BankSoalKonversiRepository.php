@@ -27,7 +27,7 @@ class BankSoalKonversiRepository
             'soal.judul as soal',
             'bank_soal_konversi.jawaban',
             'bank_soal_konversi.output',
-            'bank_soal_konversi.difficulty'
+            'bank_soal_konversi.order'
         )
         ->leftJoin('level', 'level.id', '=', 'bank_soal_konversi.id_level')
         ->leftJoin('soal', 'soal.id', '=', 'bank_soal_konversi.id_soal');
@@ -39,7 +39,7 @@ class BankSoalKonversiRepository
     }
 
     // Order
-    $query->orderBy('bank_soal_konversi.difficulty', 'asc')
+    $query->orderBy('bank_soal_konversi.order', 'asc')
           ->orderBy('bank_soal_konversi.created_at', 'asc');
 
     return DataTables::of($query)
@@ -75,11 +75,11 @@ class BankSoalKonversiRepository
         return DB::table('bank_soal_konversi')
             ->leftJoin('soal', 'soal.id', '=', 'bank_soal_konversi.id_soal')
             ->where('bank_soal_konversi.id_level', $levelId)
-            ->orderBy('bank_soal_konversi.difficulty', 'asc')
+            ->orderBy('bank_soal_konversi.order', 'asc')
             ->orderBy('bank_soal_konversi.created_at', 'asc')
             ->select(
                 'bank_soal_konversi.id',
-                'bank_soal_konversi.difficulty',
+                'bank_soal_konversi.order',
                 'bank_soal_konversi.id_soal',
                 'soal.judul as judul'
             )
@@ -91,10 +91,10 @@ class BankSoalKonversiRepository
         DB::beginTransaction();
         try {
             foreach ($difficulties as $item) {
-                if (!isset($item['id'], $item['difficulty'])) continue;
+                if (!isset($item['id'], $item['order'])) continue;
                 DB::table('bank_soal_konversi')
                     ->where('id', $item['id'])
-                    ->update(['difficulty' => (int) $item['difficulty']]);
+                    ->update(['order' => (int) $item['order']]);
             }
             DB::commit();
             return true;
