@@ -64,7 +64,7 @@ function submitKonversi() {
     });
 
     $.ajax({
-        url: APP_URL + 'code-program/submit-konversi',
+        url: APP_URL + 'ujian-kode/submit-konversi',
         type: 'POST',
         data: {
             _token: $('meta[name="csrf-token"]').attr('content'),

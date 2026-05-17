@@ -199,7 +199,7 @@
 
 <!-- modal-feedback-correct KONVERSI-->
 <div class="modal fade" tabindex="-1" id="modal-feedback-correct-konversi" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">
@@ -212,22 +212,50 @@
             </div>
             <form action="" method="post" id="form-mahasiswa">
                 @csrf
-                <div class="modal-body d-flex align-items-center">
-                    <div style="flex: 1;">
-                        <p style="font-size: medium; font-weight: 400; margin-bottom: 0;">
-                            <span style="color: #0a3a71; font-weight: bold;">Konversi </span>Yang kamu susun sudah benar, selamat ya!
-                        </p>
-                        <div id="java-run-result" style="margin-top: 16px; background: #f5f5f5; border-radius: 6px; padding: 12px; font-family: monospace; color: #333;">
-                            <!-- Hasil output Java akan ditampilkan di sini -->
+                <div class="modal-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div style="flex: 1;">
+                            <p style="font-size: medium; font-weight: 400; margin-bottom: 0;">
+                                <span style="color: #0a3a71; font-weight: bold;">Konversi </span>Yang kamu susun sudah benar, selamat ya!
+                            </p>
+                        </div>
+                        <div style="flex-shrink: 0; margin-left: 24px;">
+                            <img src="{{ asset('assets/media/img/benar.webp') }}" alt="benar" style="max-width: 170px; display: block;">
                         </div>
                     </div>
-                    <div style="flex-shrink: 0; margin-left: 24px;">
-                        <img src="{{ asset('assets/media/img/benar.webp') }}" alt="benar" style="max-width: 170px; display: block;">
-                    </div> 
+
+                    {{-- Output awal dari server (selalu tampil) --}}
+                    <div id="java-run-result" style="background: #f5f5f5; border-radius: 6px; padding: 12px; font-family: monospace; color: #333;">
+                        <!-- Hasil output Java akan ditampilkan di sini -->
+                    </div>
+
+                    {{-- Scanner Section: hanya muncul jika kode mengandung Scanner --}}
+                    <div id="scanner-section-ujian" class="d-none" style="margin-top: 16px;">
+                        <hr>
+                        <p style="font-size: small; font-weight: 600; margin-bottom: 8px;">
+                            <i class="bi bi-keyboard me-1"></i> Input Scanner
+                        </p>
+                        <p style="font-size: small; color: #6b7280; margin-bottom: 12px;">
+                            Masukkan nilai input lalu klik <strong>Jalankan</strong> untuk melihat hasilnya.
+                            Input ini tidak mempengaruhi nilai kamu.
+                        </p>
+
+                        {{-- Field input — diisi dinamis oleh renderScannerFieldsUjian() --}}
+                        <div id="scanner-fields-ujian" class="d-flex flex-column gap-2 mb-3"></div>
+
+                        <button type="button" id="btn-run-scanner-ujian" class="btn btn-sm btn-primary" onclick="runScannerUjian()">
+                            <i class="bi bi-play-fill me-1"></i> Jalankan
+                        </button>
+
+                        {{-- Output setelah run dengan input siswa --}}
+                        <div id="java-run-result-scanner"
+                             style="margin-top: 12px; background: #f5f5f5; border-radius: 6px; padding: 12px; font-family: monospace; color: #333; display: none;">
+                        </div>
+                    </div>
                 </div>
+
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="window.location.href='{{ route('quiz.question-list') }}?level={{ $soal->id_level }}'">Selesai</button>
-                    <!-- <button type="button" class="btn btn-primary" id="submit-yakin">Yakin</button> -->
+                    <button type="button" class="btn btn-primary btn-lanjut-correct">Selesai</button>
                 </div>
             </form>
         </div>

@@ -23,7 +23,7 @@ use App\Models\ArsResult;
 
 /**
  * Class KelasRepository.
- * 
+ *
  * @package namespace App\Repositories;
  */
 class KonversiRepository extends BaseRepository
@@ -128,29 +128,31 @@ class KonversiRepository extends BaseRepository
                     $mainCode .= "        " . $code['value'] . "\n";
                 }
             }
-    
+
             $lines = explode("\n", $mainCode);
             $fixed = [];
             $varTypes = [];
-            
+            // Step 1: ambil deklarasi variabel
             foreach ($lines as $line) {
                 $trim = trim($line);
-            
+
+                // cocokkan deklarasi, misal: int uang_bayar;  float pajak_jual;
                 if (preg_match('/^(int|float|double)\s+([a-zA-Z_][a-zA-Z0-9_]*)/', $trim, $m)) {
                     $varTypes[$m[2]] = $m[1]; 
                 }
             }
-            
+
+            // Step 2: cek assignment dan tambahkan cast jika perlu
             foreach ($lines as $line) {
                 $trim = trim($line);
-            
+
                 if (preg_match('/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+);$/', $trim, $m)) {
                     $var = $m[1];
                     $expr = $m[2];
-            
+
                     if (isset($varTypes[$var])) {
                         $targetType = $varTypes[$var];
-            
+
                         if ($targetType === 'int') {
                             $line = "        $var = (int)($expr);";
                         } elseif ($targetType === 'float') {
@@ -160,10 +162,10 @@ class KonversiRepository extends BaseRepository
                         }
                     }
                 }
-            
+
                 $fixed[] = $line;
             }
-            
+
             $mainCode = implode("\n", $fixed);
 
             $javaCode = <<<EOD

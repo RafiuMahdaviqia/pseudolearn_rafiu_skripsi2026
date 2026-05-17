@@ -11,12 +11,14 @@ use App\Http\Controllers\Level\LevelController;
 use App\Http\Controllers\Nyawa\NyawaController;
 use App\Http\Controllers\Ujian\UjianController;
 use App\Http\Controllers\Scoring\ScoringController;
+use App\Http\Controllers\BankSoalKonversi\BankSoalKonversiController;
 use App\Http\Controllers\Konversi\KonversiController;
 use App\Http\Controllers\Labeling\LabelingController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Mahasiswa\MahasiswaController;
 use App\Http\Controllers\Confidence\ConfidenceController;
-use App\Http\Controllers\Ujian\UjianCodeProgramController;
+// use App\Http\Controllers\Ujian\UjianCodeProgramController;
+use App\Http\Controllers\UjianKode\UjianKodeController;
 use App\Http\Controllers\Leaderboard\LeaderboardController;
 use App\Http\Controllers\LogActivity\LogActivityController;
 use App\Http\Controllers\LogChatbot\LogChatbotController;
@@ -25,6 +27,7 @@ use App\Http\Controllers\Overlapping\OverlappingController;
 use App\Http\Controllers\Quiz\QuestionListRefactorReferenceController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
 use App\Http\Controllers\ARS\ArsController;
+use App\Http\Controllers\LogUjianKode\LogUjianKodeController;
 use App\Models\Setting;
 use App\Http\Controllers\Chatbot\ChatbotController;
 
@@ -39,16 +42,16 @@ Route::get('/maintenance-mahasiswa', function () {
     return view('auth.maintanceMahasiswa');
 })->name('maintenance.mahasiswa');
 
-Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
+Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     // Dashboard untuk semua user
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/pencapaian-list', [DashboardController::class, 'dashboardPencapaianList'])->name('dashboard.pencapaian.list');
     Route::get('/dashboard/getDataGuide', [DashboardController::class, 'getDataGuide'])->name('dashboard.getDataGuide');
-    
+
     // Role mahasiswa
-    Route::middleware('role:mahasiswa')->group(function() {
-        Route::prefix('quiz')->name('quiz.')->group(function() {
+    Route::middleware('role:mahasiswa')->group(function () {
+        Route::prefix('quiz')->name('quiz.')->group(function () {
             Route::get('/', [QuizController::class, 'index'])->name('index');
             Route::get('/question-list-z', [QuizController::class, 'questionList'])->name('question-list');
             Route::post('/calculateAvgSkor', [QuizController::class, 'calculateAvgSkor'])->name('calculateAvgSkor');
@@ -56,12 +59,12 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::get('/question-list-v', [QuestionListRefactorReferenceController::class, 'questionList'])->name('question-list-v');
         });
 
-        Route::prefix('leaderboard')->name('leaderboard.')->group(function() {
+        Route::prefix('leaderboard')->name('leaderboard.')->group(function () {
             Route::get('/', [LeaderboardController::class, 'index'])->name('index');
             Route::post('/table', [LeaderboardController::class, 'table'])->name('table');
         });
 
-        Route::prefix('mahasiswa')->name('mahasiswa.')->group(function() {
+        Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
             Route::get('/profile', [MahasiswaController::class, 'profile'])->name('profile');
             Route::post('/profile/get-data', [MahasiswaController::class, 'getProfileData'])->name('getDataProfile');
             Route::post('/profile/update', [MahasiswaController::class, 'updateProfile'])->name('updateProfile');
@@ -80,18 +83,23 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::post('/submit', [UjianController::class, 'submit'])->name('submit');
             Route::post('/send-log', [UjianController::class, 'sendLog'])->name('send-log');
         });
-        Route::prefix('code-program')->name('code-program.')->group(function () {
-            Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
-            Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
-        });
-        Route::prefix('code-program')->name('code-program.')->group(function () {
-            Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
-            Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
+        // Route::prefix('code-program')->name('code-program.')->group(function () {
+        //     Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
+        //     Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
+        // });
+        // Route::prefix('code-program')->name('code-program.')->group(function () {
+        //     Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
+        //     Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
+        // });
+        Route::prefix('ujian-kode')->name('ujian-kode.')->group(function () {
+            Route::get('/', [UjianKodeController::class, 'index'])->name('index');
+            Route::post('submit-konversi', [UjianKodeController::class, 'submitKonversi'])->name('submit-konversi');
+            Route::post('run-scanner', [UjianKodeController::class, 'runScanner'])->name('run-scanner');
+            Route::post('/log-drag', [UjianKodeController::class, 'logDrag'])->name('logDrag');
         });
         Route::prefix('nyawa')->name('nyawa.')->group(function () {
             Route::get('status', [NyawaController::class, 'status'])->name('nyawa.status');
         });
-
         // chatbot
         Route::prefix('chatbot')->name('chatbot.')->group(function() {
             Route::post('/send', [ChatbotController::class, 'send'])->name('send');
@@ -101,9 +109,9 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
     });
 
     // Role admin (dosen)
-    Route::middleware('role:admin')->group(function() {
+    Route::middleware('role:admin')->group(function () {
         Route::post('/dashboard/toggle-maintenance', [DashboardController::class, 'toggleMaintenance'])->name('dashboard.toggleMaintenance');
-        
+
         // Dashboard
         Route::get('/dashboard/data-filter-admin', [DashboardController::class, 'dataFilterAdmin'])->name('dashboard.data-filter-admin');
         Route::get('/dashboard/chart-labeling', [DashboardController::class, 'chartLabeling'])->name('dashboard.chart-labeling');
@@ -113,7 +121,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         Route::get('/dashboard/mahasiswa-online', [DashboardController::class, 'mahasiswaOnline'])->name('dashboard.mahasiswa-online');
 
         // Mahasiswa
-        Route::prefix('mahasiswa')->name('mahasiswa.')->group(function() {
+        Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
             Route::get('/', [MahasiswaController::class, 'index'])->name('index');
             Route::post('/table', [MahasiswaController::class, 'table'])->name('table');
             Route::post('/store', [MahasiswaController::class, 'store'])->name('store');
@@ -127,7 +135,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // Kelas
-        Route::prefix('kelas')->name('kelas.')->group(function() {
+        Route::prefix('kelas')->name('kelas.')->group(function () {
             Route::get('/', [KelasController::class, 'index'])->name('index');
             Route::post('/table', [KelasController::class, 'table'])->name('table');
             Route::post('/store', [KelasController::class, 'store'])->name('store');
@@ -138,8 +146,8 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // Soal
-        Route::prefix('soal')->name('soal.')->group(function() {    
-        Route::get('/', [SoalController::class, 'index'])->name('index');
+        Route::prefix('soal')->name('soal.')->group(function () {
+            Route::get('/', [SoalController::class, 'index'])->name('index');
             Route::get('/order', [SoalController::class, 'order'])->name('order');
             Route::post('/table', [SoalController::class, 'table'])->name('table');
             Route::get('/form', [SoalController::class, 'form'])->name('form');
@@ -149,10 +157,10 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::get('/{id}', [SoalController::class, 'getById'])->name('getById');
             Route::post('/saveOrder', [SoalController::class, 'saveOrder'])->name('saveOrder');
             Route::post('/updateStatusSoal', [SoalController::class, 'updateStatusSoal'])->name('updateStatusSoal');
-            });
+        });
 
         // Level
-        Route::prefix('level')->name('level.')->group(function() {
+        Route::prefix('level')->name('level.')->group(function () {
             Route::get('/', [LevelController::class, 'index'])->name('index');
             Route::get('/form', [LevelController::class, 'form'])->name('form');
             Route::get('/form/{id}', [LevelController::class, 'form'])->name('formEdit');
@@ -167,8 +175,34 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::post('/update-active', [LevelController::class, 'updateActive'])->name('updateActive');
         });
 
+        // Bank Soal Konversi
+        Route::prefix('bank-soal-konversi')->name('bank-soal-konversi.')->group(function () {
+
+            Route::get('/', [BankSoalKonversiController::class, 'index'])->name('index');
+
+            Route::get('/form', [BankSoalKonversiController::class, 'form'])->name('form');
+
+            Route::get('/form/{id}', [BankSoalKonversiController::class, 'form'])->name('formEdit');
+
+            Route::get('/getSoalByLevel', [BankSoalKonversiController::class, 'getSoalByLevel'])->name('getSoalByLevel');
+
+            Route::get('/order', [BankSoalKonversiController::class, 'order'])->name('order');
+            Route::get('/getByLevelForOrder', [BankSoalKonversiController::class, 'getByLevelForOrder'])->name('getByLevelForOrder');
+            Route::post('/saveOrder', [BankSoalKonversiController::class, 'saveOrder'])->name('saveOrder');
+
+            Route::post('/table', [BankSoalKonversiController::class, 'table'])->name('table');
+
+            Route::post('/store', [BankSoalKonversiController::class, 'store'])->name('store');
+
+            Route::post('/update/{id}', [BankSoalKonversiController::class, 'update'])->name('update');
+
+            Route::delete('/{id}', [BankSoalKonversiController::class, 'destroy'])->name('destroy');
+
+            Route::post('/runJava', [BankSoalKonversiController::class, 'runKonversi'])->name('runJava');
+        });
+
         // Konversi
-        Route::prefix('konversi')->name('konversi.')->group(function(){
+        Route::prefix('konversi')->name('konversi.')->group(function () {
             Route::get('/', [KonversiController::class, 'index'])->name('index');
             Route::get('/form', [KonversiController::class, 'form'])->name('form');
             Route::get('/form/{id}', [KonversiController::class, 'form'])->name('formEdit');
@@ -183,7 +217,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // Overlapping
-        Route::prefix('overlapping')->name('overlapping.')->group(function() {
+        Route::prefix('overlapping')->name('overlapping.')->group(function () {
             Route::get('/', [OverlappingController::class, 'index'])->name('index');
             Route::post('/tableSoal', [OverlappingController::class, 'tableSoal'])->name('tableSoal');
             // Route::get('/analysis/{id}', [OverlappingController::class, 'analysis'])->name('analysis');
@@ -198,7 +232,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
                 ->name('overlapping.analysis.detail');
             Route::post('data', [OverlappingController::class, 'data'])
                 ->name('overlapping.analysis.data');
-            Route::post('table-detail', [OverlappingController::class,'tableDetail'])
+            Route::post('table-detail', [OverlappingController::class, 'tableDetail'])
                 ->name('overlapping.analysis.tableDetail');
 
             // Route dinamis terakhir + constraint (ULID/UUID campuran)
@@ -208,7 +242,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // confidence
-        Route::prefix('confidence')->name('confidence.')->group(function() {
+        Route::prefix('confidence')->name('confidence.')->group(function () {
             Route::get('/', [ConfidenceController::class, 'index'])->name('index');
             Route::post('/table', [ConfidenceController::class, 'table'])->name('table');
             Route::get('/detail/{id}', [ConfidenceController::class, 'detail'])->name('detail');
@@ -220,7 +254,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // log-activity
-        Route::prefix('log-activity')->name('log-activity.')->group(function() {
+        Route::prefix('log-activity')->name('log-activity.')->group(function () {
             Route::get('/', [LogActivityController::class, 'index'])->name('index');
             Route::post('/table', [LogActivityController::class, 'table'])->name('table');
             Route::post('/tableDetail', [LogActivityController::class, 'tableDetail'])->name('tableDetail');
@@ -228,7 +262,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
             Route::post('/tableDetailLog', [LogActivityController::class, 'tableDetailLog'])->name('tableDetailLog');
             Route::get('/detail/{id}', [LogActivityController::class, 'detail'])->name('detail');
             Route::get('/detailLevel/{id}', [LogActivityController::class, 'detailLevel'])->name('detailLevel');
-            Route::get('/detailSoal/{id}', [LogActivityController::class, 'detailSoal'])->name('detailSoal'); 
+            Route::get('/detailSoal/{id}', [LogActivityController::class, 'detailSoal'])->name('detailSoal');
             Route::get('/getSoalByLevel', [LogActivityController::class, 'getSoalByLevel'])->name('log-activity.getSoalByLevel');
             Route::post('/export', [LogActivityController::class, 'export'])->name('export');
         });
@@ -253,7 +287,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // labeling
-        Route::prefix('labeling')->name('labeling.')->group(function() {
+        Route::prefix('labeling')->name('labeling.')->group(function () {
             Route::get('/', [LabelingController::class, 'index'])->name('index');
             Route::post('/table', [LabelingController::class, 'table'])->name('table');
             Route::post('/update-test', [LabelingController::class, 'updateTest'])->name('labeling.update-test');
@@ -262,7 +296,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // scoring
-        Route::prefix('scoring')->name('scoring.')->group(function() {
+        Route::prefix('scoring')->name('scoring.')->group(function () {
             Route::get('/', [ScoringController::class, 'index'])->name('index');
             Route::post('/table', [ScoringController::class, 'table'])->name('table');
             Route::post('/update-test', [ScoringController::class, 'updateTest'])->name('scoring.update-test');
@@ -272,7 +306,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // ujian konversi
-        Route::prefix('ujian-konversi')->name('ujian-konversi.')->group(function() {
+        Route::prefix('ujian-konversi')->name('ujian-konversi.')->group(function () {
             Route::get('/', [UjianKonversiController::class, 'index'])->name('index');
             Route::post('/table', [UjianKonversiController::class, 'table'])->name('table');
             Route::get('/detail/{id}', [UjianKonversiController::class, 'detail'])->name('detail');
@@ -291,7 +325,7 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // Guide
-        Route::prefix('guide')->name('guide.')->group(function() {
+        Route::prefix('guide')->name('guide.')->group(function () {
             Route::get('/', [GuideController::class, 'index'])->name('index');
             Route::get('getData', [GuideController::class, 'getData'])->name('getData');
             Route::get('getDataById/{id}', [GuideController::class, 'getDataById'])->name('getDataById');
@@ -299,9 +333,20 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
         });
 
         // Setting Admin
-        Route::prefix('setting-admin')->name('setting-admin.')->group(function() {
+        Route::prefix('setting-admin')->name('setting-admin.')->group(function () {
             Route::get('/', [MahasiswaController::class, 'settingAdmin'])->name('index');
             Route::post('/update', [MahasiswaController::class, 'updateSettingAdmin'])->name('updateSettingAdmin');
+        });
+
+        // log ujian kode (admin)
+        Route::prefix('log-ujian-kode')->name('log-ujian-kode.')->group(function () {
+            Route::get('/', [LogUjianKodeController::class, 'index'])->name('index');
+            Route::post('/table', [LogUjianKodeController::class, 'table'])->name('table');
+            Route::get('/detail/{id}', [LogUjianKodeController::class, 'detail'])->name('detail');
+            Route::post('/table-detail', [LogUjianKodeController::class, 'tableDetail'])->name('tableDetail');
+            Route::get('/detail-kode/{id}', [LogUjianKodeController::class, 'detailKode'])->name('detailKode');
+            Route::get('/summary-stats', [LogUjianKodeController::class, 'summaryStats'])->name('summaryStats');
+            Route::get('/export-detail', [LogUjianKodeController::class, 'exportDetail'])->name('exportDetail');
         });
     });
 });

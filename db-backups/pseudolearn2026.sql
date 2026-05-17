@@ -3,9 +3,11 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Feb 12, 2026 at 06:48 AM
+-- Generation Time: Mar 10, 2026 at 02:28 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.3.10
+CREATE DATABASE IF NOT EXISTS pseudolearn2026;
+USE pseudolearn2026;
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +20,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `new_pseudolearn`
+-- Database: `pseudolearn2026`
 --
 
 -- --------------------------------------------------------
@@ -44,6 +46,48 @@ CREATE TABLE `cache_locks` (
   `owner` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `expiration` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chatbot_logs`
+--
+
+CREATE TABLE `chatbot_logs` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id_mahasiswa` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id_level` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `id_soal` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `type` enum('biasa','adaptive') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'biasa',
+  `pesan` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `respons` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `chatbot_logs`
+--
+
+INSERT INTO `chatbot_logs` (`id`, `id_mahasiswa`, `id_level`, `id_soal`, `type`, `pesan`, `respons`, `created_at`, `updated_at`, `deleted_at`) VALUES
+('019cc8f5-17be-735a-b8f6-6d5582571478', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'hallo', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-07 08:40:31', '2026-03-07 08:40:31', NULL),
+('019cc8f5-3ab1-72b0-80a3-f8a05f01180d', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'hai', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-07 08:40:40', '2026-03-07 08:40:40', NULL),
+('019cc8f5-5c7c-7016-8c68-68256d43ab30', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'halo', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-07 08:40:49', '2026-03-07 08:40:49', NULL),
+('019cc8f5-905f-7020-993b-0802d10ced4c', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'hallo', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-07 08:41:02', '2026-03-07 08:41:02', NULL),
+('019cc90d-4a79-7139-8030-e26120ba7756', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'haii', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-07 09:06:57', '2026-03-07 09:06:57', NULL),
+('019cc911-e78b-7176-a7f9-c88628c22a2e', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'haii', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-07 09:11:59', '2026-03-07 09:11:59', NULL),
+('019cc912-398c-7283-9215-033be555bcbb', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'test', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-07 09:12:20', '2026-03-07 09:12:20', NULL),
+('019cc917-0d4c-71f1-b200-9595c9d68f41', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'test', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-07 09:17:37', '2026-03-07 09:17:37', NULL),
+('019cc917-8a2e-724e-b2ef-adb8d47e18ee', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'hai', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-07 09:18:09', '2026-03-07 09:18:09', NULL),
+('019ccd1a-0c36-723d-b7c1-6fee17aaee91', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'hallo', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-08 03:59:22', '2026-03-08 03:59:22', NULL),
+('019cce7f-a3f2-7281-8996-a0670ff98abc', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'ok', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-08 10:29:57', '2026-03-08 10:29:57', NULL),
+('019cce7f-f496-7024-8abb-a586dff3ecfc', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'i', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-08 10:30:18', '2026-03-08 10:30:18', NULL),
+('019cce85-6d03-72c9-bcd4-b1dc305481d5', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'jawaban', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-08 10:36:16', '2026-03-08 10:36:16', NULL),
+('019cd810-e81b-72e1-b4cc-552f1564f47a', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'hallo', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-10 07:05:12', '2026-03-10 07:05:12', NULL),
+('019cd811-8c75-7393-8357-b38d68e0f130', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'hallo', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-10 07:05:54', '2026-03-10 07:05:54', NULL),
+('019cd820-eb71-7260-91c1-626267817ae3', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'hai', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-10 07:22:42', '2026-03-10 07:22:42', NULL),
+('019cd822-2057-72a6-93cc-963a5f37b4e1', '019bd119-feea-72db-ae7f-6eab643a243d', '01995dec-678e-70cf-854a-b25e2c2d0d28', '01995df6-35ed-7363-9d42-578622c3e4f2', 'biasa', 'haii', 'Maaf, saya sedang tidak dapat merespons saat ini. Silakan coba lagi.', '2026-03-10 07:24:01', '2026-03-10 07:24:01', NULL);
 
 -- --------------------------------------------------------
 
@@ -3231,7 +3275,8 @@ CREATE TABLE `migrations` (
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (1, '0001_01_01_000000_create_users_table', 1),
 (2, '0001_01_01_000001_create_cache_table', 1),
-(3, '0001_01_01_000002_create_jobs_table', 1);
+(3, '0001_01_01_000002_create_jobs_table', 1),
+(4, '2026_03_02_000001_create_chatbot_logs_table', 2);
 
 -- --------------------------------------------------------
 
@@ -3275,7 +3320,7 @@ CREATE TABLE `nyawa` (
 INSERT INTO `nyawa` (`id`, `id_user`, `id_mahasiswa`, `nyawa`, `max_nyawa`, `next_regen_at`, `created_at`, `updated_at`, `deleted_at`) VALUES
 ('01998481-df27-73b9-9506-ff6f40f7e72b', '8271c8db-2578-4b4a-9716-e0d8d03a542c', '01998481-df25-70a6-8d69-3fee01558a4c', 25, 25, '2025-09-26 05:42:07', '2025-09-26 05:32:07', '2025-09-26 05:32:07', NULL),
 ('019990b2-f640-72da-a18a-209abc1596d3', '31bda37a-d332-41fc-bfe8-7fde797511cb', '019990b2-f63e-72c7-92b7-12f87a539122', 25, 25, '2025-09-28 14:31:11', '2025-09-28 14:21:11', '2025-09-28 14:21:11', NULL),
-('019bd119-feec-70cf-9e31-018f739d8e1b', '8e4222f8-4aa3-48f9-962e-072f38533514', '019bd119-feea-72db-ae7f-6eab643a243d', 25, 25, NULL, '2026-01-18 05:35:00', '2026-02-11 08:16:53', NULL),
+('019bd119-feec-70cf-9e31-018f739d8e1b', '8e4222f8-4aa3-48f9-962e-072f38533514', '019bd119-feea-72db-ae7f-6eab643a243d', 25, 25, NULL, '2026-01-18 05:35:00', '2026-03-02 02:03:48', NULL),
 ('40b50732-9923-11f0-b4bd-0050562b63bd', '00406845-e5e9-4fd8-99fd-47f83dcc8b04', '1994b0d3-81b6-4e34-bbdd-245504d95e6c', 25, 25, NULL, '2025-09-24 08:48:33', '2025-09-24 08:48:33', NULL),
 ('40b50785-9923-11f0-b4bd-0050562b63bd', '006fbaec-bb88-4dc2-aa9b-1a9a665c1890', '18760fd9-69c2-42cd-8f21-45014788d18b', 25, 25, NULL, '2025-09-24 08:48:33', '2025-09-24 08:48:33', NULL),
 ('40b5079d-9923-11f0-b4bd-0050562b63bd', '022ea1fd-94f7-4678-b2d0-00133f37501e', '406036aa-6d0a-4e6e-ab7c-b34ff78180b0', 25, 25, NULL, '2025-09-24 08:48:33', '2025-09-24 08:48:33', NULL),
@@ -10164,9 +10209,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('SxQHb67Q2krZ9Ig7TE8IZ3BbZ8ojArDnswDfxcs0', 'b1bc1c75-6956-4b33-b585-3dc5edad9333', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiQVQzOUprWVFpdXBiaTRNaVJHbElkUlB6cExuOXBra1F5U0lPNHJkeiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2ctYWN0aXZpdHkiO3M6NToicm91dGUiO3M6MTg6ImxvZy1hY3Rpdml0eS5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtzOjM2OiJiMWJjMWM3NS02OTU2LTRiMzMtYjU4NS0zZGM1ZWRhZDkzMzMiO30=', 1769481587),
-('Z5yLVwID3YitJUaAg5hzFQp77dD5ceiNHyG8feFN', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiQnRnYnNqY1VqbG9uajVncVBhS0RJS0dsRXkxbUdwUDdTWlRKZG5pTyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1770878499),
-('zplCbRSY3fuukDyRAA4FnhFsLSXZY7qaDBHUxkKN', '8e4222f8-4aa3-48f9-962e-072f38533514', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoicWs2azhkazFhR1g4MzdFbGlvWmVlT0NPMUczb3B0bXBpTTdyZlFONyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9kYXNoYm9hcmQiO3M6NToicm91dGUiO3M6OToiZGFzaGJvYXJkIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO3M6MzY6IjhlNDIyMmY4LTRhYTMtNDhmOS05NjJlLTA3MmYzODUzMzUxNCI7fQ==', 1770823236);
+('VJKxCC2ObvpeJR1h2rI4UKdvgi8AsYMPhWr1nEuy', '8e4222f8-4aa3-48f9-962e-072f38533514', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoibWxCSHk3bVhlaFVZYnNYZTU1QlJQZE1aajgxQ0FVZ3p1MURkVzZnZiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9jb2RlLXByb2dyYW0/aWQ9MDE5OTY1MWQtYjc3YS03MzI5LThiOWEtMGU1YjZiMmYxNmQ2IjtzOjU6InJvdXRlIjtzOjMxOiJjb2RlLXByb2dyYW0uY29kZS1wcm9ncmFtLmluZGV4Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO3M6MzY6IjhlNDIyMmY4LTRhYTMtNDhmOS05NjJlLTA3MmYzODUzMzUxNCI7fQ==', 1773152641);
 
 -- --------------------------------------------------------
 
@@ -10188,7 +10231,7 @@ CREATE TABLE `settings` (
 --
 
 INSERT INTO `settings` (`id`, `key`, `value`, `created_at`, `updated_at`, `deleted_at`) VALUES
-('ffb8c542-a376-11f0-8150-b46921aaa072', 'maintenance_mahasiswa', '0', '2025-10-07 12:13:13', '2026-01-18 08:45:12', NULL);
+('ffb8c542-a376-11f0-8150-b46921aaa072', 'maintenance_mahasiswa', '0', '2025-10-07 12:13:13', '2026-02-18 08:41:34', NULL);
 
 -- --------------------------------------------------------
 
@@ -10892,6 +10935,15 @@ ALTER TABLE `cache_locks`
   ADD PRIMARY KEY (`key`) USING BTREE;
 
 --
+-- Indexes for table `chatbot_logs`
+--
+ALTER TABLE `chatbot_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `chatbot_logs_id_mahasiswa_foreign` (`id_mahasiswa`),
+  ADD KEY `chatbot_logs_id_level_foreign` (`id_level`),
+  ADD KEY `chatbot_logs_id_soal_foreign` (`id_soal`);
+
+--
 -- Indexes for table `debug_konversi`
 --
 ALTER TABLE `debug_konversi`
@@ -11093,11 +11145,19 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `chatbot_logs`
+--
+ALTER TABLE `chatbot_logs`
+  ADD CONSTRAINT `chatbot_logs_id_level_foreign` FOREIGN KEY (`id_level`) REFERENCES `level` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `chatbot_logs_id_mahasiswa_foreign` FOREIGN KEY (`id_mahasiswa`) REFERENCES `mahasiswa` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chatbot_logs_id_soal_foreign` FOREIGN KEY (`id_soal`) REFERENCES `soal` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `debug_konversi`

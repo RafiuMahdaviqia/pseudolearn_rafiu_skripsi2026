@@ -9,11 +9,11 @@ use App\Models\Soal;
 use App\Models\Level;
 use App\Models\Nyawa;
 use App\Models\Ujian;
-use App\Models\Konversi;
+use App\Models\BankSoalKonversi;
 use App\Models\LabelSkor;
 use App\Models\Mahasiswa;
 use Illuminate\Http\Request;
-use App\Models\UjianKonversi;
+use App\Models\UjianKode;
 use App\Services\SoalService;
 use App\Services\LevelService;
 use App\Services\KonversiService;
@@ -32,11 +32,11 @@ class QuizController extends Controller
     protected $soalService;
     protected $konversiService;
     protected $soalModel;
-    protected $konversiModel;
+    protected $bankSoalKonversiModel;
     protected $mahasiswaModel;
     protected $ujianModel;
     protected $labelSkorModel;
-    protected $ujianKonversiModel;
+    protected $ujianKodeModel;
     protected $levelModel;
     protected $visibleLimit = 5;
 
@@ -46,11 +46,11 @@ class QuizController extends Controller
         $this->soalService = new SoalService();
         $this->konversiService = new KonversiService();
         $this->soalModel = new Soal();
-        $this->konversiModel = new Konversi();
+        $this->bankSoalKonversiModel = new BankSoalKonversi();
         $this->mahasiswaModel = new Mahasiswa();
         $this->ujianModel = new Ujian();
         $this->labelSkorModel = new LabelSkor();
-        $this->ujianKonversiModel = new UjianKonversi();
+        $this->ujianKodeModel = new UjianKode();
         $this->levelModel = new Level();
     }
 
@@ -78,14 +78,14 @@ class QuizController extends Controller
             );
 
             $totalKonversi = min(
-                $this->konversiModel->setView('v_konversi')
+                $this->bankSoalKonversiModel->setView('v_bank_soal_konversi')
                     ->where('id_level', $levelId)
                     ->where('status', 1)
                     ->count(),
                 $this->visibleLimit
             );
 
-            // Distinct
+            // Selesai (distinct)
             $completedSoal = $this->ujianModel
                 ->where('id_mahasiswa', $mahasiswa->id)
                 ->where('id_level', $levelId)
@@ -93,11 +93,11 @@ class QuizController extends Controller
                 ->distinct('id_soal')
                 ->count('id_soal');
 
-            $completedKonversi = $this->ujianKonversiModel
+            $completedKonversi = $this->ujianKodeModel
                 ->where('id_mahasiswa', $mahasiswa->id)
                 ->where('id_level', $levelId)
-                ->distinct('id_soal_konversi')
-                ->count('id_soal_konversi');
+                ->distinct('id_bank_soal_konversi')
+                ->count('id_bank_soal_konversi');
 
             $algopoinPerLevel = $this->labelSkorModel
                 ->where('id_mahasiswa', $mahasiswa->id)
@@ -117,20 +117,20 @@ class QuizController extends Controller
                         ->where('id_level', $levelId)
                         ->where('status', 1);
                 })
-                ->orderBy('order', 'asc')
+                ->orderBy('difficulty', 'asc')
                 ->first();
 
-            $activeKonversi = $this->konversiModel
-                ->setView('v_konversi')
+            $activeKonversi = $this->bankSoalKonversiModel
+                ->setView('v_bank_soal_konversi')
                 ->where('id_level', $levelId)
                 ->where('status', 1)
                 ->whereNotIn('id', function ($q) use ($mahasiswa, $levelId) {
-                    $q->select('id_soal_konversi')
-                        ->from((new UjianKonversi)->getTable())
+                    $q->select('id_bank_soal_konversi')
+                        ->from((new UjianKode)->getTable())
                         ->where('id_mahasiswa', $mahasiswa->id)
                         ->where('id_level', $levelId);
                 })
-                ->orderBy('order', 'asc')
+                ->orderBy('difficulty', 'asc')
                 ->first();
 
             $remainingSoal = max(0, $totalSoal - $completedSoal);
@@ -222,10 +222,20 @@ class QuizController extends Controller
         // 1) Ambil level dari query string, lalu muat semua soal aktif dan konversi aktif pada level itu.
         $levelId = $request->query('level');
         $dataSoal = $this->soalModel->where('id_level', $levelId)->where('status', 1)->orderBy('order', 'asc')->get()->toArray();
-        $dataKonversi = $this->konversiModel->setView('v_konversi')->where('id_level', $levelId)->where('status', 1)->orderBy('order', 'asc')->get()->toArray();
-        $dataSoal = array_slice($dataSoal, 0, 5);
+        $dataKonversi = $this->bankSoalKonversiModel
+            ->setView('v_bank_soal_konversi')
+            ->where('id_level', $levelId)
+            ->where('status', 1)
+            ->orderBy('order', 'asc')
+            ->get()
+            ->toArray();
 
-        // 2) Ambil mahasiswa dari user yang login, lalu ambil ujian pseudocode yang sudah selesai di level ini.
+        $dataSoal = array_slice($dataSoal, 0, 5);
+        $soalIds = array_column($dataSoal, 'id');
+        $dataKonversi = array_values(array_filter($dataKonversi, function ($konversi) use ($soalIds) {
+            return in_array($konversi['id_soal'], $soalIds, true);
+        }));
+        
         $idUser = Auth::id();
         $idMahasiswa = $this->mahasiswaModel->where('id_user', $idUser)->value('id');
         $dataUjian = $this->ujianModel->where('id_mahasiswa', $idMahasiswa)
@@ -245,12 +255,15 @@ class QuizController extends Controller
         // 4) Buat index konversi berdasarkan id_soal agar mudah dipasangkan ke soal utama.
         $konversiBySoal = [];
         foreach ($dataKonversi as $konversi) {
+            if (!isset($konversi['judul']) && isset($konversi['judul_soal'])) {
+                $konversi['judul'] = $konversi['judul_soal'];
+            }
             $konversiBySoal[$konversi['id_soal']] = $konversi;
-
-            // Simpan hasil ujian konversi (jika ada) untuk menentukan status done/locked per item konversi.
-            $dataUjianKonversi = $this->ujianKonversiModel->where('id_mahasiswa', $idMahasiswa)
+            $dataUjianKonversi = $this->ujianKodeModel
+                ->setView('v_ujian_kode')
+                ->where('id_mahasiswa', $idMahasiswa)
                 ->where('id_level', $levelId)
-                ->where('id_soal_konversi', $konversi['id'])
+                ->where('id_bank_soal_konversi', $konversi['id'])
                 ->first();
             if ($dataUjianKonversi) {
                 $konversiBySoal[$konversi['id_soal']]['ujianKonversi'] = $dataUjianKonversi->toArray();
@@ -299,10 +312,10 @@ class QuizController extends Controller
             }
         }
 
-        // 7) Normalisasi status agar progres linear:
-        //    - status done tetap done,
-        //    - item pertama yang belum done menjadi active,
-        //    - sisanya locked.
+        // Atur status final: 
+        // 1. Semua 'done' tetap done
+        // 2. Satu soal/konversi pertama yang tidak done => active
+        // 3. Sisanya => locked
         $firstActiveSet = false;
         foreach ($result as $i => $row) {
             if ($row['status'] === 'done') {
@@ -322,11 +335,11 @@ class QuizController extends Controller
         if (empty($konversiIds)) {
             $nilaiKonversiList = [];
         } else {
-            $nilaiKonversiList = $this->ujianKonversiModel
-                ->setView('v_ujian_konversi')
+            $nilaiKonversiList = $this->ujianKodeModel
+                ->setView('v_ujian_kode')
                 ->where('id_mahasiswa', $idMahasiswa)
                 ->where('id_level', $levelId)
-                ->whereIn('id_soal_konversi', $konversiIds)
+                ->whereIn('id_bank_soal_konversi', $konversiIds)
                 ->whereNotNull('nilai')
                 ->orderBy('created_at', 'asc')
                 ->pluck('nilai', 'judul_soal')
@@ -335,7 +348,7 @@ class QuizController extends Controller
 
         // 9) Siapkan metadata level dan jumlah soal konversi untuk ditampilkan di header/summary halaman.
         $dataLevel = $this->levelModel->find($levelId);
-        $jumlahSoalKonversi = $this->konversiModel->where('id_level', $levelId)->where('status', 1)->count();
+        $jumlahSoalKonversi = $this->bankSoalKonversiModel->where('id_level', $levelId)->where('status', 1)->count();
 
         $nyawa = Nyawa::where('id_user', $idUser)->first();
 
@@ -423,8 +436,8 @@ class QuizController extends Controller
 
         if (!$soalTambahan) return null;
 
-        $konversiTambahan = $this->konversiModel
-            ->setView('v_konversi')
+        $konversiTambahan = $this->bankSoalKonversiModel
+            ->setView('v_bank_soal_konversi')
             ->where('id_soal', $soalTambahan->id)
             ->first();
 
@@ -436,9 +449,9 @@ class QuizController extends Controller
 
         $isKonversiDone = false;
         if ($konversiTambahan) {
-            $isKonversiDone = $this->ujianKonversiModel
+            $isKonversiDone = $this->ujianKodeModel
                 ->where('id_mahasiswa', $idMahasiswa)
-                ->where('id_soal_konversi', $konversiTambahan->id)
+                ->where('id_bank_soal_konversi', $konversiTambahan->id)
                 ->exists();
         }
 
@@ -680,27 +693,12 @@ class QuizController extends Controller
 
         $dataKonversi = [];
         if ($orderedSoalIdsArray !== []) {
-            $dataKonversi = $this->konversiModel
-                ->newQuery()
-                ->select([
-                    'konversi.id',
-                    'konversi.id_level',
-                    'konversi.id_soal',
-                    's.judul as judul_soal',
-                    's.soal as soal_name',
-                    'konversi.jawaban',
-                    'konversi.output',
-                    'konversi.bobot',
-                    'konversi.created_at',
-                    'konversi.updated_at',
-                    's.status',
-                    's.order',
-                ])
-                ->join('soal as s', 's.id', '=', 'konversi.id_soal')
-                ->where('konversi.id_level', $level->id)
-                ->where('s.status', 1)
-                ->whereIn('konversi.id_soal', $orderedSoalIdsArray)
-                ->orderBy('s.order', 'asc')
+            $dataKonversi = $this->bankSoalKonversiModel
+                ->setView('v_bank_soal_konversi')
+                ->where('id_level', $level->id)
+                ->where('status', 1)
+                ->whereIn('id_soal', $orderedSoalIdsArray)
+                ->orderBy('order', 'asc')
                 ->get()
                 ->toArray();
         }
@@ -709,13 +707,14 @@ class QuizController extends Controller
         $ujianKonversiById = [];
 
         if ($konversiIds !== []) {
-            $ujianKonversiById = $this->ujianKonversiModel
+            $ujianKonversiById = $this->ujianKodeModel
+                ->setView('v_ujian_kode')
                 ->where('id_mahasiswa', $mahasiswa->id)
                 ->where('id_level', $level->id)
-                ->whereIn('id_soal_konversi', $konversiIds)
+                ->whereIn('id_bank_soal_konversi', $konversiIds)
                 ->orderBy('created_at', 'asc')
                 ->get()
-                ->keyBy('id_soal_konversi')
+                ->keyBy('id_bank_soal_konversi')
                 ->map(fn($item) => $item->toArray())
                 ->toArray();
         }
@@ -723,6 +722,9 @@ class QuizController extends Controller
         $konversiBySoal = [];
         $konversiById = [];
         foreach ($dataKonversi as $konversi) {
+            if (!isset($konversi['judul']) && isset($konversi['judul_soal'])) {
+                $konversi['judul'] = $konversi['judul_soal'];
+            }
             $konversi['ujianKonversi'] = $ujianKonversiById[$konversi['id']] ?? null;
             $konversiBySoal[$konversi['id_soal']] = $konversi;
             $konversiById[$konversi['id']] = $konversi;
@@ -792,16 +794,17 @@ class QuizController extends Controller
         $nilaiKonversiList = [];
 
         if ($konversiIdsForNilai !== []) {
-            $nilaiRows = $this->ujianKonversiModel
+            $nilaiRows = $this->ujianKodeModel
+                ->setView('v_ujian_kode')
                 ->where('id_mahasiswa', $mahasiswa->id)
                 ->where('id_level', $level->id)
-                ->whereIn('id_soal_konversi', $konversiIdsForNilai)
+                ->whereIn('id_bank_soal_konversi', $konversiIdsForNilai)
                 ->whereNotNull('nilai')
                 ->orderBy('created_at', 'asc')
-                ->get(['id_soal_konversi', 'nilai']);
+                ->get(['id_bank_soal_konversi', 'nilai']);
 
             foreach ($nilaiRows as $row) {
-                $konversi = $konversiById[$row->id_soal_konversi] ?? null;
+                $konversi = $konversiById[$row->id_bank_soal_konversi] ?? null;
                 if ($konversi === null) {
                     continue;
                 }
