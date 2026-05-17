@@ -4,6 +4,8 @@ namespace App\Repositories;
 
 use App\Models\UjianKode;
 use App\Models\BankSoalKonversi;
+use App\Models\Nyawa;
+use App\Models\Mahasiswa;
 use Illuminate\Support\Facades\Auth;
 
 class UjianKodeRepository
@@ -22,6 +24,15 @@ class UjianKodeRepository
         $kodeLangkah        = $request->input('kode_langkah', []);
         $waktu              = $request->input('waktu', 0);
 
+        // Ambil mahasiswa ID dari user ID
+        $idMahasiswa = Mahasiswa::where('id_user', $idUser)->value('id');
+        if (!$idMahasiswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data mahasiswa tidak ditemukan.'
+            ], 404);
+        }
+
         // Ambil soal kunci dari bank_soal_konversi
         $soalKonversi = BankSoalKonversi::find($idBankSoalKonversi);
         if (!$soalKonversi) {
@@ -31,36 +42,58 @@ class UjianKodeRepository
             ], 404);
         }
 
-        // Jawaban kunci — plain text dipecah per baris
-        $kunciJawaban = array_values(
-            array_filter(
-                array_map('trim', explode("\n", $soalKonversi->jawaban))
-            )
-        );
+        $kunciJawaban = BankSoalKonversi::parseJawabanLines($soalKonversi->jawaban);
 
-        // Jawaban mahasiswa — dari drag & drop
-        $jawabanMahasiswa = array_map('trim', $kodeLangkah);
+        if ($kunciJawaban === []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kunci jawaban soal tidak valid.',
+            ], 422);
+        }
 
-        // Validasi per langkah
+        // Jawaban mahasiswa — dari drag & drop (urutan langkah)
+        $jawabanMahasiswa = array_map(static fn ($line) => trim((string) $line), $kodeLangkah);
+
+        while (
+            count($jawabanMahasiswa) > count($kunciJawaban)
+            && trim((string) end($jawabanMahasiswa)) === ''
+        ) {
+            array_pop($jawabanMahasiswa);
+        }
+
         $errors = [];
-        foreach ($jawabanMahasiswa as $index => $jawaban) {
-            if ($jawaban !== ($kunciJawaban[$index] ?? null)) {
+        foreach ($kunciJawaban as $index => $kunci) {
+            $jawaban = $jawabanMahasiswa[$index] ?? '';
+            if ($jawaban === '' || !BankSoalKonversi::linesMatch($kunci, $jawaban)) {
                 $errors[] = ['index' => $index];
             }
         }
 
         if (!empty($errors)) {
+            $nyawa = Nyawa::where('id_user', $idUser)->first();
+            if ($nyawa && $nyawa->nyawa > 0) {
+                $nyawa->nyawa -= 1;
+
+                // Set waktu regenerasi
+                if (is_null($nyawa->next_regen_at)) {
+                    $nyawa->next_regen_at = now()->addMinutes(10);
+                }
+
+                $nyawa->save();
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => [
                     'message' => 'Terdapat jawaban salah',
                     'errors'  => $errors,
-                ]
+                ],
+                'lives' => $nyawa->nyawa ?? 0,
             ], 422);
         }
 
         // Simpan hasil ujian
-        $this->model->create([
+        $ujian = $this->model->create([
             'id_mahasiswa'          => $idUser,
             'id_bank_soal_konversi' => $idBankSoalKonversi,
             'id_level'              => $soalKonversi->id_level,

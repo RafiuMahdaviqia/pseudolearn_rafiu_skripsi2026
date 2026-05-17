@@ -46,6 +46,16 @@ class QuizController extends Controller
         $this->levelModel = new Level();
     }
 
+
+    // Filter ujian_kode by mahasiswa id,
+    private function scopeUjianKodeMahasiswa($query, string $idMahasiswa, $idUser)
+    {
+        return $query->where(function ($q) use ($idMahasiswa, $idUser) {
+            $q->where('id_mahasiswa', $idMahasiswa)
+                ->orWhere('id_mahasiswa', $idUser);
+        });
+    }
+
     public function index()
     {
         $dataLevelResponse = $this->levelService->getData();
@@ -75,8 +85,11 @@ class QuizController extends Controller
                 ->distinct('id_soal')
                 ->count('id_soal');
 
-            $completedKonversi = $this->ujianKodeModel
-                ->where('id_mahasiswa', $mahasiswa->id)
+            $completedKonversi = $this->scopeUjianKodeMahasiswa(
+                $this->ujianKodeModel,
+                $mahasiswa->id,
+                $userId
+            )
                 ->where('id_level', $levelId)
                 ->distinct('id_bank_soal_konversi')
                 ->count('id_bank_soal_konversi');
@@ -107,10 +120,13 @@ class QuizController extends Controller
                 ->setView('v_bank_soal_konversi')
                 ->where('id_level', $levelId)
                 ->where('status', 1)
-                ->whereNotIn('id', function ($q) use ($mahasiswa, $levelId) {
+                ->whereNotIn('id', function ($q) use ($mahasiswa, $userId, $levelId) {
                     $q->select('id_bank_soal_konversi')
                       ->from((new UjianKode)->getTable())
-                      ->where('id_mahasiswa', $mahasiswa->id)
+                      ->where(function ($sub) use ($mahasiswa, $userId) {
+                          $sub->where('id_mahasiswa', $mahasiswa->id)
+                              ->orWhere('id_mahasiswa', $userId);
+                      })
                       ->where('id_level', $levelId);
                 })
                 ->orderBy('difficulty', 'asc')
@@ -228,7 +244,11 @@ class QuizController extends Controller
         $konversiBySoal = [];
         foreach ($dataKonversi as $konversi) {
             $konversiBySoal[$konversi['id_soal']] = $konversi;
-            $dataUjianKonversi = $this->ujianKodeModel->where('id_mahasiswa', $idMahasiswa)
+            $dataUjianKonversi = $this->scopeUjianKodeMahasiswa(
+                $this->ujianKodeModel,
+                $idMahasiswa,
+                $idUser
+            )
                 ->where('id_level', $levelId)
                 ->where('id_bank_soal_konversi', $konversi['id'])
                 ->first();
@@ -301,15 +321,27 @@ class QuizController extends Controller
         if (empty($konversiIds)) {
             $nilaiKonversiList = [];
         } else {
-            $nilaiKonversiList = $this->ujianKodeModel
-                ->setView('v_ujian_kode')
-                ->where('id_mahasiswa', $idMahasiswa)
+            $judulByKonversiId = collect($dataKonversi)->mapWithKeys(function ($row) {
+                $judul = $row['judul_soal'] ?? $row['judul'] ?? 'Soal konversi';
+                return [$row['id'] => $judul];
+            });
+
+            $ujianKodeRows = $this->scopeUjianKodeMahasiswa(
+                $this->ujianKodeModel,
+                $idMahasiswa,
+                $idUser
+            )
                 ->where('id_level', $levelId)
                 ->whereIn('id_bank_soal_konversi', $konversiIds)
                 ->whereNotNull('nilai')
                 ->orderBy('created_at', 'asc')
-                ->pluck('nilai', 'judul_soal') // atau 'judul_soal' jika tetap ingin pakai judul
-                ->toArray();
+                ->get(['id_bank_soal_konversi', 'nilai']);
+
+            $nilaiKonversiList = [];
+            foreach ($ujianKodeRows as $row) {
+                $judul = $judulByKonversiId[$row->id_bank_soal_konversi] ?? 'Soal konversi';
+                $nilaiKonversiList[$judul] = $row->nilai;
+            }
         }
 
         $dataLevel = $this->levelModel->find($levelId);
