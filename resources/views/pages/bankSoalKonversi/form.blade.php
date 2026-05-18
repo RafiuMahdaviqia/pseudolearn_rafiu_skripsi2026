@@ -423,15 +423,48 @@
             $('#row-pseudocode').addClass('d-none');
         }
 
+        // Ambil baris-baris jawaban dari berbagai format (textarea multiline / JSON array)
+        function extractJawabanLines(raw) {
+            if (Array.isArray(raw)) {
+                return raw
+                    .map(v => String(v ?? '').trim())
+                    .filter(v => v.length > 0);
+            }
+
+            const text = String(raw ?? '');
+            const trimmed = text.trim();
+            if (!trimmed) return [];
+
+            // Jika jawaban tersimpan sebagai JSON array string: ["...","..."]
+            if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    if (Array.isArray(parsed)) {
+                        return parsed
+                            .map(v => String(v ?? '').trim())
+                            .filter(v => v.length > 0);
+                    }
+                } catch (e) {
+                    // fallback ke split newline
+                }
+            }
+
+            return text
+                .split(/\r?\n/)
+                .map(l => l.trim())
+                .filter(l => l.length > 0);
+        }
+
         // Set jawaban ke textarea + render preview chip
         function setJawaban(plainText) {
-            $('#jawaban-textarea').val(plainText);
-            renderPreviewChip(plainText);
+            const normalized = extractJawabanLines(plainText).join('\n');
+            $('#jawaban-textarea').val(normalized);
+            renderPreviewChip(normalized);
         }
 
         // Render preview chip terurut
         function renderPreviewChip(plainText) {
-            const lines = plainText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const lines = extractJawabanLines(plainText);
             if (lines.length === 0) {
                 $('#row-preview-chip').addClass('d-none');
                 return;

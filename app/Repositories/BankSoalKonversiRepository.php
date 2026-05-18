@@ -86,11 +86,11 @@ class BankSoalKonversiRepository
             ->get();
     }
 
-    public function saveOrder(array $difficulties): bool
+    public function saveOrder(array $orders): bool
     {
         DB::beginTransaction();
         try {
-            foreach ($difficulties as $item) {
+            foreach ($orders as $item) {
                 if (!isset($item['id'], $item['order'])) continue;
                 DB::table('bank_soal_konversi')
                     ->where('id', $item['id'])
@@ -120,21 +120,21 @@ class BankSoalKonversiRepository
 
     public function update($payload, $id)
     {
-        $data = $this->model->find($id);
+        $data = $this->model->find($id, ['*']);
         if (!$data) return false;
         return $data->update($payload);
     }
 
     public function destroy($id)
     {
-        $record = $this->model->find($id);
+        $record = $this->model->find($id, ['*']);
         if (!$record) return false;
         return $record->delete();
     }
 
     public function detail($id)
     {
-        return $this->model->find($id);
+        return $this->model->find($id, ['*']);
     }
 
     public function runJavaCode($request)
