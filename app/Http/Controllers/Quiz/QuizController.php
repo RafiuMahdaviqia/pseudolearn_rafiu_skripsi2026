@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\ArsResult;
 use Illuminate\Http\JsonResponse;
 use \Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 
 class QuizController extends Controller
@@ -75,9 +76,8 @@ class QuizController extends Controller
             );
 
             $totalKonversi = min(
-                $this->konversiModel->setView('v_konversi')
+                 DB::table('bank_soal_konversi')
                     ->where('id_level', $levelId)
-                    ->where('status', 1)
                     ->count(),
                 $this->visibleLimit
             );
@@ -90,11 +90,11 @@ class QuizController extends Controller
                 ->distinct('id_soal')
                 ->count('id_soal');
 
-            $completedKonversi = $this->ujianKonversiModel
+            $completedKonversi = DB::table('ujian_kode')
                 ->where('id_mahasiswa', $mahasiswa->id)
                 ->where('id_level', $levelId)
-                ->distinct('id_soal_konversi')
-                ->count('id_soal_konversi');
+                ->distinct('id_bank_soal_konversi')
+                ->count('id_bank_soal_konversi');
 
             $algopoinPerLevel = $this->labelSkorModel
                 ->where('id_mahasiswa', $mahasiswa->id)
@@ -117,17 +117,15 @@ class QuizController extends Controller
                 ->orderBy('order', 'asc')
                 ->first();
 
-            $activeKonversi = $this->konversiModel
-                ->setView('v_konversi')
+            $activeKonversi = DB::table('bank_soal_konversi')
                 ->where('id_level', $levelId)
-                ->where('status', 1)
                 ->whereNotIn('id', function ($q) use ($mahasiswa, $levelId) {
-                    $q->select('id_soal_konversi')
-                      ->from((new UjianKonversi)->getTable())
-                      ->where('id_mahasiswa', $mahasiswa->id)
-                      ->where('id_level', $levelId);
+                    $q->select('id_bank_soal_konversi')
+                    ->from('ujian_kode')
+                    ->where('id_mahasiswa', $mahasiswa->id)
+                    ->where('id_level', $levelId);
                 })
-                ->orderBy('order', 'asc')
+                ->orderBy('created_at', 'asc')
                 ->first();
 
             $remainingSoal = max(0, $totalSoal - $completedSoal);
@@ -235,9 +233,9 @@ class QuizController extends Controller
         foreach ($soalList as $soal) {
             if ($pairCount >= $visibleLimit) break;
 
-            $konversi = $this->konversiModel
-                ->setView('v_konversi')
+            $konversi = DB::table('bank_soal_konversi')
                 ->where('id_soal', $soal->id)
+                ->where('id_level', $levelId)
                 ->first();
 
             $isPseudoDone = $this->ujianModel
@@ -248,10 +246,10 @@ class QuizController extends Controller
 
             $isKonversiDone = false;
             if ($konversi) {
-                $isKonversiDone = $this->ujianKonversiModel
+                $isKonversiDone = DB::table('ujian_kode')
                     ->where('id_mahasiswa', $idMahasiswa)
-                    ->where('id_soal_konversi', $konversi->id)
-                    ->exists();
+                    ->where('id_bank_soal_konversi', $konversi->id)
+                    ->exists(); 
             }
 
             if (!$unlockNext) {
@@ -331,7 +329,7 @@ class QuizController extends Controller
                 ->toArray());
 
             // Soal ARS finish
-            $arsResultDone = \App\Models\ArsResult::where('id_mahasiswa', $idMahasiswa)
+            $arsResultDone = ArsResult::where('id_mahasiswa', $idMahasiswa)
                 ->where('id_level', $levelId)
                 ->whereNotNull('pseudo_label')
                 ->whereNotNull('konversi_label')
@@ -342,9 +340,9 @@ class QuizController extends Controller
                 $soalArs = $this->soalModel->find($arsItem->id_soal);
                 if (!$soalArs) continue;
 
-                $konversiArs = $this->konversiModel
-                    ->setView('v_konversi')
+                $konversiArs = DB::table('bank_soal_konversi')
                     ->where('id_soal', $soalArs->id)
+                    ->where('id_level', $levelId)
                     ->first();
 
                 $result[] = [
@@ -382,9 +380,9 @@ class QuizController extends Controller
                 $soalArs = $this->soalModel->find($arsItem->id_soal);
                 if (!$soalArs) continue;
 
-                $konversiArs = $this->konversiModel
-                    ->setView('v_konversi')
+                $konversiArs = DB::table('bank_soal_konversi')
                     ->where('id_soal', $soalArs->id)
+                    ->where('id_level', $levelId)
                     ->first();
 
                 $isPseudoDone = $this->ujianModel
@@ -395,10 +393,10 @@ class QuizController extends Controller
 
                 $isKonversiDone = false;
                 if ($konversiArs) {
-                    $isKonversiDone = $this->ujianKonversiModel
-                        ->where('id_mahasiswa', $idMahasiswa)
-                        ->where('id_soal_konversi', $konversiArs->id)
-                        ->exists();
+                    $isKonversiDone = DB::table('ujian_kode')
+                    ->where('id_mahasiswa', $idMahasiswa)
+                    ->where('id_bank_soal_konversi', $konversiArs->id)
+                    ->exists();
                 }
 
                 $result[] = [
@@ -431,10 +429,15 @@ class QuizController extends Controller
                 ->whereNull('konversi_label')
                 ->exists();
 
-            if ($isStable && $lastDifficulty === 'hard') {
+           if ($isStable && $lastDifficulty === 'hard') {
 
-            } elseif (!$adaYangBelumSelesai && !$isStable && $lastDifficulty === 'hard') {
-                $soalTambahan = $this->appendSoalTambahan($result, $idMahasiswa, $levelId, 'hard', true, $arsData['batch_count']);
+            } elseif ($isStable && $lastDifficulty !== 'hard' && !$adaYangBelumSelesai) {
+                $nextDifficulty = $this->getProgressDifficulty($lastDifficulty);
+                $this->appendSoalTambahan($result, $idMahasiswa, $levelId, $nextDifficulty, false, $arsData['batch_count']);
+
+            } elseif (!$isStable && !$adaYangBelumSelesai && $arsData['total_ars'] > 0) {
+                $nextDifficulty = $this->getNextDifficulty($lastDifficulty);
+                $soalTambahan   = $this->appendSoalTambahan($result, $idMahasiswa, $levelId, $nextDifficulty, true, $arsData['batch_count']);
 
                 if ($soalTambahan) {
                     $exists = ArsResult::where('id_mahasiswa', $idMahasiswa)
@@ -457,38 +460,6 @@ class QuizController extends Controller
                         ]);
                     }
                 }
-
-            } elseif (!$adaYangBelumSelesai && $isStable && $lastDifficulty !== 'hard') {
-                $nextDifficulty = $this->getProgressDifficulty($lastDifficulty);
-                $this->appendSoalTambahan($result, $idMahasiswa, $levelId, $nextDifficulty, false, $arsData['batch_count']);
-
-            } else {
-                if (!$adaYangBelumSelesai && $arsData['total_ars'] > 0) {
-                    $nextDifficulty = $this->getNextDifficulty($lastDifficulty);
-                    $soalTambahan   = $this->appendSoalTambahan($result, $idMahasiswa, $levelId, $nextDifficulty, true, $arsData['batch_count']);
-
-                    if ($soalTambahan) {
-                        $exists = ArsResult::where('id_mahasiswa', $idMahasiswa)
-                            ->where('id_level', $levelId)
-                            ->where('id_soal', $soalTambahan['id'])
-                            ->exists();
-
-                        if (!$exists) {
-                            $jumlahSoalTambahan = ArsResult::where('id_mahasiswa', $idMahasiswa)
-                                ->where('id_level', $levelId)
-                                ->count();
-
-                            ArsResult::create([
-                                'id'           => Str::uuid(),
-                                'id_mahasiswa' => $idMahasiswa,
-                                'id_level'     => $levelId,
-                                'id_soal'      => $soalTambahan['id'],
-                                'ars_batch'    => floor($jumlahSoalTambahan / 5) + 1,
-                                'difficulty'   => $soalTambahan['difficulty'],
-                            ]);
-                        }
-                    }
-                }
             }
         }
 
@@ -501,9 +472,8 @@ class QuizController extends Controller
 
         $dataLevel = $this->levelModel->find($levelId);
 
-        $jumlahSoalKonversi = $this->konversiModel
+        $jumlahSoalKonversi = DB::table('bank_soal_konversi')
             ->where('id_level', $levelId)
-            ->where('status', 1)
             ->count();
 
         $nyawa = Nyawa::where('id_user', $idUser)->first();
@@ -548,6 +518,7 @@ class QuizController extends Controller
     {
         if (!$difficulty) return null;
 
+        $konversiTambahan = null;
         // Id soal utama 1-10
         $excludeIds = collect($result)
             ->where('type', 'soal')
@@ -558,7 +529,6 @@ class QuizController extends Controller
         $arsResultBelumSelesai = ArsResult::where('id_mahasiswa', $idMahasiswa)
             ->where('id_level', $levelId)
             ->whereNull('konversi_label')
-            ->whereNull('pseudo_label')
             ->first();
 
         if ($arsResultBelumSelesai) {
@@ -588,9 +558,9 @@ class QuizController extends Controller
 
         if (!$soalTambahan) return null;
 
-        $konversiTambahan = $this->konversiModel
-            ->setView('v_konversi')
+        $konversiTambahan = DB::table('bank_soal_konversi')
             ->where('id_soal', $soalTambahan->id)
+            ->where('id_level', $levelId)
             ->first();
 
         $isPseudoDone = $this->ujianModel
@@ -601,9 +571,9 @@ class QuizController extends Controller
 
         $isKonversiDone = false;
         if ($konversiTambahan) {
-            $isKonversiDone = $this->ujianKonversiModel
+            $isKonversiDone = DB::table('ujian_kode')
                 ->where('id_mahasiswa', $idMahasiswa)
-                ->where('id_soal_konversi', $konversiTambahan->id)
+                ->where('id_bank_soal_konversi', $konversiTambahan->id ?? null)
                 ->exists();
         }
 
