@@ -7,7 +7,6 @@ use App\Core\BaseResponse;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class BankSoalKonversiRepository
 {
@@ -52,14 +51,8 @@ class BankSoalKonversiRepository
             $query->where('soal.judul', 'like', "%{$keyword}%");
         })
 
-        // Format Jawaban
         ->editColumn('jawaban', function ($item) {
-            if (empty($item->jawaban)) return '-';
-
-            return collect(explode("\n", $item->jawaban))
-                ->map(fn($line) => trim($line))
-                ->filter(fn($line) => $line !== '')
-                ->implode('<br>');
+            return $this->formatJawabanHtml($item->jawaban);
         })
 
         ->editColumn('output', function ($item) {
@@ -69,6 +62,58 @@ class BankSoalKonversiRepository
         ->rawColumns(['jawaban'])
         ->make(true);
 }
+
+    protected function formatJawabanHtml($jawaban): string
+    {
+        $lines = $this->normalizeJawabanLines($jawaban);
+
+        if (empty($lines)) {
+            return '-';
+        }
+
+        $formatted = collect($lines)
+            ->map(function ($line, $index) {
+                $lineNumber = str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT);
+
+                return $lineNumber . '. ' . $line;
+            })
+            ->implode("\n");
+
+        return '<pre class="bank-soal-jawaban-code mb-0">' . e($formatted) . '</pre>';
+    }
+
+    protected function normalizeJawabanLines($jawaban): array
+    {
+        if (is_array($jawaban)) {
+            $rawLines = $jawaban;
+        } else {
+            $text = (string) $jawaban;
+
+            if (trim($text) === '') {
+                return [];
+            }
+
+            $decoded = json_decode(trim($text), true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $rawLines = $decoded;
+            } else {
+                $normalized = str_replace(["\r\n", "\r"], "\n", $text);
+                $rawLines = explode("\n", $normalized);
+            }
+        }
+
+        return collect($rawLines)
+            ->map(function ($line) {
+                if (is_array($line) || is_object($line)) {
+                    $line = json_encode($line, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                }
+
+                return rtrim((string) $line);
+            })
+            ->filter(fn($line) => trim($line) !== '')
+            ->values()
+            ->all();
+    }
 
     public function getOrderListByLevel(string $levelId)
     {
@@ -145,6 +190,7 @@ class BankSoalKonversiRepository
             $soalInput  = $request->input('scanner_input', '');
 
             $safeSoalId = str_replace('-', '_', $soalId);
+            $className   = 'Main_' . $safeSoalId;
 
             // Gabungkan semua baris kode
             $rawJoined = collect($codes)
@@ -152,16 +198,12 @@ class BankSoalKonversiRepository
                 ->filter(fn($line) => $line !== null && trim($line) !== '')
                 ->implode("\n");
 
-            // Jika user paste full class, ambil isi main() saja
+            // Jika user paste full class, pertahankan seluruh source dan hanya sesuaikan nama class.
             $mainCode = '';
-            if (preg_match('/\bclass\b/i', $rawJoined) && preg_match('/\bmain\s*\(/i', $rawJoined)) {
-                $mainBody = $this->extractMainBody($rawJoined);
-                if (!empty($mainBody)) {
-                    foreach ($mainBody as $line) {
-                        $trimmedLine = rtrim($line);
-                        $mainCode .= ($trimmedLine === '' ? '' : ' ' . $trimmedLine) . "\n";
-                    }
-                }
+            $isFullClassSource = preg_match('/\bclass\s+[A-Za-z_][A-Za-z0-9_]*/i', $rawJoined) === 1;
+
+            if ($isFullClassSource) {
+                $mainCode = $this->renameJavaClassName($rawJoined, $className);
             } else {
                 foreach ($codes as $code) {
                     if (isset($code['value']) && trim($code['value']) !== '') {
@@ -234,14 +276,16 @@ class BankSoalKonversiRepository
             $importBlock = !empty($imports) ? implode("\n", $imports) . "\n\n" : '';
 
             // Rakit file Java final
-            $className = 'Main_' . $safeSoalId;
-
-            $javaCode = $importBlock
-                . 'public class ' . $className . ' {' . "\n"
-                . '    public static void main(String[] args) {' . "\n"
-                . $mainCode
-                . '    }' . "\n"
-                . '}' . "\n";
+            if ($isFullClassSource) {
+                $javaCode = $importBlock . $mainCode;
+            } else {
+                $javaCode = $importBlock
+                    . 'public class ' . $className . ' {' . "\n"
+                    . '    public static void main(String[] args) {' . "\n"
+                    . $mainCode
+                    . '    }' . "\n"
+                    . '}' . "\n";
+            }
 
             // Tulis file .java
             $dirPath = storage_path('app/java/' . $soalId);
@@ -252,27 +296,14 @@ class BankSoalKonversiRepository
             $filePath = $dirPath . '/' . $className . '.java';
             file_put_contents($filePath, $javaCode);
 
-            // Kompilasi
+            // Jalankan langsung source file Java agar tidak bergantung pada javac di server.
+            // Java 11+ bisa mengeksekusi source file secara langsung.
             $javaHome = env('JAVA_HOME', '');
-            $javacBin = $javaHome
-                ? rtrim($javaHome, '/\\') . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'javac'
-                : 'javac';
             $javaBin  = $javaHome
                 ? rtrim($javaHome, '/\\') . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'java'
                 : 'java';
 
-            $compile = new Process([$javacBin, $filePath], $dirPath);
-            $compile->setTimeout(30);
-            $compile->run();
-
-            if (!$compile->isSuccessful()) {
-                throw new \RuntimeException(
-                    'Kompilasi gagal:' . "\n" . $compile->getErrorOutput()
-                );
-            }
-
-            // Jalankan dengan stdin dari form
-            $process = new Process([$javaBin, '-cp', $dirPath, $className], $dirPath);
+            $process = new Process([$javaBin, basename($filePath)], $dirPath);
             $process->setTimeout(15);
             $process->setInput($soalInput); // input dari form ke Scanner
             $process->run();
@@ -285,17 +316,28 @@ class BankSoalKonversiRepository
 
             $output = $process->getOutput();
 
-            // Bersihkan file .class
-            @unlink($dirPath . '/' . $className . '.class');
-
             return BaseResponse::json([
                 'status' => true,
                 'output' => trim($output),
                 'path'   => $filePath,
             ]);
         } catch (\Exception $e) {
-            return BaseResponse::errorTransaction($e);
+            return BaseResponse::errorMessage($e->getMessage(), 500);
         }
+    }
+
+    protected function renameJavaClassName(string $javaCode, string $className): string
+    {
+        $updatedCode = preg_replace_callback(
+            '/\b((?:public\s+)?(?:abstract\s+|final\s+)?)class\s+[A-Za-z_][A-Za-z0-9_]*/i',
+            function ($matches) use ($className) {
+                return $matches[1] . 'class ' . $className;
+            },
+            $javaCode,
+            1
+        );
+
+        return $updatedCode ?? $javaCode;
     }
 
     protected function extractMainBody(string $javaCode): array
