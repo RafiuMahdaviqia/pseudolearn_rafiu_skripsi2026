@@ -117,7 +117,8 @@ class QuizController extends Controller
                         ->where('id_level', $levelId)
                         ->where('status', 1);
                 })
-                ->orderBy('difficulty', 'asc')
+                // ✅ Urutkan spesifik: easy duluan, lalu medium, lalu hard
+                ->orderByRaw("FIELD(difficulty, 'easy', 'medium', 'hard') ASC")
                 ->first();
 
             $activeKonversi = $this->bankSoalKonversiModel
@@ -130,7 +131,8 @@ class QuizController extends Controller
                         ->where('id_mahasiswa', $mahasiswa->id)
                         ->where('id_level', $levelId);
                 })
-                ->orderBy('difficulty', 'asc')
+                // ✅ Ubah ke difficulty pakai FIELD
+                ->orderByRaw("FIELD(difficulty, 'easy', 'medium', 'hard') ASC")
                 ->first();
 
             $remainingSoal = max(0, $totalSoal - $completedSoal);
@@ -221,12 +223,11 @@ class QuizController extends Controller
     {
         // 1) Ambil level dari query string, lalu muat semua soal aktif dan konversi aktif pada level itu.
         $levelId = $request->query('level');
-        $dataSoal = $this->soalModel->where('id_level', $levelId)->active()->orderBy('order', 'asc')->get()->toArray();
-        $dataKonversi = $this->bankSoalKonversiModel
+        $dataSoal = $this->soalModel->where('id_level', $levelId)->active()->orderByRaw("FIELD(difficulty, 'easy', 'medium', 'hard') ASC")->get()->toArray();        $dataKonversi = $this->bankSoalKonversiModel
             ->setView('v_bank_soal_konversi')
             ->where('id_level', $levelId)
             ->whereIn('status', Soal::activeStatusValues())
-            ->orderBy('order', 'asc')
+            ->orderByRaw("FIELD(difficulty, 'easy', 'medium', 'hard') ASC")
             ->get()
             ->toArray();
 
@@ -416,9 +417,8 @@ class QuizController extends Controller
         if ($arsResultBelumSelesai) {
             $soalTambahan = $this->soalModel->find($arsResultBelumSelesai->id_soal);
         } else {
-            $soalTambahan = $this->soalModel
+            $soalQuery = $this->soalModel
                 ->where('id_level', $levelId)
-                ->where('difficulty', $difficulty)
                 ->active()
                 ->whereNotIn('id', function ($q) use ($idMahasiswa, $levelId) {
                     $q->select('id_soal')
@@ -426,7 +426,13 @@ class QuizController extends Controller
                     ->where('id_mahasiswa', $idMahasiswa)
                     ->where('id_level', $levelId);
                 })
-                ->whereNotIn('id', $excludeIds)
+                ->whereNotIn('id', $excludeIds);
+
+            if (Soal::hasDifficultyColumn()) {
+                $soalQuery->where('difficulty', $difficulty);
+            }
+
+            $soalTambahan = $soalQuery
                 ->orderBy('order', 'asc')
                 ->first();
         }
@@ -567,11 +573,15 @@ class QuizController extends Controller
             ->first(['id_soal']);
 
         if ($latestUjian !== null && !empty($latestUjian->id_soal)) {
-            $latestSoalDifficulty = Soal::query()
-                ->whereKey($latestUjian->id_soal)
-                ->value('difficulty');
+            $currentDifficulty = SoalDifficulty::EASY;
 
-            $currentDifficulty = SoalDifficulty::tryFrom((string) $latestSoalDifficulty) ?? SoalDifficulty::EASY;
+            if (Soal::hasDifficultyColumn()) {
+                $latestSoalDifficulty = Soal::query()
+                    ->whereKey($latestUjian->id_soal)
+                    ->value('difficulty');
+
+                $currentDifficulty = SoalDifficulty::tryFrom((string) $latestSoalDifficulty) ?? SoalDifficulty::EASY;
+            }
 
             $latestLabel = LabelSkor::query()
                 ->where('id_mahasiswa', $mahasiswa->id)
@@ -649,10 +659,9 @@ class QuizController extends Controller
 
         $appendSoalId = null;
         if ($shouldAppendNew) {
-            $candidateSoalIds = $allSoal
-                ->where('difficulty', $difficulty)
-                ->pluck('id')
-                ->values();
+            $candidateSoalIds = Soal::hasDifficultyColumn()
+                ? $allSoal->where('difficulty', $difficulty)->pluck('id')->values()
+                : $allSoal->pluck('id')->values();
 
             $historySoalIdSet = $historySoalIdsOrdered->flip();
 

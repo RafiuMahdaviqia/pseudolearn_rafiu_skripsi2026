@@ -19,7 +19,6 @@ class DatabaseSeeder extends Seeder
             LevelSeeder::class,
             SoalSeeder::class,
             MahasiswaSeeder::class,
-            BankSoalKonversiSeeder::class,
             SettingsSeeder::class,
             GuideSeeder::class,
             NyawaSeeder::class,
@@ -40,7 +39,6 @@ class DatabaseSeeder extends Seeder
             ChatbotSeeder::class,
             PatchAfifahSeeder::class,
             PatchDelaSeeder::class,
-            SoalDelaSeeder::class,
         ]);
     }
 }

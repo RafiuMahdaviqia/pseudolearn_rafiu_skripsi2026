@@ -112,6 +112,10 @@ class QuestionListRefactorReferenceController extends Controller
             return SoalDifficulty::EASY;
         }
 
+        if (!Soal::hasDifficultyColumn()) {
+            return SoalDifficulty::EASY;
+        }
+
         $latestSoalDifficulty = Soal::query()
             ->whereKey($latestUjian->id_soal)
             ->value('difficulty');
@@ -147,7 +151,7 @@ class QuestionListRefactorReferenceController extends Controller
             ->where('status', 1)
             ->orderBy('order', 'asc');
 
-        if ($difficulty !== null) {
+        if ($difficulty !== null && Soal::hasDifficultyColumn()) {
             $query->where('difficulty', $difficulty->value);
         }
 

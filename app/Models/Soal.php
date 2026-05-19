@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class Soal extends BaseModel
@@ -71,6 +72,11 @@ class Soal extends BaseModel
     public static function activeStatusValues(): array
     {
         return [self::STATUS_ACTIVE, '1', 'active'];
+    }
+
+    public static function hasDifficultyColumn(): bool
+    {
+        return Schema::hasColumn((new static())->getTable(), 'difficulty');
     }
 
     public function scopeActive($query)
