@@ -15,6 +15,32 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UserSeeder::class,
+            KelasSeeder::class,
+            LevelSeeder::class,
+            SoalSeeder::class,
+            MahasiswaSeeder::class,
+            BankSoalKonversiSeeder::class,
+            SettingsSeeder::class,
+            GuideSeeder::class,
+            NyawaSeeder::class,
+            UjianSeeder::class,
+            KonversiSeeder::class,
+            UjianKonversiSeeder::class,
+            LogDataSeeder::class,
+            HistoryJawabanSeeder::class,
+            HistoryConfidenceSeeder::class,
+            LabelSkorSeeder::class,
+            PencapaianSeeder::class,
+            ArsResultSeeder::class,
+            UjianKodeSeeder::class,
+            LogUjianKodeSeeder::class,
+            DebugKonversiSeeder::class,
+            NilaiTestSeeder::class,
+            ChatbotAccessLogCleanupSeeder::class,
+            ChatbotSeeder::class,
+            PatchAfifahSeeder::class,
+            PatchDelaSeeder::class,
+            SoalDelaSeeder::class,
         ]);
     }
 }

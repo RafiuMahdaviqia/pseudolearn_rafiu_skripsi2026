@@ -2,6 +2,11 @@
 // var blockUI = new KTBlockUI(target);
 var APP_URL = window.APP_URL || "/";
 
+function buildQuizQuestionListUrl(levelId) {
+    const base = window.QUIZ_QUESTION_LIST_URL || (APP_URL + "quiz/question-list-z");
+    return base + "?level=" + encodeURIComponent(levelId);
+}
+
 // $(() => {
 //     blockUI.block();
 //     initTable();
@@ -126,7 +131,7 @@ function openModalFeedbackIncorrect(feedbackText, lives = null) {
         // Ganti tombol modal
         var modalFooter = document.querySelector('#modal-feedback-incorrect .modal-footer');
         if (modalFooter) {
-            modalFooter.innerHTML = `<button type="button" class="btn btn-primary" onclick="window.location.href='${APP_URL}quiz/question-list?level=${id_level}'">Kembali ke Daftar Soal</button>`;
+            modalFooter.innerHTML = `<button type="button" class="btn btn-primary" onclick="window.location.href='${buildQuizQuestionListUrl(id_level)}'">Kembali ke Daftar Soal</button>`;
         }
 
         // Sembunyikan tombol silang (X) pada header modal
@@ -154,7 +159,7 @@ function openModalFeedbackCorrect(pencapaian = null, badge = null) {
     // console.log(pencapaian, badge);
     // Setelah klik tombol selesai, redirect dengan parameter pencapaian
     document.querySelector('#modal-feedback-correct .btn-primary').onclick = function() {
-        let url = `${APP_URL}quiz/question-list?level=${document.getElementById('id-level').value}`;
+        let url = buildQuizQuestionListUrl(document.getElementById('id-level').value);
         if (pencapaian) {
             url += `&pencapaian_id=${encodeURIComponent(pencapaian.id)}`;
         }
@@ -307,7 +312,7 @@ function back(id_level){
         cancelButtonText: 'Tidak'
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href = APP_URL + "quiz/question-list?level=" + id_level;
+            window.location.href = buildQuizQuestionListUrl(id_level);
         }
     });
 }

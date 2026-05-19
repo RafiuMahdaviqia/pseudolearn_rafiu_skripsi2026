@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 
@@ -13,7 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("DROP VIEW IF EXISTS v_pseudo_konversicode");
+        DB::statement("DROP VIEW IF EXISTS v_pseudo_konversicode;");
+
         DB::statement("CREATE OR REPLACE VIEW v_pseudo_konversicode AS SELECT * FROM (
             SELECT
                 u.id_mahasiswa,
@@ -71,6 +70,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("DROP VIEW IF EXISTS v_pseudo_konversicode");
+        DB::statement("DROP VIEW IF EXISTS v_pseudo_konversicode;");
     }
 };

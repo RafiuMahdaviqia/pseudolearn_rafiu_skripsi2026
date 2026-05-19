@@ -406,6 +406,8 @@
 
     <script>
         var hostUrl = "assets/";
+        var APP_URL = window.APP_URL || "/";
+        var QUIZ_QUESTION_LIST_URL = @json(route('quiz.question-list'));
     </script>
     <script src="{{ asset('js/ujian/indexUjianKode.js') }}"></script>
     <script src="{!! asset('assets/plugins/global/plugins.bundle.js') !!}"></script>

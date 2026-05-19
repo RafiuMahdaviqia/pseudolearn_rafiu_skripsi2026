@@ -15,6 +15,9 @@ class Soal extends BaseModel
 {
     use HasFactory, HasUuids, SoftDeletes;
 
+    public const STATUS_ACTIVE = 1;
+    public const STATUS_INACTIVE = 0;
+
     protected $table = 'soal';
     protected $primaryKey = 'id';
     protected $fillable = [
@@ -63,5 +66,15 @@ class Soal extends BaseModel
     public function level() : BelongsTo
     {
         return $this->belongsTo(Level::class, 'id_level');
+    }
+
+    public static function activeStatusValues(): array
+    {
+        return [self::STATUS_ACTIVE, '1', 'active'];
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereIn('status', self::activeStatusValues());
     }
 }

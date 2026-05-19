@@ -2,15 +2,19 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        DB::statement("DROP VIEW IF EXISTS v_bank_soal_konversi;");
+        DB::statement('DROP VIEW IF EXISTS v_bank_soal_konversi;');
+
+        $hasDifficulty = Schema::hasColumn('bank_soal_konversi', 'difficulty');
+
+        $difficultyExpr = $hasDifficulty
+            ? 'COALESCE(bsk.difficulty, s.difficulty) AS difficulty'
+            : 's.difficulty AS difficulty';
 
         DB::statement("
             CREATE VIEW v_bank_soal_konversi AS
@@ -23,7 +27,7 @@ return new class extends Migration
                 s.soal     AS soal_name,
                 bsk.jawaban,
                 bsk.output,
-                bsk.`order`,
+                {$difficultyExpr},
                 bsk.created_at,
                 bsk.updated_at,
                 bsk.deleted_at,
@@ -34,12 +38,18 @@ return new class extends Migration
         ");
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        DB::statement("DROP VIEW IF EXISTS v_bank_soal_konversi;");
+        DB::statement('DROP VIEW IF EXISTS v_bank_soal_konversi;');
+
+        $hasOrder = Schema::hasColumn('bank_soal_konversi', 'order');
+        $hasDifficulty = Schema::hasColumn('bank_soal_konversi', 'difficulty');
+
+        $orderSelect = $hasOrder ? "bsk.`order`," : '';
+
+        $difficultySelect = $hasDifficulty
+            ? 'COALESCE(bsk.difficulty, s.difficulty) AS difficulty'
+            : 's.difficulty AS difficulty';
 
         DB::statement("
             CREATE VIEW v_bank_soal_konversi AS
@@ -52,6 +62,8 @@ return new class extends Migration
                 s.soal     AS soal_name,
                 bsk.jawaban,
                 bsk.output,
+                {$orderSelect}
+                {$difficultySelect},
                 bsk.created_at,
                 bsk.updated_at,
                 bsk.deleted_at,

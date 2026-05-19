@@ -73,14 +73,14 @@ class QuizController extends Controller
 
             // Total aktif
             $totalSoal = min(
-                $this->soalModel->where('id_level', $levelId)->where('status', 1)->count(),
+                $this->soalModel->where('id_level', $levelId)->active()->count(),
                 $this->visibleLimit
             );
 
             $totalKonversi = min(
                 $this->bankSoalKonversiModel->setView('v_bank_soal_konversi')
                     ->where('id_level', $levelId)
-                    ->where('status', 1)
+                    ->whereIn('status', Soal::activeStatusValues())
                     ->count(),
                 $this->visibleLimit
             );
@@ -109,7 +109,7 @@ class QuizController extends Controller
             // Pseudo & konversi aktif blm dikerjakan
             $activeSoal = $this->soalModel
                 ->where('id_level', $levelId)
-                ->where('status', 1)
+                ->active()
                 ->whereNotIn('id', function ($q) use ($mahasiswa, $levelId) {
                     $q->select('id_soal')
                         ->from((new Ujian)->getTable())
@@ -123,7 +123,7 @@ class QuizController extends Controller
             $activeKonversi = $this->bankSoalKonversiModel
                 ->setView('v_bank_soal_konversi')
                 ->where('id_level', $levelId)
-                ->where('status', 1)
+                ->whereIn('status', Soal::activeStatusValues())
                 ->whereNotIn('id', function ($q) use ($mahasiswa, $levelId) {
                     $q->select('id_bank_soal_konversi')
                         ->from((new UjianKode)->getTable())
@@ -199,7 +199,7 @@ class QuizController extends Controller
             ->whereIn('id_soal', function ($q) {
                 $q->select('id')
                     ->from((new Soal)->getTable())
-                    ->where('status', 1);
+                    ->whereIn('status', Soal::activeStatusValues());
             })
             ->count();
 
@@ -221,11 +221,11 @@ class QuizController extends Controller
     {
         // 1) Ambil level dari query string, lalu muat semua soal aktif dan konversi aktif pada level itu.
         $levelId = $request->query('level');
-        $dataSoal = $this->soalModel->where('id_level', $levelId)->where('status', 1)->orderBy('order', 'asc')->get()->toArray();
+        $dataSoal = $this->soalModel->where('id_level', $levelId)->active()->orderBy('order', 'asc')->get()->toArray();
         $dataKonversi = $this->bankSoalKonversiModel
             ->setView('v_bank_soal_konversi')
             ->where('id_level', $levelId)
-            ->where('status', 1)
+            ->whereIn('status', Soal::activeStatusValues())
             ->orderBy('order', 'asc')
             ->get()
             ->toArray();
@@ -348,7 +348,11 @@ class QuizController extends Controller
 
         // 9) Siapkan metadata level dan jumlah soal konversi untuk ditampilkan di header/summary halaman.
         $dataLevel = $this->levelModel->find($levelId);
-        $jumlahSoalKonversi = $this->bankSoalKonversiModel->where('id_level', $levelId)->where('status', 1)->count();
+        $jumlahSoalKonversi = $this->bankSoalKonversiModel
+            ->setView('v_bank_soal_konversi')
+            ->where('id_level', $levelId)
+            ->whereIn('status', Soal::activeStatusValues())
+            ->count();
 
         $nyawa = Nyawa::where('id_user', $idUser)->first();
 
@@ -415,7 +419,7 @@ class QuizController extends Controller
             $soalTambahan = $this->soalModel
                 ->where('id_level', $levelId)
                 ->where('difficulty', $difficulty)
-                ->where('status', 1)
+                ->active()
                 ->whereNotIn('id', function ($q) use ($idMahasiswa, $levelId) {
                     $q->select('id_soal')
                     ->from('ars_result')
@@ -489,7 +493,7 @@ class QuizController extends Controller
         $levelId = $request->input('level_id');
         $idUser = Auth::id();
         $idMahasiswa = $this->mahasiswaModel->where('id_user', $idUser)->value('id');
-        $soalIds = $this->soalModel->where('id_level', $levelId)->where('status', 1)->pluck('id')->toArray();
+        $soalIds = $this->soalModel->where('id_level', $levelId)->active()->pluck('id')->toArray();
 
         $labelSkorSoal = $this->labelSkorModel
             ->where('id_mahasiswa', $idMahasiswa)
@@ -595,7 +599,7 @@ class QuizController extends Controller
 
         $allSoal = Soal::query()
             ->where('id_level', $level->id)
-            ->where('status', 1)
+            ->active()
             ->orderBy('order', 'asc')
             ->get();
 
@@ -612,7 +616,10 @@ class QuizController extends Controller
         $doneSoalMap = $doneSoalIds === [] ? [] : array_fill_keys($doneSoalIds, true);
 
         $shouldIncreaseLimit = false;
-        $baseLimit = (int) ($level->limit_soal ?? 0);
+        $baseLimit = (int) ($level->limit_soal ?? $level->jumlah_soal ?? $this->visibleLimit);
+        if ($baseLimit <= 0) {
+            $baseLimit = $this->visibleLimit;
+        }
         $extraLimit = $shouldIncreaseLimit ? (int) ($level->limit_ars ?? 0) : 0;
         $effectiveLimit = max(0, $baseLimit + $extraLimit);
 
@@ -696,7 +703,7 @@ class QuizController extends Controller
             $dataKonversi = $this->bankSoalKonversiModel
                 ->setView('v_bank_soal_konversi')
                 ->where('id_level', $level->id)
-                ->where('status', 1)
+                ->whereIn('status', Soal::activeStatusValues())
                 ->whereIn('id_soal', $orderedSoalIdsArray)
                 ->orderBy('order', 'asc')
                 ->get()

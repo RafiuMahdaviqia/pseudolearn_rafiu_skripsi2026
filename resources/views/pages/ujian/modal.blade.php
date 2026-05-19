@@ -122,7 +122,7 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="window.location.href='{{ route('quiz.question-list') }}?level={{ $soal->id_level }}'">Selesai</button>
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='{{ route('quiz.question-list', ['level' => $soal->id_level]) }}'">Selesai</button>
                     <!-- <button type="button" class="btn btn-primary" id="submit-yakin">Yakin</button> -->
                 </div>
             </form>
