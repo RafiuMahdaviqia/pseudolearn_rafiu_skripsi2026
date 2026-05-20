@@ -55,4 +55,9 @@ class QueueSoalKunciDefaults
             'Mencari Skor Tertinggi di Antrian Turnamen',
         ];
     }
+
+    public static function levelName(): string
+    {
+        return 'Queue';
+    }
 }

@@ -17,7 +17,7 @@ class LevelSeeder extends Seeder
         Level::query()->updateOrCreate(
             ['id' => self::DEFAULT_LEVEL_ID],
             [
-                'name' => 'Level 1',
+                'name' => 'Queue',
                 'jumlah_soal' => 15,
                 'limit_soal' => 5,
                 'limit_ars' => 0,

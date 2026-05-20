@@ -10,17 +10,24 @@ return new class extends Migration
     {
         Schema::create('soal', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('id_level');
-            $table->string('judul')->nullable();
-            $table->longText('soal')->nullable();
+            $table->uuid('id_level')->nullable();
+            $table->string('judul', 255)->nullable();
+            $table->text('soal')->nullable();
             $table->json('kunci_tipe_data')->nullable();
             $table->json('kunci_algoritma')->nullable();
             $table->integer('order')->nullable();
-            $table->string('status')->nullable();
+            $table->integer('status')->nullable();
+            $table->enum('difficulty', ['easy', 'medium', 'hard'])->default('easy');
+            
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('id_level')->references('id')->on('level')->onDelete('cascade');
+            // Relasi ke tabel level
+            $table->foreign('id_level')
+                  ->references('id')
+                  ->on('level')
+                  ->onDelete('cascade'); 
+                  // Menggunakan cascade agar jika level dihapus, soal ikut terhapus otomatis
         });
     }
 

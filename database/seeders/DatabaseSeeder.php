@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
             ChatbotSeeder::class,
             PatchAfifahSeeder::class,
             PatchDelaSeeder::class,
+            PatchSoalSeeder::class,
         ]);
     }
 }

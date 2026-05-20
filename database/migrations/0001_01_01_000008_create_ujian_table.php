@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('ujian', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('id_level');
+            $table->uuid('id_level')->nullable();
             $table->uuid('id_soal');
             $table->uuid('id_mahasiswa');
             $table->dateTime('waktu')->nullable();

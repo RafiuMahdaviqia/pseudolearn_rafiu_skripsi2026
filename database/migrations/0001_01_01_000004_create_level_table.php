@@ -10,15 +10,13 @@ return new class extends Migration
     {
         Schema::create('level', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('name');
-            $table->integer('jumlah_soal')->nullable();
-            $table->string('image')->nullable();
-            $table->string('feedback_data_type')->nullable();
-            $table->string('feedback_algorithm')->nullable();
-            $table->integer('limit_soal')->nullable();
-            $table->integer('limit_ars')->nullable();
+            $table->string('name', 255)->nullable();
+            $table->string('image', 255)->nullable();
+            $table->text('feedback_data_type')->nullable();
+            $table->text('feedback_algorithm')->nullable();
             $table->integer('order')->nullable();
-            $table->boolean('manual_active')->default(0);
+            $table->integer('manual_active')->nullable();
+            
             $table->timestamps();
             $table->softDeletes();
         });
