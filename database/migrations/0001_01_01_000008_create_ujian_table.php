@@ -13,7 +13,7 @@ return new class extends Migration
             $table->uuid('id_level')->nullable();
             $table->uuid('id_soal');
             $table->uuid('id_mahasiswa');
-            $table->dateTime('waktu')->nullable();
+            $table->integer('waktu')->nullable();
             $table->string('status')->nullable();
             $table->timestamps();
             $table->softDeletes();

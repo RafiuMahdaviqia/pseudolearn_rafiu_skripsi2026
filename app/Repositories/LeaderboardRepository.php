@@ -184,7 +184,7 @@ class LeaderboardRepository extends BaseRepository
                     ->count();
 
                 $jumlahKonversi = $this->konversiModel
-                    ->setView('v_konversi')
+                    ->setView('v_bank_soal_konversi')
                     ->where('id_level', $levelId)
                     ->where('status', 1)
                     ->count();

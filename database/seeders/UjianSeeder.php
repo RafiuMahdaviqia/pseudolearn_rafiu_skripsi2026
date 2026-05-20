@@ -27,7 +27,7 @@ class UjianSeeder extends Seeder
             ],
             [
                 'id' => (string) Str::uuid(),
-                'waktu' => now(),
+                'waktu' => now()->timestamp,
                 'status' => 'done',
             ]
         );
