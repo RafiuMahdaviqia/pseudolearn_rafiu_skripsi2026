@@ -6,7 +6,9 @@ use App\Models\UjianKode;
 use App\Models\BankSoalKonversi;
 use App\Models\Nyawa;
 use App\Models\Mahasiswa;
+use App\Models\ArsResult;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class UjianKodeRepository
 {
@@ -103,6 +105,29 @@ class UjianKodeRepository
             'waktu'                 => $waktu,
         ]);
 
+        // ARS: update ArsResult konversi label after successful submission
+        $arsResult = ArsResult::where('id_mahasiswa', $idMahasiswa)
+            ->where('id_level', $soalKonversi->id_level)
+            ->where('id_soal', $soalKonversi->id_soal)
+            ->whereNull('konversi_label')
+            ->first();
+
+        if ($arsResult) {
+            $langkah = DB::table('log_ujian_kode')
+                ->where('id_mahasiswa', $idMahasiswa)
+                ->where('id_bank_soal_konversi', $idBankSoalKonversi)
+                ->count();
+
+            [$konversiLabel, $konversiScore] = $this->determineLabelAndScore($langkah, $waktu);
+
+            $arsResult->update([
+                'konversi_label'  => $konversiLabel,
+                'konversi_score'  => $konversiScore,
+                'konversi_langkah' => $langkah,
+                'konversi_durasi'  => $waktu,
+            ]);
+        }
+
         return response()->json([
             'success'     => true,
             'java_output' => $soalKonversi->output,
@@ -110,5 +135,26 @@ class UjianKodeRepository
                 'id' => $soalKonversi->id,
             ],
         ]);
+    }
+
+    /**
+     * Tentukan label dan skor berdasarkan totalDrag dan totalWaktuDetik.
+     *
+     * @param int $totalDrag
+     * @param int $totalWaktuDetik
+     * @return array [label, skor]
+     */
+    private function determineLabelAndScore($totalDrag, $totalWaktuDetik)
+    {
+        if ($totalDrag <= 18 && $totalWaktuDetik < 53) {
+            return ['Ideal', 90];
+        } elseif ($totalDrag > 18 && $totalWaktuDetik >= 53) {
+            return ['Struggling', 30];
+        } elseif ($totalDrag <= 18 && $totalWaktuDetik >= 53) {
+            return ['Normal', 70];
+        } elseif ($totalDrag >= 18 && $totalWaktuDetik < 53) {
+            return ['Gaming the System', 50];
+        }
+        return [null, null];
     }
 }

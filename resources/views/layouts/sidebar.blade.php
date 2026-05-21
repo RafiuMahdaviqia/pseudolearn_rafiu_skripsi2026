@@ -183,6 +183,14 @@
                             Ujian Kode</span>
                     </a>
                 </div>
+                <div class="menu-item">
+                    <a class="menu-link{{ request()->is('ars*') ? ' active' : '' }}" href="{{ url('ars') }}">
+                        <span class="menu-icon me-2">
+                            <i class="ki-solid ki-book-open fs-2"></i>
+                        </span>
+                        <span class="menu-title {{ request()->is('ars*') ? 'fw-bold' : 'fw-semibold' }}">ARS Report</span>
+                    </a>
+                </div>
                 <div class="menu-item mt-5">
                     <div class="menu-heading text-uppercase fs-7 fw-bold">Master</div>
                     <div class="app-sidebar-separator separator my-2"></div>

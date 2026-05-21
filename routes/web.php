@@ -25,6 +25,7 @@ use App\Http\Controllers\Overlapping\OverlappingController;
 use App\Http\Controllers\Quiz\QuestionListRefactorReferenceController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
 use App\Http\Controllers\LogUjianKode\LogUjianKodeController;
+use App\Http\Controllers\ARS\ArsController;
 use App\Models\Setting;
 
 Route::get('/', function () {
@@ -274,6 +275,17 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
             Route::post('/calculate-manual', [ScoringController::class, 'calculateManual'])->name('calculate-manual');
             Route::post('/calculate-average', [ScoringController::class, 'calculateAverage'])->name('calculate-average');
             Route::post('/export', [ScoringController::class, 'export'])->name('export');
+        });
+
+        // ars
+        Route::prefix('ars')->name('ars.')->group(function () {
+            Route::get('/', [ArsController::class, 'index'])->name('index');
+            Route::post('table', [ArsController::class, 'table'])->name('table');
+            Route::post('tableArsLog', [ArsController::class, 'tableArsLog'])->name('tableArsLog');
+            Route::get('detail/{id}', [ArsController::class, 'detail'])->name('detail');
+            Route::post('detail/table', [ArsController::class, 'getDetailArs'])->name('detail.table');
+            Route::post('run', [ArsController::class, 'runArs'])->name('run');
+            Route::get('/export', [ArsController::class, 'export'])->name('ars.export');
         });
 
         // ujian konversi
