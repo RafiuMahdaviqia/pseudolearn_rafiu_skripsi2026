@@ -26,9 +26,9 @@ class BaseModel extends Model
 
     protected $model;
 
-    function __construct()
+    function __construct(array $attributes = [])
     {
-        parent::__construct();
+        parent::__construct($attributes);
         $this->request = app(Request::class);
         $this->model = $this;
     }
