@@ -40,6 +40,12 @@ initTable = () => {
                     searchable: true 
                 },
                 {
+                    data: "limit_soal",
+                    className: "text-center",
+                    orderable: false,
+                    searchable: false,
+                },
+                {
                     data: "feedback_data_type",
                     orderable: false,
                     searchable: false,
@@ -86,17 +92,23 @@ initTable = () => {
                 {
                     targets: 3,
                     render: function (data, type, row) {
-                        return row.feedback_data_type || "";
+                        return row.limit_soal ?? '-';
                     },
                 },
                 {
                     targets: 4,
                     render: function (data, type, row) {
-                        return row.feedback_algorithm || "";
+                        return row.feedback_data_type || "";
                     },
                 },
                 {
                     targets: 5,
+                    render: function (data, type, row) {
+                        return row.feedback_algorithm || "";
+                    },
+                },
+                {
+                    targets: 6,
                     className: "text-center",
                     render: function (data, type, row) {
                         const isActive = Number(row.manual_active) === 1;
@@ -116,7 +128,7 @@ initTable = () => {
                     },
                 },
                 {
-                    targets: 6,
+                    targets: 7,
                     render: function (data, type, row, meta) {
                         return `
                             <div class="d-flex gap-3 justify-content-center">
