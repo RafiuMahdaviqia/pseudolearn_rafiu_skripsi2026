@@ -46,9 +46,9 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function() {
     Route::middleware('role:mahasiswa')->group(function() {
         Route::prefix('quiz')->name('quiz.')->group(function() {
             Route::get('/', [QuizController::class, 'index'])->name('index');
-            Route::get('/question-list-z', [QuizController::class, 'questionList'])->name('question-list');
+            Route::get('/question-list-z', [QuizController::class, 'questionList'])->name('question-list-z');
             Route::post('/calculateAvgSkor', [QuizController::class, 'calculateAvgSkor'])->name('calculateAvgSkor');
-            Route::get('/question-list', [QuizController::class, 'listQuestion'])->name('question-list-z');
+            Route::get('/question-list', [QuizController::class, 'listQuestion'])->name('question-list');
             Route::get('/question-list-v', [QuestionListRefactorReferenceController::class, 'questionList'])->name('question-list-v');
         });
 
