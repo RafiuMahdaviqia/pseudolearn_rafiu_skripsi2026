@@ -2,21 +2,47 @@
 
 namespace Database\Seeders;
 
+use App\Models\BankSoalKonversi;
+use App\Models\Level;
+use App\Models\Soal;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class BankSoalKonversiSeeder extends Seeder
 {
     public function run(): void
     {
-        $data = [
+        // Ensure levels exist — find by ID, or create with a placeholder name
+        $levelQueue = Level::firstOrCreate(
+            // ['id' => '019863c4-59f9-7319-9104-08267fc3c551'],
+            ['name' => 'Queue (Array-Based Manual)', 'order' => 11]
+        )->id;
+
+        $levelLinkedList = Level::firstOrCreate(
+            // ['id' => '019de356-abfa-717d-958c-e9311c2712f3'],
+            ['name' => 'Linked List', 'order' => 12]
+        )->id;
+
+        // Resolve Soal ID — find by judul, or create a placeholder with that judul
+        // Uses updateOrCreate so existing Soal records get their id_level/difficulty refreshed
+        $resolveSoal = function (string $judul, string $levelId, string $difficulty = 'easy') {
+            return Soal::updateOrCreate(
+                ['judul' => $judul],
+                [
+                    'id_level'   => $levelId,
+                    'soal'       => $judul,
+                    'order'      => 0,
+                    'difficulty' => $difficulty,
+                ]
+            )->id;
+        };
+
+        $entries = [
             // ============================================================
             // BAGIAN 1: QUEUE (Array-Based Manual)
             // ============================================================
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Antrian Loket Karcis Bioskop' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Antrian Loket Karcis Bioskop',
                 'jawaban'    => "public class Main {\n" .
                                 "    static String[] q = new String[10];\n" .
                                 "    static int f = 0, r = 0, s = 0;\n" .
@@ -30,15 +56,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Rina\n3",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'easy',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Antrian Pasien Klinik' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Antrian Pasien Klinik',
                 'jawaban'    => "public class Main {\n" .
                                 "    static int[] q = new int[10];\n" .
                                 "    static int f = 0, r = 0, s = 0;\n" .
@@ -53,15 +75,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "FRONT : 101\nREAR  : 103\nSIZE  : 3",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'easy',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Antrian Pengambilan Obat' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Antrian Pengambilan Obat',
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
                                 "    static String[] q = new String[10];\n" .
@@ -82,15 +100,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Antrian: [Siti] Ukuran: 1\nAntrian: [Siti, Bagas] Ukuran: 2\nAntrian: [Siti, Bagas, Citra] Ukuran: 3",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'easy',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Loket Bank Belum Buka' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Loket Bank Belum Buka',
                 'jawaban'    => "public class Main {\n" .
                                 "    static int[] q = new int[10];\n" .
                                 "    static int f = 0, r = 0, s = 0;\n" .
@@ -106,15 +120,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "true\nfalse\n2\n201",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'easy',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Antrian Wahana Taman Bermain' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Antrian Wahana Taman Bermain',
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
                                 "    static int[] q = new int[10];\n" .
@@ -131,15 +141,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "FRONT  : 7\nREAR   : 9\nSIZE   : 3\nISEMPTY: false",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'easy',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Memanggil Pasien Pertama di Puskesmas' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Memanggil Pasien Pertama di Puskesmas',
                 'jawaban'    => "public class Main {\n" .
                                 "    static String[] q = new String[10];\n" .
                                 "    static int f = 0, r = 0, s = 0;\n" .
@@ -160,15 +166,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Dipanggil  : Hendra\nSisa       : [Lestari, Miko]\nFRONT baru : Lestari\nSIZE baru  : 2",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'medium',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Melayani Seluruh Antrian Kasir Supermarket' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Melayani Seluruh Antrian Kasir Supermarket',
                 'jawaban'    => "public class Main {\n" .
                                 "    static int[] q = new int[10];\n" .
                                 "    static int f = 0, r = 0, s = 0;\n" .
@@ -185,15 +187,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Dilayani: 1 Sisa: 4\nDilayani: 2 Sisa: 3\nDilayani: 3 Sisa: 2\nDilayani: 4 Sisa: 1\nDilayani: 5 Sisa: 0\nAntrian telah kosong",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'medium',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Antrian Pendaftaran Lomba Bergantian' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Antrian Pendaftaran Lomba Bergantian',
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
                                 "    static String[] q = new String[10];\n" .
@@ -220,15 +218,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "a         : A\nb         : B\nIsi akhir : [C, D]\nSIZE      : 2",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'medium',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Membalik Urutan Antrian Peserta Ujian' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Membalik Urutan Antrian Peserta Ujian',
                 'jawaban'    => "public class Main {\n" .
                                 "    static int[] q = new int[20]; static int f = 0, r = 0, s = 0;\n" .
                                 "    static int[] st = new int[20]; static int top = -1;\n" .
@@ -250,15 +244,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Sebelum: [1, 2, 3, 4, 5]\nSesudah: [5, 4, 3, 2, 1]",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'medium',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Cek Palindrom Plat Nomor Kendaraan' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Cek Palindrom Plat Nomor Kendaraan',
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
                                 "    static char[] q = new char[20]; static int f = 0, r = 0, s = 0;\n" .
@@ -278,15 +268,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Palindrom: true",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'medium',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Pencarian Nomor Antrian di Rumah Sakit' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Pencarian Nomor Antrian di Rumah Sakit',
                 'jawaban'    => "public class Main {\n" .
                                 "    static int[] q = new int[20]; static int qf = 0, qr = 0, qs = 0;\n" .
                                 "    static int[] tmp = new int[20]; static int tf = 0, tr = 0, ts = 0;\n" .
@@ -309,15 +295,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Ditemukan: true\nAntrian  : [11, 22, 33, 44, 55]",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'hard',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Mencari Stok Minimum di Gudang' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Mencari Stok Minimum di Gudang',
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
                                 "    static int[] q = new int[20]; static int qf = 0, qr = 0, qs = 0;\n" .
@@ -343,15 +325,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Minimum: 10\nAntrian: [50, 20, 80, 10, 60]",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'hard',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Menghitung Frekuensi Kehadiran Siswa' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Menghitung Frekuensi Kehadiran Siswa',
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
                                 "    static int[] q = new int[20]; static int qf = 0, qr = 0, qs = 0;\n" .
@@ -378,15 +356,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Frekuensi 2 : 3\nAntrian     : [2, 5, 2, 3, 2, 5, 4]",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'hard',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Cari Nomor Paket lalu Balik Antrian Pengiriman' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Cari Nomor Paket lalu Balik Antrian Pengiriman',
                 'jawaban'    => "public class Main {\n" .
                                 "    static int[] q = new int[20]; static int f = 0, r = 0, s = 0;\n" .
                                 "    static int[] st = new int[20]; static int top = -1;\n" .
@@ -409,15 +383,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Ditemukan: true\nAntrian  : [305, 304, 303, 302, 301]",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'hard',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Mencari Skor Tertinggi di Antrian Turnamen' LIMIT 1)"),
+                'level'      => $levelQueue,
+                'judul'      => 'Mencari Skor Tertinggi di Antrian Turnamen',
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
                                 "    static int[] q = new int[20]; static int f = 0, r = 0, s = 0;\n" .
@@ -444,18 +414,15 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Maksimum : 95\nPosisi   : 4\nAntrian  : [80, 95, 60, 90, 75]",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'hard',
             ],
+
             // ============================================================
             // BAGIAN 2: LINKED LIST
             // ============================================================
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Menyambung Tiga Gerbong Kereta' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Menyambung Tiga Gerbong Kereta',
                 'jawaban'    => "class Node { int d; Node n; Node(int d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -468,15 +435,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Depan: 10\nBelakang: 30",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'easy',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Menghitung Total Gerbong Kereta' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Menghitung Total Gerbong Kereta',
                 'jawaban'    => "class Node { String d; Node n; Node(String d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -494,15 +457,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Jumlah: 3",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'easy',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Menambah Gerbong di Paling Depan' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Menambah Gerbong di Paling Depan',
                 'jawaban'    => "class Node { String d; Node n; Node(String d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -520,15 +479,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "A B C ",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'easy',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Navigasi Playlist Lagu Maju dan Mundur' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Navigasi Playlist Lagu Maju dan Mundur',
                 'jawaban'    => "class DNode { String d; DNode p, n; DNode(String d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -543,15 +498,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Maju: Lagu1, Lagu2\nMundur: Lagu2, Lagu1",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'easy',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Menampilkan Seluruh Daftar Pesanan Makanan' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Menampilkan Seluruh Daftar Pesanan Makanan',
                 'jawaban'    => "class Node { String d; Node n; Node(String d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -567,15 +518,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Sate\nSoto\nBakso",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'easy',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Mencari Buku di Rak Perpustakaan' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Mencari Buku di Rak Perpustakaan',
                 'jawaban'    => "class Node { int d; Node n; Node(int d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -594,15 +541,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Buku 102 Ditemukan: true",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'medium',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Menghapus Pasien Pertama dari Antrian' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Menghapus Pasien Pertama dari Antrian',
                 'jawaban'    => "class Node { int d; Node n; Node(int d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -619,15 +562,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "2 3 ",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'medium',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Melepas Gerbong Terakhir Kereta' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Melepas Gerbong Terakhir Kereta',
                 'jawaban'    => "class DNode { int d; DNode p, n; DNode(int d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -646,15 +585,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "10 20 ",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'medium',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Menyisipkan Peserta di Tengah Barisan' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Menyisipkan Peserta di Tengah Barisan',
                 'jawaban'    => "class Node { String d; Node n; Node(String d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -672,15 +607,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Budi Caca Doni ",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'medium',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Menghitung Total Belanjaan di Kasir' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Menghitung Total Belanjaan di Kasir',
                 'jawaban'    => "class Node { int d; Node n; Node(int d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -698,15 +629,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Total: 30000",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'medium',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Mencari Skor Peserta Tertinggi' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Mencari Skor Peserta Tertinggi',
                 'jawaban'    => "class Node { int d; Node n; Node(int d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -724,15 +651,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Maksimum: 95",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'hard',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Membalik Urutan Antrian Pemain' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Membalik Urutan Antrian Pemain',
                 'jawaban'    => "class Node { int d; Node n; Node(int d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -753,15 +676,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "3 2 1 ",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'hard',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Menyisipkan Data di Tengah Double Linked List' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Menyisipkan Data di Tengah Double Linked List',
                 'jawaban'    => "class DNode { int d; DNode p, n; DNode(int d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -781,15 +700,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "10 20 30 ",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'hard',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Mencabut Berkas Rusak di Tengah Urutan' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Mencabut Berkas Rusak di Tengah Urutan',
                 'jawaban'    => "class Node { int d; Node n; Node(int d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -811,15 +726,11 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "5 15 ",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'hard',
             ],
             [
-                'id'         => DB::raw('UUID()'),
-                'id_level'   => '019de356-abfa-717d-958c-e9311c2712f3',
-                'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Memeriksa Struktur Palindrom Sederhana' LIMIT 1)"),
+                'level'      => $levelLinkedList,
+                'judul'      => 'Memeriksa Struktur Palindrom Sederhana',
                 'jawaban'    => "class DNode { char d; DNode p, n; DNode(char d){this.d=d;} }\n" .
                                 "public class Main {\n" .
                                 "    public static void main(String[] args) {\n" .
@@ -838,13 +749,18 @@ class BankSoalKonversiSeeder extends Seeder
                                 "    }\n" .
                                 "}",
                 'output'     => "Palindrom: true",
-                'created_at' => now(),
-                'updated_at' => now(),
-                'deleted_at' => null,
                 'difficulty' => 'hard',
             ],
         ];
 
-        DB::table('bank_soal_konversi')->insert($data);
+        foreach ($entries as $entry) {
+            BankSoalKonversi::factory()->create([
+                'id_level'   => $entry['level'],
+                'id_soal'    => $resolveSoal($entry['judul'], $entry['level'], $entry['difficulty']),
+                'jawaban'    => $entry['jawaban'],
+                'output'     => $entry['output'],
+                'difficulty' => $entry['difficulty'],
+            ]);
+        }
     }
 }
