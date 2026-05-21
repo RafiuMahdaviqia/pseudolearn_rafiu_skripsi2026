@@ -596,44 +596,45 @@ class QuizController extends Controller
 
         $dataKonversi = [];
         if ($orderedSoalIdsArray !== []) {
-            $dataKonversi = $this->konversiModel
+            $dataKonversi = $this->bankSoalKonversiModel
                 ->newQuery()
                 ->select([
-                    'konversi.id',
-                    'konversi.id_level',
-                    'konversi.id_soal',
+                    'bank_soal_konversi.id',
+                    'bank_soal_konversi.id_level',
+                    'bank_soal_konversi.id_soal',
                     's.judul as judul_soal',
                     's.soal as soal_name',
-                    'konversi.jawaban',
-                    'konversi.output',
-                    'konversi.bobot',
-                    'konversi.created_at',
-                    'konversi.updated_at',
+                    'bank_soal_konversi.jawaban',
+                    'bank_soal_konversi.output',
+                    'bank_soal_konversi.created_at',
+                    'bank_soal_konversi.updated_at',
                     's.status',
                     's.order',
                 ])
-                ->join('soal as s', 's.id', '=', 'konversi.id_soal')
-                ->where('konversi.id_level', $level->id)
+                ->join('soal as s', 's.id', '=', 'bank_soal_konversi.id_soal')
+                ->where('bank_soal_konversi.id_level', $level->id)
                 ->where('s.status', 1)
-                ->whereIn('konversi.id_soal', $orderedSoalIdsArray)
+                ->whereIn('bank_soal_konversi.id_soal', $orderedSoalIdsArray)
                 ->orderBy('s.order', 'asc')
                 ->get()
                 ->toArray();
+                // dd($dataKonversi);
         }
 
         $konversiIds = array_values(array_unique(array_column($dataKonversi, 'id')));
         $ujianKonversiById = [];
 
         if ($konversiIds !== []) {
-            $ujianKonversiById = $this->ujianKonversiModel
-                ->where('id_mahasiswa', $mahasiswa->id)
+            $ujianKonversiById = $this->ujianKodeModel
+                ->where('id_mahasiswa', $user->id)
                 ->where('id_level', $level->id)
-                ->whereIn('id_soal_konversi', $konversiIds)
+                ->whereIn('id_bank_soal_konversi', $konversiIds)
                 ->orderBy('created_at', 'asc')
                 ->get()
-                ->keyBy('id_soal_konversi')
+                ->keyBy('id_bank_soal_konversi')
                 ->map(fn($item) => $item->toArray())
-                ->toArray();
+                ->toArray()
+                ;
         }
 
         $konversiBySoal = [];
@@ -708,23 +709,23 @@ class QuizController extends Controller
         $nilaiKonversiList = [];
 
         if ($konversiIdsForNilai !== []) {
-            $nilaiRows = $this->ujianKonversiModel
-                ->where('id_mahasiswa', $mahasiswa->id)
+            $nilaiRows = $this->ujianKodeModel
+                ->where('id_mahasiswa', $user->id)
                 ->where('id_level', $level->id)
-                ->whereIn('id_soal_konversi', $konversiIdsForNilai)
+                ->whereIn('id_bank_soal_konversi', $konversiIdsForNilai)
                 ->whereNotNull('nilai')
                 ->orderBy('created_at', 'asc')
-                ->get(['id_soal_konversi', 'nilai']);
+                ->get(['id_bank_soal_konversi', 'nilai']);
 
             foreach ($nilaiRows as $row) {
-                $konversi = $konversiById[$row->id_soal_konversi] ?? null;
+                $konversi = $konversiById[$row->id_bank_soal_konversi] ?? null;
                 if ($konversi === null) {
                     continue;
                 }
 
                 $judul = $konversi['judul_soal']
                     ?? $konversi['judul']
-                    ?? ($konversi['soal']['judul'] ?? ('Konversi ' . $row->id_soal_konversi));
+                    ?? ($konversi['soal']['judul'] ?? ('Konversi ' . $row->id_bank_soal_konversi));
                 $nilaiKonversiList[$judul] = $row->nilai;
             }
         }
