@@ -61,7 +61,7 @@ class SoalController extends Controller
 
     public function form($id = null)
     {
-         $list_level = $this->levelModel->get(['id', 'name'])
+        $list_level = $this->levelModel->get(['id', 'name'])
             ->pluck('name', 'id')
             ->toArray();
 
@@ -71,7 +71,7 @@ class SoalController extends Controller
                 'name' => $name
             ];
         })->values()->toArray();
-        
+
         $data = null;
         if ($id) {
             $data = $this->soalModel->find($id);
@@ -98,9 +98,23 @@ class SoalController extends Controller
 
     public function getById($id)
     {
-        $opr = $this->soalService->getById($id);
-        return $opr;
+        $soal = $this->soalModel->find($id);
+
+        if (!$soal) {
+            return response()->json([], 404);
+        }
+
+        return response()->json([
+            'id' => $soal->id,
+            'judul' => $soal->judul ?? null,
+            'soal' => $soal->soal ?? null,
+            'output' => $soal->output ?? null,
+            'kunci_tipe_data' => $soal->kunci_tipe_data ?? null,
+            'kunci_algoritma' => $soal->kunci_algoritma ?? null,
+            'jawaban' => $soal->jawaban ?? null,
+        ]);
     }
+
 
     public function saveOrder(Request $request)
     {

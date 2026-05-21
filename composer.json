@@ -13,7 +13,8 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.9",
         "maatwebsite/excel": "^3.1",
-        "prettus/l5-repository": "^2.9"
+        "prettus/l5-repository": "^2.9",
+        "yajra/laravel-datatables-oracle": "^12.7"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
