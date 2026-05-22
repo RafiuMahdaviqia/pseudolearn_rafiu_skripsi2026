@@ -6,12 +6,14 @@ use App\Models\Soal;
 use App\Models\Kelas;
 use App\Models\Nyawa;
 use App\Models\Konversi;
+use App\Models\LabelSkor;
 use App\Models\Mahasiswa;
 use App\Core\BaseResponse;
 use App\Models\Pencapaian;
 use Illuminate\Support\Str;
 use App\Models\DebugKonversi;
 use App\Models\UjianKonversi;
+use App\Services\DecoyAnswerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Jobs\DeletePencapaianKonversi;
@@ -33,6 +35,7 @@ class KonversiRepository extends BaseRepository
     protected $mahasiswaModel;
     protected $ujianKonversiModel;
     protected $debugKonversiModel;
+    protected $labelSkorModel;
 
     public function __construct()
     {
@@ -41,6 +44,7 @@ class KonversiRepository extends BaseRepository
         $this->mahasiswaModel = new Mahasiswa();
         $this->ujianKonversiModel = new UjianKonversi();
         $this->debugKonversiModel = new DebugKonversi();
+        $this->labelSkorModel = new LabelSkor();
     }
 
     /**
@@ -370,9 +374,15 @@ class KonversiRepository extends BaseRepository
                     $nyawa->save();
                 }
 
-                return BaseResponse::errorMessage([
-                    'message' => 'Terdapat jawaban salah',
-                    'errors'  => $errors
+                $decoy = $this->buildDecoyForGaming($idMahasiswa, $soalKonversi);
+
+                return BaseResponse::json([
+                    'success' => false,
+                    'message' => [
+                        'message' => 'Terdapat jawaban salah',
+                        'errors'  => $errors,
+                    ],
+                    'decoy' => $decoy,
                 ]);
             }
 
@@ -479,6 +489,37 @@ class KonversiRepository extends BaseRepository
             return BaseResponse::errorMessage($e->getMessage());
         }
     }
+    private function buildDecoyForGaming($idMahasiswa, $soalKonversi): ?array
+    {
+        $label = $this->labelSkorModel
+            ->where('id_level', $soalKonversi->id_level)
+            ->where('id_soal', $soalKonversi->id_soal)
+            ->where('id_mahasiswa', $idMahasiswa)
+            ->orderByDesc('created_at')
+            ->value('label');
+
+        if ($label !== 'Gaming the System') {
+            return null;
+        }
+
+        $decoyService = new DecoyAnswerService();
+
+        // Extract kunci lines from the structured jawaban array
+        $kunciLines = array_map(function ($item) {
+            return trim((string) (is_array($item) ? reset($item) : $item));
+        }, $soalKonversi->jawaban ?? []);
+
+        $decoyLines = $decoyService->makeDecoyLines($kunciLines);
+
+        if (empty(array_filter($decoyLines))) {
+            return null;
+        }
+
+        return [
+            'kode_langkah' => $decoyLines,
+        ];
+    }
+
     protected function generateTokens(string $text): array
     {
         $pattern = '/(\s+|[a-zA-Z0-9_]+|[+\-*\/=<>!&|^~(){}[\],.;:])/';
