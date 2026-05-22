@@ -81,7 +81,7 @@ function submitForm(confidence) {
                             const livesEl = document.getElementById("lives-count");
                             if (livesEl) livesEl.innerText = (data && typeof data.lives !== 'undefined') ? data.lives : 0;
 
-                            openModalFeedbackIncorrect(feedbackText, data.lives);
+                            openModalFeedbackIncorrect(feedbackText, data.lives, response.decoy || null);
                         },
                         error: function (xhr) {
                             // console.error("Gagal mendapatkan status nyawa", xhr);
@@ -111,7 +111,53 @@ function submitForm(confidence) {
     });
 }
 
-function openModalFeedbackIncorrect(feedbackText, lives = null) {
+function renderDecoyList(listEl, items) {
+    if (!listEl) return 0;
+    listEl.innerHTML = '';
+    if (!Array.isArray(items)) return 0;
+
+    let count = 0;
+    items.forEach(item => {
+        if (!item) return;
+        const li = document.createElement('li');
+        li.textContent = item;
+        listEl.appendChild(li);
+        count++;
+    });
+
+    return count;
+}
+
+function setDecoyUjian(decoy, lives) {
+    const section = document.getElementById('decoy-section-ujian');
+    if (!section) return;
+
+    const livesInt = parseInt(lives, 10);
+    const noLives = Number.isFinite(livesInt) && livesInt <= 0;
+
+    if (!decoy || noLives) {
+        section.classList.add('d-none');
+        const tipeList = document.getElementById('decoy-tipe-list');
+        const algoList = document.getElementById('decoy-algo-list');
+        if (tipeList) tipeList.innerHTML = '';
+        if (algoList) algoList.innerHTML = '';
+        return;
+    }
+
+    const tipeList = document.getElementById('decoy-tipe-list');
+    const algoList = document.getElementById('decoy-algo-list');
+    const tipeCount = renderDecoyList(tipeList, decoy.tipe_data || []);
+    const algoCount = renderDecoyList(algoList, decoy.algoritma || []);
+
+    if (tipeCount === 0 && algoCount === 0) {
+        section.classList.add('d-none');
+        return;
+    }
+
+    section.classList.remove('d-none');
+}
+
+function openModalFeedbackIncorrect(feedbackText, lives = null, decoy = null) {
     var modal = new bootstrap.Modal(document.getElementById('modal-feedback-incorrect'));
     var modalKonfirmasi = bootstrap.Modal.getInstance(document.getElementById('modal-konfirmasi-jawaban'));
     document.getElementById('feedback-ujian').innerText = feedbackText;
@@ -141,6 +187,7 @@ function openModalFeedbackIncorrect(feedbackText, lives = null) {
     if (modalKonfirmasi) {
         modalKonfirmasi.hide();
     }
+    setDecoyUjian(decoy, lives);
     modal.show();
 }
 
