@@ -78,6 +78,17 @@
                         </p>
                         <br>
                         <p id="feedback-ujian"></p>
+                        <div id="decoy-section-ujian" class="mt-3 d-none">
+                            <div style="font-size: 0.9rem; font-weight: 600;">Contoh jawaban mirip (bukan kunci):</div>
+                            <div class="mt-2">
+                                <div style="font-size: 0.85rem; font-weight: 600;">Tipe Data</div>
+                                <ul id="decoy-tipe-list" style="font-size: 0.85rem; padding-left: 18px; margin-bottom: 8px;"></ul>
+                            </div>
+                            <div class="mt-2">
+                                <div style="font-size: 0.85rem; font-weight: 600;">Algoritma</div>
+                                <ul id="decoy-algo-list" style="font-size: 0.85rem; padding-left: 18px; margin-bottom: 0;"></ul>
+                            </div>
+                        </div>
                     </div>
                     <div style="flex-shrink: 0; margin-left: 24px;">
                         <img src="{{ asset('assets/media/img/fail.webp') }}" alt="fail" style="max-width: 170px; display: block;">
@@ -182,6 +193,10 @@
                         </p>
                         <br>
                         <p id="feedback-ujian-konversi"></p>
+                        <div id="decoy-section-konversi" class="mt-3 d-none">
+                            <div style="font-size: 0.9rem; font-weight: 600;">Contoh jawaban mirip (bukan kunci):</div>
+                            <ul id="decoy-kode-list" style="font-size: 0.85rem; padding-left: 18px; margin-bottom: 0;"></ul>
+                        </div>
                     </div>
                     <div style="flex-shrink: 0; margin-left: 24px;">
                         <img src="{{ asset('assets/media/img/fail.webp') }}" alt="fail" style="max-width: 170px; display: block;">
