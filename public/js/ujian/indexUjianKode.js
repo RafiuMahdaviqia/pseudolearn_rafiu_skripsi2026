@@ -167,6 +167,7 @@ function submitKonversi() {
                     openModalFeedbackIncorrect(
                         res?.message?.message ?? "Terdapat jawaban salah",
                         data.lives,
+                        res?.decoy || null,
                     );
                 },
                 error: function (xhr) {
@@ -177,7 +178,49 @@ function submitKonversi() {
     });
 }
 
-function openModalFeedbackIncorrect(feedbackText, lives = null) {
+function renderDecoyList(listEl, items) {
+    if (!listEl) return 0;
+    listEl.innerHTML = '';
+    if (!Array.isArray(items)) return 0;
+
+    let count = 0;
+    items.forEach(item => {
+        if (!item) return;
+        const li = document.createElement('li');
+        li.textContent = item;
+        listEl.appendChild(li);
+        count++;
+    });
+
+    return count;
+}
+
+function setDecoyKonversi(decoy, lives) {
+    const section = document.getElementById('decoy-section-konversi');
+    if (!section) return;
+
+    const livesInt = parseInt(lives, 10);
+    const noLives = Number.isFinite(livesInt) && livesInt <= 0;
+
+    if (!decoy || noLives) {
+        section.classList.add('d-none');
+        const listEl = document.getElementById('decoy-kode-list');
+        if (listEl) listEl.innerHTML = '';
+        return;
+    }
+
+    const listEl = document.getElementById('decoy-kode-list');
+    const count = renderDecoyList(listEl, decoy.kode_langkah || []);
+
+    if (count === 0) {
+        section.classList.add('d-none');
+        return;
+    }
+
+    section.classList.remove('d-none');
+}
+
+function openModalFeedbackIncorrect(feedbackText, lives = null, decoy = null) {
     // Tampilkan modal incorrect konversi
     var modalIncorrect = new bootstrap.Modal(
         document.getElementById("modal-feedback-incorrect-konversi"),
@@ -216,6 +259,7 @@ function openModalFeedbackIncorrect(feedbackText, lives = null) {
     if (modalKonfirmasi) {
         modalKonfirmasi.hide();
     }
+    setDecoyKonversi(decoy, lives);
     modalIncorrect.show();
 }
 
