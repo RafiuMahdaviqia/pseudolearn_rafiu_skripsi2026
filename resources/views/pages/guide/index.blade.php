@@ -47,7 +47,7 @@
                                     <img src="/assets/media/img/panduan3_a.png" alt="Ilustrasi nyawa" class="img-fluid" style="max-height: 70px;" />
                                 </div>
                                 <div class="col text-start">
-                                    <p class="mb-0">Kamu <strong style="color: #03346E">maksimal</strong> memiliki <strong style="color: #03346E;">25</strong> nyawa. Jika nyawamu hangus, satu nyawa akan otomatis kembali setiap 10 menit.</p>
+                                    <p class="mb-0">Kamu <strong style="color: #03346E">maksimal</strong> memiliki <strong style="color: #03346E;">100</strong> nyawa. Jika nyawamu hangus, nyawa akan otomatis kembali 10 setiap menit.</p>
                                 </div>
                             </div>
                             <div class="row align-items-center justify-content-center mb-4">

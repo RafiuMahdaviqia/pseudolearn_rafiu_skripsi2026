@@ -80,7 +80,7 @@ class UjianKodeRepository
 
                 // Set waktu regenerasi
                 if (is_null($nyawa->next_regen_at)) {
-                    $nyawa->next_regen_at = now()->addMinutes(10);
+                    $nyawa->next_regen_at = now()->addMinute();
                 }
 
                 $nyawa->save();
