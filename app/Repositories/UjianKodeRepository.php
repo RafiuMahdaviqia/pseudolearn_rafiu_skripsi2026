@@ -4,9 +4,11 @@ namespace App\Repositories;
 
 use App\Models\UjianKode;
 use App\Models\BankSoalKonversi;
+use App\Models\LabelSkor;
 use App\Models\Nyawa;
 use App\Models\Mahasiswa;
 use App\Models\ArsResult;
+use App\Services\DecoyAnswerService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -84,6 +86,8 @@ class UjianKodeRepository
                 $nyawa->save();
             }
 
+            $decoy = $this->buildDecoyForGaming($idMahasiswa, $soalKonversi, $kunciJawaban);
+
             return response()->json([
                 'success' => false,
                 'message' => [
@@ -91,6 +95,7 @@ class UjianKodeRepository
                     'errors'  => $errors,
                 ],
                 'lives' => $nyawa->nyawa ?? 0,
+                'decoy' => $decoy,
             ], 422);
         }
 
@@ -135,6 +140,34 @@ class UjianKodeRepository
                 'id' => $soalKonversi->id,
             ],
         ]);
+    }
+
+    private function buildDecoyForGaming($idMahasiswa, BankSoalKonversi $soalKonversi, array $kunciJawaban): ?array
+    {
+        $label = LabelSkor::query()
+            ->where('id_level', $soalKonversi->id_level)
+            ->where('id_soal', $soalKonversi->id_soal)
+            ->where('id_mahasiswa', $idMahasiswa)
+            ->orderByDesc('created_at')
+            ->value('label');
+
+        if ($label !== 'Gaming the System') {
+            return null;
+        }
+
+        $decoyService = new DecoyAnswerService();
+        $cleanKunci = array_map(function ($line) {
+            return trim((string) $line);
+        }, $kunciJawaban);
+        $decoyLines = $decoyService->makeDecoyLines($cleanKunci);
+
+        if (empty(array_filter($decoyLines))) {
+            return null;
+        }
+
+        return [
+            'kode_langkah' => $decoyLines,
+        ];
     }
 
     /**
