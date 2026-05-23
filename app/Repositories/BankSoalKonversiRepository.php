@@ -41,7 +41,7 @@ class BankSoalKonversiRepository
     $query->orderBy('bank_soal_konversi.difficulty', 'asc')
           ->orderBy('bank_soal_konversi.created_at', 'asc');
 
-    return DataTables::of($query)
+    $dataTable = DataTables::of($query)
         ->addIndexColumn()
         ->filterColumn('level_name', function ($query, $keyword) {
             $query->where('level.name', 'like', "%{$keyword}%");
@@ -59,8 +59,17 @@ class BankSoalKonversiRepository
             return $item->output ?? '-';
         })
 
-        ->rawColumns(['jawaban'])
-        ->make(true);
+        ->rawColumns(['jawaban']);
+
+    // Defensive guard: jika request order column tidak ada atau null,
+    // nonaktifkan ordering default Yajra untuk mencegah TypeError
+    // (Yajra\DataTables\QueryDataTable::hasOrderColumn() expects string, null given)
+    $orderColumn = $request->input('columns.' . $request->input('order.0.column', '') . '.name');
+    if (is_null($orderColumn) || $orderColumn === '') {
+        $dataTable->ordering(false);
+    }
+
+    return $dataTable->make(true);
 }
 
     protected function formatJawabanHtml($jawaban): string
