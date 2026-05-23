@@ -31,11 +31,17 @@ class ChatbotService
         if ($idSoal) {
             $soal = Soal::find($idSoal);
             if ($soal) {
-                $options = is_string($soal->options) 
-                    ? json_decode($soal->options, true) 
+                $options = is_string($soal->options)
+                    ? json_decode($soal->options, true)
                     : $soal->options;
-                
-                $optionsList = array_column($options, 'text') ?? [];
+
+                // Guard terhadap null / non-array sebelum memanggil array_column
+                if (is_array($options)) {
+                    $optionsList = array_column($options, 'text');
+                } else {
+                    $optionsList = [];
+                }
+
                 $optionsText = implode(", ", $optionsList);
                 $soalInfo = "Soal: {$soal->name}.\nOpsi jawaban: {$optionsText}";
                 

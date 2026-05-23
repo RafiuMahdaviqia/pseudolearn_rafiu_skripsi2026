@@ -121,6 +121,28 @@ class BankSoalKonversiRepository
         return $this->model->find($id, ['*']);
     }
 
+    /**
+     * Table for ujian konversi (v_ujian_konversi or ujian_konversi view)
+     * Provides a DataTables response similar to other table methods.
+     */
+    public function tableUjianKonversi($request)
+    {
+        $query = DB::table('v_ujian_konversi')
+            ->select('*');
+
+        // optional filter by level
+        $level = $request->input('level');
+        if (!is_null($level) && $level !== '') {
+            $query->where('id_level', $level);
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->make(true);
+    }
+
     public function runJavaCode($request)
     {
         try {

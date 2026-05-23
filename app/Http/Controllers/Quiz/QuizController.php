@@ -103,25 +103,17 @@ class QuizController extends Controller
             $dataLevel[$i]['jumlahSoalKonversiAktif'] = max(0, $totalKonversi - $completedKonversi);
         }
 
-        // KUNCIAN LEVEL
+        // 🔥 LOGIKA KUNCIAN LEVEL: BUKA PAKSA SESUAI STATUS DOSEN
         foreach ($dataLevel as $i => $level) {
-            $manualActive = intval($level['manual_active']) === 1;
+            $isActive = intval($level['manual_active']) === 1;
 
-            if ($manualActive) {
-                $dataLevel[$i]['isLocked'] = false; 
-                continue;
+            if ($isActive) {
+                // Jika AKTIF di Admin -> Buka Gembok (Mahasiswa bebas loncat ke level ini)
+                $dataLevel[$i]['isLocked'] = false;
+            } else {
+                // Jika TIDAK AKTIF di Admin -> Kunci Mutlak
+                $dataLevel[$i]['isLocked'] = true;
             }
-
-            if ($i === 0) {
-                $dataLevel[$i]['isLocked'] = false; 
-                continue;
-            }
-
-            $prevLevel = $dataLevel[$i - 1];
-            $prevIsManual = intval($prevLevel['manual_active']) === 1;
-            $canUnlock = !$prevIsManual && !empty($levelCompletion[$i - 1]);
-
-            $dataLevel[$i]['isLocked'] = !$canUnlock;
         }
 
         $algopoin = $this->labelSkorModel
@@ -151,18 +143,22 @@ class QuizController extends Controller
         ]);
     }
 
+
     public function questionList(Request $request)
     {
         $levelId = $request->query('level');
         $level = $this->levelModel->find($levelId);
         abort_if(!$level, 404, 'Level not found.');
 
-        if (intval($level->manual_active) === 0 && intval($level->order) !== 1) {
+        // 🔥 PROTEKSI URL MUTLAK
+        if (intval($level->manual_active) === 0) {
             return redirect()->route('quiz.index')->with('error', 'Level ini sedang dinonaktifkan oleh Dosen.');
         }
+        // Hapus pengecekan order/level sebelumnya di sini jika ada.
 
         $user = Auth::user();
         abort_if($user === null, 401);
+
         $mahasiswa = $user->mahasiswa()->first();
         abort_if($mahasiswa === null, 404, 'Mahasiswa not found.');
 
@@ -408,6 +404,11 @@ class QuizController extends Controller
             ->whereNull('label')
             ->where('id_level', $levelId)
             ->sum('skor');
+
+        $algobadge = $this->labelSkorModel
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->whereNotNull('id_soal')
+            ->count();
 
         $jumlahSoalKonversi = count(array_filter($result, fn($r) => $r['type'] === 'soal'));
 

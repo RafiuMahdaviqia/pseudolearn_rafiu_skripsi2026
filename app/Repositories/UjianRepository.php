@@ -128,7 +128,13 @@ class UjianRepository extends BaseRepository
                     $givenVariabel    = $jawabRow['variabel'] ?? null;
                     $givenTipe        = $jawabRow['jawaban'] ?? null;
 
-                    if($expectedVariabel !== $givenVariabel || strtolower($expectedTipe) !== strtolower($givenTipe)){
+                    // 🔥 TOLERANSI TIPE DATA: Hapus spasi dan jadikan huruf kecil semua
+                    $normExpVar = preg_replace('/\s+/', '', strtolower($expectedVariabel ?? ''));
+                    $normGivVar = preg_replace('/\s+/', '', strtolower($givenVariabel ?? ''));
+                    $normExpTipe = preg_replace('/\s+/', '', strtolower($expectedTipe ?? ''));
+                    $normGivTipe = preg_replace('/\s+/', '', strtolower($givenTipe ?? ''));
+
+                    if($normExpVar !== $normGivVar || $normExpTipe !== $normGivTipe){
                         $isCorrectTipe = false;
                         $tipeMismatch[] = [
                             'index'=>$i,
@@ -166,7 +172,12 @@ class UjianRepository extends BaseRepository
             } else {
                 foreach($kunciLangkah as $i => $exp){
                     $given = $jawabLangkah[$i] ?? '';
-                    if($exp !== $given){
+                    
+                    // 🔥 TOLERANSI ALGORITMA: Hapus spasi dan jadikan huruf kecil semua
+                    $normExpAlgo = preg_replace('/\s+/', '', strtolower($exp));
+                    $normGivAlgo = preg_replace('/\s+/', '', strtolower($given));
+
+                    if($normExpAlgo !== $normGivAlgo){
                         $isCorrectAlgo = false;
                         $algoMismatch[] = [
                             'index'=>$i,
@@ -301,7 +312,6 @@ class UjianRepository extends BaseRepository
                             ->where('id_soal', $soal->id)
                             ->where('category', 'badge')
                             ->first();
-
                         
                         if ($dataPencapaianBadge && $dataPencapaianBadge->status == 0 && $isCorrectAll) {
                             $dataPencapaianBadge->update([
@@ -312,9 +322,7 @@ class UjianRepository extends BaseRepository
                             $returnPencapaianBadge = [
                                 'id' => $dataPencapaianBadge->id,
                             ];
-                            
                         }
-                       
                     }
 
                 $returnData = [
