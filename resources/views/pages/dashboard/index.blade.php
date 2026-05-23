@@ -517,7 +517,7 @@
         }
 
         let nyawaSekarang = parseInt($('#lives-count').text() || '0', 10);
-        let maxNyawa = parseInt($('#max-lives-count').text() || '25', 10);
+        let maxNyawa = parseInt($('#max-lives-count').text() || '100', 10);
 
         let pesan = '';
         if (estimasiNyawa && (nyawaSekarang + estimasiNyawa) > maxNyawa) {

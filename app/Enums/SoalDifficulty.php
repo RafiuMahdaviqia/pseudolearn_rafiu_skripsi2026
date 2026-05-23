@@ -6,9 +6,9 @@ use Illuminate\Support\Str;
 
 enum SoalDifficulty: string
 {
-    case EASY = 'Easy';
-    case MEDIUM = 'Medium';
-    case HARD = 'Hard';
+    case EASY = 'easy';
+    case MEDIUM = 'medium';
+    case HARD = 'hard';
 
     public function index(): int
     {

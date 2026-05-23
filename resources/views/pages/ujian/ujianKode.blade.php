@@ -312,11 +312,9 @@
                                         return false;
                                     });
 
-                                    // Format jawaban
-                                    $rawJawaban = $konversi['jawaban'] ?? '';
-
+                                    // Format jawaban (JSON array atau teks per baris)
                                     $jawabanList = collect(
-                                        array_filter(array_map('trim', explode("\n", (string) $rawJawaban))),
+                                        \App\Models\BankSoalKonversi::parseJawabanLines($konversi['jawaban'] ?? ''),
                                     )->shuffle();
 
                                     $totalLangkah = $jawabanList->count();

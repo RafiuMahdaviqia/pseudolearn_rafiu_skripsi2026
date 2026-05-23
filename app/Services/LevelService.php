@@ -67,6 +67,7 @@ class LevelService
 
         $insertData = [
             'name' => $insertData['nama'],
+            'limit_soal' => $insertData['limit_soal'] ?? null,
             'feedback_data_type' => $insertData['feedback_tipe_data'] ?? null,
             'feedback_algorithm' => $insertData['feedback_algoritma'] ?? null,
             'image' => $insertData['image'] ?? null,
@@ -140,6 +141,7 @@ class LevelService
 
             $insertData = [
                 'name' => $insertData['nama'] ?? $level->name,
+                'limit_soal' => $insertData['limit_soal'] ?? $level->limit_soal,
                 'feedback_data_type' => $insertData['feedback_tipe_data'] ? $insertData['feedback_tipe_data'] : $level->feedback_data_type,
                 'feedback_algorithm' => $insertData['feedback_algoritma'] ? $insertData['feedback_algoritma'] : $level->feedback_algorithm,
                 'image' => $insertData['image'] ?? $level->image,

@@ -17,7 +17,7 @@ use App\Http\Controllers\Labeling\LabelingController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Mahasiswa\MahasiswaController;
 use App\Http\Controllers\Confidence\ConfidenceController;
-// use App\Http\Controllers\Ujian\UjianCodeProgramController;
+use App\Http\Controllers\Ujian\UjianCodeProgramController;
 use App\Http\Controllers\UjianKode\UjianKodeController;
 use App\Http\Controllers\Leaderboard\LeaderboardController;
 use App\Http\Controllers\LogActivity\LogActivityController;
@@ -28,6 +28,7 @@ use App\Http\Controllers\Quiz\QuestionListRefactorReferenceController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
 use App\Http\Controllers\ARS\ArsController;
 use App\Http\Controllers\LogUjianKode\LogUjianKodeController;
+use App\Http\Controllers\ARS\ArsController;
 use App\Models\Setting;
 use App\Http\Controllers\Chatbot\ChatbotController;
 
@@ -53,9 +54,9 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
     Route::middleware('role:mahasiswa')->group(function () {
         Route::prefix('quiz')->name('quiz.')->group(function () {
             Route::get('/', [QuizController::class, 'index'])->name('index');
-            Route::get('/question-list-z', [QuizController::class, 'questionList'])->name('question-list');
+            Route::get('/question-list', [QuizController::class, 'questionList'])->name('question-list');
             Route::post('/calculateAvgSkor', [QuizController::class, 'calculateAvgSkor'])->name('calculateAvgSkor');
-            Route::get('/question-list', [QuizController::class, 'listQuestion'])->name('question-list-z');
+            Route::get('/question-list-z', [QuizController::class, 'questionList'])->name('question-list-z');
             Route::get('/question-list-v', [QuestionListRefactorReferenceController::class, 'questionList'])->name('question-list-v');
         });
 
@@ -83,14 +84,10 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
             Route::post('/submit', [UjianController::class, 'submit'])->name('submit');
             Route::post('/send-log', [UjianController::class, 'sendLog'])->name('send-log');
         });
-        // Route::prefix('code-program')->name('code-program.')->group(function () {
-        //     Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
-        //     Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
-        // });
-        // Route::prefix('code-program')->name('code-program.')->group(function () {
-        //     Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
-        //     Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
-        // });
+        Route::prefix('code-program')->name('code-program.')->group(function () {
+            Route::get('/', [UjianCodeProgramController::class, 'index'])->name('code-program.index');
+            Route::post('submit-konversi', [UjianCodeProgramController::class, 'submitKonversi'])->name('code-program.submit-konversi');
+        });
         Route::prefix('ujian-kode')->name('ujian-kode.')->group(function () {
             Route::get('/', [UjianKodeController::class, 'index'])->name('index');
             Route::post('submit-konversi', [UjianKodeController::class, 'submitKonversi'])->name('submit-konversi');
@@ -303,6 +300,17 @@ Route::middleware(['auth', 'maintenance.mahasiswa'])->group(function () {
             Route::post('/calculate-manual', [ScoringController::class, 'calculateManual'])->name('calculate-manual');
             Route::post('/calculate-average', [ScoringController::class, 'calculateAverage'])->name('calculate-average');
             Route::post('/export', [ScoringController::class, 'export'])->name('export');
+        });
+
+        // ars
+        Route::prefix('ars')->name('ars.')->group(function () {
+            Route::get('/', [ArsController::class, 'index'])->name('index');
+            Route::post('table', [ArsController::class, 'table'])->name('table');
+            Route::post('tableArsLog', [ArsController::class, 'tableArsLog'])->name('tableArsLog');
+            Route::get('detail/{id}', [ArsController::class, 'detail'])->name('detail');
+            Route::post('detail/table', [ArsController::class, 'getDetailArs'])->name('detail.table');
+            Route::post('run', [ArsController::class, 'runArs'])->name('run');
+            Route::get('/export', [ArsController::class, 'export'])->name('ars.export');
         });
 
         // ujian konversi

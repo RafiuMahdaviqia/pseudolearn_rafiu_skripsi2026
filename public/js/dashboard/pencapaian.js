@@ -104,11 +104,11 @@ function claimPencapaian(id, category, target) {
 
     // Ambil nyawa sekarang dari elemen (atau variabel global jika ada)
     let nyawaSekarang = parseInt($('#lives-count').val() || '0', 10);
-    let maxNyawa = 25; // Default, bisa diganti jika ada variabel global/max dari server
+    let maxNyawa = 100; // Default, bisa diganti jika ada variabel global/max dari server
 
     // Jika ada elemen max lives di halaman, ambil dari situ
     if ($('#max-lives-count').length) {
-        maxNyawa = parseInt($('#max-lives-count').val() || '25', 10);
+        maxNyawa = parseInt($('#max-lives-count').val() || '100', 10);
     }
 
     let pesan = '';

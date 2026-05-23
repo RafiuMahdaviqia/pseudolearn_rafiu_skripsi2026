@@ -93,4 +93,8 @@
 
 @push('scripts')
     <script src="{{ asset('js/arsReport/detailArs.js') }}"></script>
+<<<<<<< HEAD
 @endpush
+=======
+@endpush
+>>>>>>> new-pseudolearn-ars-dda-decoy

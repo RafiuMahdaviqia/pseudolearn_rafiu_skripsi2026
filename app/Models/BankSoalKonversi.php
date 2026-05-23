@@ -21,6 +21,7 @@ class BankSoalKonversi extends BaseModel
         'order',
         'jawaban',
         'output',
+        'difficulty',
     ];
 
     protected static function boot()
@@ -34,35 +35,42 @@ class BankSoalKonversi extends BaseModel
         });
     }
 
-    public static function parseJawabanLines(?string $jawaban): array
+    // Parse jawaban bank soal (JSON array atau teks per baris) menjadi daftar baris kode
+    public static function parseJawabanLines(?string $raw): array
     {
-        if ($jawaban === null) {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
             return [];
         }
 
-        $normalized = str_replace(["\r\n", "\r"], "\n", trim($jawaban));
-        if ($normalized === '') {
-            return [];
+        if (str_starts_with($raw, '[')) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $lines = [];
+                foreach ($decoded as $line) {
+                    if (!is_string($line)) {
+                        continue;
+                    }
+                    $line = trim($line);
+                    if ($line !== '') {
+                        $lines[] = $line;
+                    }
+                }
+
+                return array_values($lines);
+            }
         }
 
-        return array_values(array_filter(array_map(
-            static fn (string $line): string => trim($line),
-            explode("\n", $normalized)
-        ), static fn (string $line): string => $line !== ''));
+        $lines = preg_split('/\R/', $raw) ?: [];
+
+        return array_values(array_filter(array_map('trim', $lines), fn ($line) => $line !== ''));
     }
 
-    public static function linesMatch(?string $expected, ?string $actual): bool
+    // Bandingkan dua baris kode Java, abaikan perbedaan spasi
+    public static function linesMatch(string $kunci, string $jawaban): bool
     {
-        $expectedLine = trim((string) $expected);
-        $actualLine = trim((string) $actual);
+        $normalize = static fn (string $line) => preg_replace('/\s+/', '', trim($line)) ?? '';
 
-        if ($expectedLine === '' || $actualLine === '') {
-            return false;
-        }
-
-        // Normalize internal whitespace (multiple spaces, tabs, NBSP) to single space
-        $normalize = static fn(string $s): string => preg_replace('/\s+/u', ' ', str_replace("\xc2\xa0", ' ', $s));
-
-        return $normalize($expectedLine) === $normalize($actualLine);
+        return $normalize($kunci) === $normalize($jawaban);
     }
 }

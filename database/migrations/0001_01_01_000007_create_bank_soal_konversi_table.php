@@ -6,30 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('bank_soal_konversi', function (Blueprint $table) {
-            $table->string('id', 255)->primary();
-            $table->string('id_level', 255)->nullable();
-            $table->string('id_soal', 255)->nullable();
+            $table->uuid('id')->primary();
+            $table->uuid('id_level')->nullable();
+            $table->uuid('id_soal')->nullable();
             $table->text('jawaban')->nullable();
             $table->text('output')->nullable();
             $table->enum('difficulty', ['easy', 'medium', 'hard'])->default('easy');
-            
             $table->timestamps();
             $table->softDeletes();
 
-            // Relasi ke tabel level
             $table->foreign('id_level')
-                  ->references('id')
-                  ->on('level')
-                  ->onDelete('cascade');
+                ->references('id')->on('level')
+                ->onDelete('cascade');
 
-            // Relasi ke tabel soal (opsional namun sangat disarankan untuk integritas)
             $table->foreign('id_soal')
-                  ->references('id')
-                  ->on('soal')
-                  ->onDelete('cascade');
+                ->references('id')->on('soal')
+                ->onDelete('cascade');
         });
     }
 

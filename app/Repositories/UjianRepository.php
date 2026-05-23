@@ -12,6 +12,7 @@ use App\Models\Mahasiswa;
 use App\Core\BaseResponse;
 use App\Models\Pencapaian;
 use Illuminate\Support\Str;
+use App\Services\DecoyAnswerService;
 use App\Models\HistoryJawaban;
 use App\Models\HistoryConfidence;
 use Illuminate\Support\Facades\DB;
@@ -339,11 +340,13 @@ class UjianRepository extends BaseRepository
                     $nyawa->nyawa -= 1;
 
                     if ($nyawa->next_regen_at === null && $nyawa->nyawa < $nyawa->max_nyawa) {
-                        $nyawa->next_regen_at = now()->addMinutes(10);
+                        $nyawa->next_regen_at = now()->addMinute();
                     }
 
                     $nyawa->save();
                 }
+
+                $decoy = $this->buildDecoyForGaming($idMahasiswa, $soal, $kunciTipe, $kunciAlgo);
 
                 return BaseResponse::json([
                     'correct' => $isCorrectAll,
@@ -351,7 +354,8 @@ class UjianRepository extends BaseRepository
                     'correct_algoritma' => $isCorrectAlgo,
                     'tipe_mismatch' => $dataLevel->feedback_data_type ?? null,
                     'algoritma_mismatch' => $dataLevel->feedback_algorithm ?? null,
-                    'id_level' => $soal->id_level
+                    'id_level' => $soal->id_level,
+                    'decoy' => $decoy,
                 ]);
             }
 
@@ -359,6 +363,57 @@ class UjianRepository extends BaseRepository
             DB::rollBack();
             return BaseResponse::errorMessage($e->getMessage());
         }
+    }
+
+    private function buildDecoyForGaming($idMahasiswa, $soal, array $kunciTipe, array $kunciAlgo): ?array
+    {
+        $label = $this->labelSkorModel
+            ->where('id_level', $soal->id_level)
+            ->where('id_soal', $soal->id)
+            ->where('id_mahasiswa', $idMahasiswa)
+            ->orderByDesc('created_at')
+            ->value('label');
+
+        if ($label !== 'Gaming the System') {
+            return null;
+        }
+
+        $decoyService = new DecoyAnswerService();
+
+        $tipeLines = array_map(function ($row) {
+            $variabel = trim((string) ($row['variabel'] ?? ''));
+            $tipe = trim((string) ($row['tipe_data'] ?? ''));
+
+            if ($variabel === '' && $tipe === '') {
+                return '';
+            }
+
+            if ($variabel === '') {
+                return $tipe;
+            }
+
+            if ($tipe === '') {
+                return $variabel;
+            }
+
+            return $variabel . ' : ' . $tipe;
+        }, $kunciTipe);
+
+        $algoLines = array_map(function ($row) {
+            return trim((string) ($row['langkah'] ?? ''));
+        }, $kunciAlgo);
+
+        $tipeDecoy = $decoyService->makeDecoyLines($tipeLines);
+        $algoDecoy = $decoyService->makeDecoyLines($algoLines);
+
+        if (empty(array_filter($tipeDecoy)) && empty(array_filter($algoDecoy))) {
+            return null;
+        }
+
+        return [
+            'tipe_data' => $tipeDecoy,
+            'algoritma' => $algoDecoy,
+        ];
     }
 
     /**

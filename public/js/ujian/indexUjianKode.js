@@ -171,6 +171,7 @@ function submitKonversi() {
                     openModalFeedbackIncorrect(
                         res?.message?.message ?? "Terdapat jawaban salah",
                         data.lives,
+                        res?.decoy || null,
                     );
                 },
                 error: function (xhr) {
@@ -181,7 +182,49 @@ function submitKonversi() {
     });
 }
 
-function openModalFeedbackIncorrect(feedbackText, lives = null) {
+function renderDecoyList(listEl, items) {
+    if (!listEl) return 0;
+    listEl.innerHTML = '';
+    if (!Array.isArray(items)) return 0;
+
+    let count = 0;
+    items.forEach(item => {
+        if (!item) return;
+        const li = document.createElement('li');
+        li.textContent = item;
+        listEl.appendChild(li);
+        count++;
+    });
+
+    return count;
+}
+
+function setDecoyKonversi(decoy, lives) {
+    const section = document.getElementById('decoy-section-konversi');
+    if (!section) return;
+
+    const livesInt = parseInt(lives, 10);
+    const noLives = Number.isFinite(livesInt) && livesInt <= 0;
+
+    if (!decoy || noLives) {
+        section.classList.add('d-none');
+        const listEl = document.getElementById('decoy-kode-list');
+        if (listEl) listEl.innerHTML = '';
+        return;
+    }
+
+    const listEl = document.getElementById('decoy-kode-list');
+    const count = renderDecoyList(listEl, decoy.kode_langkah || []);
+
+    if (count === 0) {
+        section.classList.add('d-none');
+        return;
+    }
+
+    section.classList.remove('d-none');
+}
+
+function openModalFeedbackIncorrect(feedbackText, lives = null, decoy = null) {
     // Tampilkan modal incorrect konversi
     var modalIncorrect = new bootstrap.Modal(
         document.getElementById("modal-feedback-incorrect-konversi"),
@@ -220,6 +263,7 @@ function openModalFeedbackIncorrect(feedbackText, lives = null) {
     if (modalKonfirmasi) {
         modalKonfirmasi.hide();
     }
+    setDecoyKonversi(decoy, lives);
     modalIncorrect.show();
 }
 
@@ -227,17 +271,72 @@ function openModalFeedbackIncorrect(feedbackText, lives = null) {
 function parseScannerFieldsUjian(lines) {
     var fields = [];
     var printPattern = /System\.out\.print(?:ln)?\s*\(\s*["'](.+?)["']\s*\)/;
-    var scannerPattern =
-        /\.\s*next(?:Int|Double|Float|Long|Line|Boolean|Short|Byte)?\s*\(\s*\)/i;
+
+    function getScannerCallCount(line) {
+        var scannerPattern =
+            /\.\s*next(?:Int|Double|Float|Long|Line|Boolean|Short|Byte)?\s*\(\s*\)/gi;
+        var matches = line.match(scannerPattern);
+
+        return matches ? matches.length : 0;
+    }
+
+    function getLoopRepeatCount(line) {
+        var forMatch = line.match(/for\s*\(\s*([^;]*);\s*([^;]*);\s*([^)]+)\)/i);
+
+        if (!forMatch) {
+            return 1;
+        }
+
+        var init = forMatch[1];
+        var condition = forMatch[2];
+        var startMatch = init.match(/=\s*(-?\d+)\b/);
+        var startValue = startMatch ? parseInt(startMatch[1], 10) : null;
+
+        if (startValue === null) {
+            return 1;
+        }
+
+        var lessThanMatch = condition.match(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*<\s*(-?\d+)\b/);
+        if (lessThanMatch) {
+            var endValue = parseInt(lessThanMatch[2], 10);
+            return Math.max(endValue - startValue, 1);
+        }
+
+        var lessOrEqualMatch = condition.match(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*<=\s*(-?\d+)\b/);
+        if (lessOrEqualMatch) {
+            var endValueInclusive = parseInt(lessOrEqualMatch[2], 10);
+            return Math.max(endValueInclusive - startValue + 1, 1);
+        }
+
+        return 1;
+    }
 
     for (var i = 0; i < lines.length; i++) {
-        if (scannerPattern.test(lines[i])) {
-            var label = "";
-            if (i > 0 && printPattern.test(lines[i - 1])) {
-                var match = lines[i - 1].match(printPattern);
-                label = match ? match[1] : "";
-            }
-            fields.push({ label: label || "Input", index: fields.length });
+        var line = lines[i];
+        var scannerCount = getScannerCallCount(line);
+
+        if (scannerCount === 0) {
+            continue;
+        }
+
+        var label = "";
+        if (i > 0 && printPattern.test(lines[i - 1])) {
+            var match = lines[i - 1].match(printPattern);
+            label = match ? match[1] : "";
+        }
+
+        var repeatCount = Math.max(
+            getLoopRepeatCount(line),
+            i > 0 ? getLoopRepeatCount(lines[i - 1]) : 1,
+            i > 1 ? getLoopRepeatCount(lines[i - 2]) : 1
+        );
+        var totalCount = scannerCount * repeatCount;
+
+        for (var occurrence = 0; occurrence < totalCount; occurrence++) {
+            fields.push({
+                label: totalCount > 1 ? (label || "Input") + " " + (occurrence + 1) : (label || "Input"),
+                index: fields.length,
+            });
         }
     }
     return fields;

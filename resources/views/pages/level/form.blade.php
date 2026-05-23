@@ -28,6 +28,10 @@
                             <label for="nama" class="form-label fs-6 required">Nama Level</label>
                             <input type="text" class="form-control form-control-sm" id="nama" name="nama" placeholder="Masukkan nama level" required>
                         </div>
+                        <div class="fv-row mb-5">
+                            <label for="limit-soal" class="form-label fs-6">Limit Soal</label>
+                            <input type="number" class="form-control form-control-sm" id="limit-soal" name="limit_soal" placeholder="Masukkan limit soal" min="0">
+                        </div>
                         <div class="row fv-row mb-5">
                             <div class="col-6">
                                 <label for="feedback-tipe-data" class="form-label fs-6">Feedback Tipe Data</label>
@@ -80,6 +84,7 @@
                     }
                     $('#id-level').val(data.id ?? '');
                     $('#nama').val(data.name ?? '');
+                    $('#limit-soal').val(data.limit_soal ?? '');
                     $('#feedback-tipe-data').val(data.feedback_data_type ?? '');
                     $('#feedback-algoritma').val(data.feedback_algorithm ?? '');
                     $('#logo-level-hidden').val(data.image ?? '');

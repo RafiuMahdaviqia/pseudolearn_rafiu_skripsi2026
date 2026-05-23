@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('ujian_kode', function (Blueprint $table) {
-            $table->string('id', 255)->primary();
-            $table->string('id_level', 255)->nullable();
-            $table->string('id_bank_soal_konversi', 255)->nullable();
-            $table->string('id_mahasiswa', 255)->nullable();
+            $table->uuid('id')->primary();
+            $table->uuid('id_level')->nullable();
+            $table->uuid('id_bank_soal_konversi')->nullable();
+            $table->uuid('id_mahasiswa')->nullable();
             $table->text('jawaban')->nullable();
             $table->text('output')->nullable();
             $table->integer('nilai')->nullable();

@@ -64,6 +64,14 @@ services:
         depends_on:
             - mysql
 
+    cloudflared:
+        image: 'cloudflare/cloudflared:latest'
+        restart: unless-stopped
+        command: tunnel --no-autoupdate run
+        environment:
+            - TUNNEL_TOKEN=${CLOUDFLARED_TOKEN}
+        networks:
+            - sail
 networks:
     sail:
         driver: bridge

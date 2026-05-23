@@ -49,7 +49,7 @@ class Nyawa extends BaseModel
 
     /**
      * Check and regenerate nyawa based on time.
-     * One nyawa regenerates every 10 minutes when below max.
+     * Regenerates 10 nyawa every minute when below max (max 100).
      */
     public function checkAndRegenerate(): self
     {
@@ -67,7 +67,7 @@ class Nyawa extends BaseModel
         // Below max - handle regeneration
         if ($this->next_regen_at === null) {
             // Start regeneration timer (first time below max)
-            $this->next_regen_at = $now->copy()->addMinutes(10);
+            $this->next_regen_at = $now->copy()->addMinute();
             $this->save();
             return $this;
         }
@@ -78,14 +78,14 @@ class Nyawa extends BaseModel
         if ($now->gte($nextRegen)) {
             // Calculate total minutes since regen timer started
             $minutesSinceRegen = $nextRegen->diffInMinutes($now);
-            // Each 10 minutes = 1 life, plus 1 for crossing the initial threshold
-            $livesToAdd = (int) floor($minutesSinceRegen / 10) + 1;
+            // Each 1 minute = 10 lives, plus 10 for crossing the initial threshold
+            $livesToAdd = ((int) floor($minutesSinceRegen / 1) + 1) * 10;
 
             $this->nyawa = min($this->nyawa + $livesToAdd, $this->max_nyawa);
 
             if ($this->nyawa < $this->max_nyawa) {
                 // Set next regen relative to now
-                $this->next_regen_at = $now->copy()->addMinutes(10);
+                $this->next_regen_at = $now->copy()->addMinute();
             } else {
                 $this->next_regen_at = null;
             }
