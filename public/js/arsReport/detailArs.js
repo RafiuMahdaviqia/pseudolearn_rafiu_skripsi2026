@@ -54,16 +54,6 @@ function initTable() {
                 }
             },
             {
-                targets: 7,
-                render: function (d, t, r) {
-                    const sec = parseInt(r.durasi || 0);
-                    const h = String(Math.floor(sec / 3600)).padStart(2, '0');
-                    const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
-                    const s = String(sec % 60).padStart(2, '0');
-                    return `${h}:${m}:${s}`;
-                }
-            },
-            {
                 targets: [6,8,9],
                 className: "text-center",
                 render: function (data) {
