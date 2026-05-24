@@ -23,7 +23,7 @@ return new class extends Migration
                 s.soal     AS soal_name,
                 bsk.jawaban,
                 bsk.output,
-                bsk.`order`,
+                s.`order`  AS `order`,
                 bsk.created_at,
                 bsk.updated_at,
                 bsk.deleted_at,

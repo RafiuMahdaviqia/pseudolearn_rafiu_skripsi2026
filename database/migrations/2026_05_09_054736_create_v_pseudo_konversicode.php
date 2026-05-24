@@ -1,16 +1,11 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-<<<<<<< HEAD
-use Illuminate\Support\Facades\DB;
-
-=======
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 
->>>>>>> new-pseudolearn-ars-dda-decoy
 return new class extends Migration
 {
     /**
@@ -30,11 +25,6 @@ return new class extends Migration
                 COUNT(ld.id) AS langkah,
                 u.waktu AS durasi,
                 u.created_at AS created_at,
-<<<<<<< HEAD
-                ROW_NUMBER() OVER (PARTITION BY u.id_mahasiswa, u.id_level, s.id ORDER BY u.created_at) AS attempt_index,
-                ROW_NUMBER() OVER (PARTITION BY u.id_mahasiswa, u.id_level ORDER BY u.created_at) AS pair_index,
-                ROW_NUMBER() OVER (PARTITION BY u.id_mahasiswa, u.id_level ORDER BY u.created_at) AS event_index
-=======
                 ROW_NUMBER() OVER (
                     PARTITION BY u.id_mahasiswa, u.id_level, s.id
                     ORDER BY u.created_at ASC
@@ -43,7 +33,6 @@ return new class extends Migration
                     PARTITION BY u.id_mahasiswa, u.id_level
                     ORDER BY s.difficulty ASC, u.created_at ASC
                 ) AS pair_index
->>>>>>> new-pseudolearn-ars-dda-decoy
 
             FROM ujian u
             JOIN soal s ON s.id = u.id_soal
@@ -62,33 +51,6 @@ return new class extends Migration
             UNION ALL
 
             SELECT
-<<<<<<< HEAD
-                uk.id_mahasiswa,
-                uk.id_level,
-                bsk.id_soal AS id_soal,
-                bsk.id AS id_konversi,
-                'konversi' AS jenis_soal,
-                bsk.difficulty,
-                COUNT(lk.id) AS langkah,
-                uk.waktu AS durasi,
-                uk.created_at AS created_at,
-                ROW_NUMBER() OVER (PARTITION BY uk.id_mahasiswa, uk.id_level, bsk.id_soal ORDER BY uk.created_at) AS attempt_index,
-                ROW_NUMBER() OVER (PARTITION BY uk.id_mahasiswa, uk.id_level ORDER BY uk.created_at) AS pair_index,
-                ROW_NUMBER() OVER (PARTITION BY uk.id_mahasiswa, uk.id_level ORDER BY uk.created_at) AS event_index
-
-            FROM ujian_kode uk
-            JOIN bank_soal_konversi bsk ON bsk.id = uk.id_bank_soal_konversi
-            LEFT JOIN log_ujian_kode lk
-                ON lk.id_bank_soal_konversi = bsk.id
-                AND lk.id_mahasiswa = uk.id_mahasiswa
-
-            GROUP BY
-                uk.id_mahasiswa,
-                uk.id_level,
-                bsk.id_soal,
-                bsk.id,
-                bsk.difficulty,
-=======
                 m.id AS id_mahasiswa,
                 uk.id_level,
                 bsk.id_soal,
@@ -122,7 +84,6 @@ return new class extends Migration
                 bsk.id_soal,
                 bsk.id,
                 s.difficulty,
->>>>>>> new-pseudolearn-ars-dda-decoy
                 uk.waktu,
                 uk.created_at
 
@@ -136,8 +97,4 @@ return new class extends Migration
     {
         DB::statement("DROP VIEW IF EXISTS v_pseudo_konversicode");
     }
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> new-pseudolearn-ars-dda-decoy

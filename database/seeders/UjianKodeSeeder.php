@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\BankSoalKonversi;
 use App\Models\UjianKode;
 use App\Models\User;
+use App\Models\Mahasiswa;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -19,10 +20,15 @@ class UjianKodeSeeder extends Seeder
             return;
         }
 
+        $mahasiswa = Mahasiswa::query()->where('id_user', $user->id)->first();
+        if (! $mahasiswa) {
+            return;
+        }
+
         UjianKode::query()->firstOrCreate(
             [
                 'id_bank_soal_konversi' => $bsk->id,
-                'id_mahasiswa' => $user->id,
+                'id_mahasiswa' => $mahasiswa->id,
             ],
             [
                 'id' => (string) Str::uuid(),
