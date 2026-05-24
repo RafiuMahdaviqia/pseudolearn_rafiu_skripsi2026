@@ -117,13 +117,18 @@ if ($arsResult) {
         ->where('id_bank_soal_konversi', $idBankSoalKonversi)
         ->count();
 
-    [$konversiLabel, $konversiScore] = $this->determineLabelAndScore($langkah, $waktu);
+    $totalWaktu = DB::table('ujian_kode')
+        ->where('id_mahasiswa', $idMahasiswa)
+        ->where('id_bank_soal_konversi', $idBankSoalKonversi)
+        ->sum('waktu');
+
+    [$konversiLabel, $konversiScore] = $this->determineLabelAndScore($langkah, $totalWaktu);
 
     $arsResult->update([
         'konversi_label' => $konversiLabel,
         'konversi_score' => $konversiScore,
         'konversi_langkah' => $langkah,
-        'konversi_durasi'  => $waktu,
+        'konversi_durasi'  => $totalWaktu,
     ]);
 }
 

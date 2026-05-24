@@ -66,7 +66,7 @@ class ArsReportRepository extends BaseRepository
                 'm.name',
                 'k.name as kelas',
 
-                DB::raw("COALESCE(SUM(CASE WHEN ar.pseudo_label IN ('Struggling','Gaming the System') THEN 1 ELSE 0 END),0) as total_ars"),
+                DB::raw("COALESCE(SUM(CASE WHEN ar.pseudo_label IN ('Struggling','Gaming the System') OR ar.konversi_label IN ('Struggling','Gaming the System') THEN 1 ELSE 0 END),0) as total_ars"),
                 DB::raw("COALESCE(COUNT(DISTINCT ar.id_soal),0) as total_soal"),
                 DB::raw("COALESCE(SUM(COALESCE(ar.pseudo_durasi,0) + COALESCE(ar.konversi_durasi,0)),0) as total_waktu")
             )
@@ -139,7 +139,9 @@ class ArsReportRepository extends BaseRepository
             ->when($idLevel, fn($q) => $q->where('id_level', $idLevel))
             ->where(function ($q) {
                 $q->where('pseudo_label', 'Struggling')
-                ->orWhere('pseudo_label', 'Gaming the System');
+                  ->orWhere('pseudo_label', 'Gaming the System')
+                  ->orWhere('konversi_label', 'Struggling')
+                  ->orWhere('konversi_label', 'Gaming the System');
             })
             ->count();
 
