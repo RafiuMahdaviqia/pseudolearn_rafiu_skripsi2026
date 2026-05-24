@@ -40,6 +40,22 @@ class BankSoalKonversiRepository
     // Order
     $query->orderBy('bank_soal_konversi.created_at', 'asc');
 
+    // Defensive: Ensure DataTables 'columns' request exists to avoid null column names
+    // Some clients or intermediaries may strip the DataTables parameters, causing
+    // the library to receive null for a column name and throw a TypeError.
+    if (!is_array($request->input('columns')) || count($request->input('columns')) === 0) {
+        $syntheticColumns = [
+            ['data' => 'DT_RowIndex', 'name' => 'DT_RowIndex', 'orderable' => false, 'searchable' => false],
+            ['data' => 'level_name', 'name' => 'level_name'],
+            ['data' => 'soal', 'name' => 'soal'],
+            ['data' => 'jawaban', 'name' => 'jawaban'],
+            ['data' => 'output', 'name' => 'output'],
+            ['data' => 'id', 'name' => 'id', 'orderable' => false, 'searchable' => false],
+        ];
+
+        $request->merge(['columns' => $syntheticColumns]);
+    }
+
     return DataTables::of($query)
         ->addIndexColumn()
         ->filterColumn('level_name', function ($query, $keyword) {
