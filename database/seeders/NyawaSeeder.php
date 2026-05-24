@@ -17,7 +17,7 @@ class NyawaSeeder extends Seeder
             return;
         }
 
-        $max = (int) (Setting::getValue('nyawa.max', 5));
+        $max = (int) (Setting::getValue('nyawa.max', 100));
 
         Nyawa::query()->updateOrCreate(
             ['id_mahasiswa' => $mhs->id],

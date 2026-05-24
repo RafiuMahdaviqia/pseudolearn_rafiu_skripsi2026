@@ -27,7 +27,7 @@ class NyawaController extends Controller
         $idUser = Auth::id();
         $nyawa = $this->model->where('id_user', $idUser)->first();
 
-        // Check and regenerate lives (1 life per 10 minutes)
+        // Check and regenerate lives (10 lives per minute)
         $nyawa->checkAndRegenerate();
 
         return response()->json([

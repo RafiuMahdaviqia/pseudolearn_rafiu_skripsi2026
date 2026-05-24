@@ -48,7 +48,7 @@ class DashboardController extends Controller
                     'algobadge' => 0,
                     'leaderboard' => null,
                     'lives' => 0,
-                    'max_lives' => (int) Setting::getValue('nyawa.max', 5),
+                    'max_lives' => (int) Setting::getValue('nyawa.max', 100),
                     'next_regen_at' => null,
                 ]);
             }
@@ -78,7 +78,7 @@ class DashboardController extends Controller
             $nyawa = Nyawa::where('id_user', $idUser)->first();
 
             if (!$nyawa) {
-                $max = (int) Setting::getValue('nyawa.max', 5);
+                $max = (int) Setting::getValue('nyawa.max', 100);
                 $nyawa = Nyawa::create([
                     'id' => (string) Str::uuid(),
                     'id_user' => $idUser,
@@ -89,7 +89,7 @@ class DashboardController extends Controller
                 ]);
             }
 
-            // Check and regenerate lives (1 life per 10 minutes)
+            // Check and regenerate lives (10 lives per minute)
             $nyawa->checkAndRegenerate();
 
             $dataReturn = [
@@ -118,7 +118,7 @@ class DashboardController extends Controller
     {
         $nyawa = Nyawa::where('id_user', Auth::id())->first();
 
-        // Check and regenerate lives (1 life per 10 minutes)
+        // Check and regenerate lives (10 lives per minute)
         $nyawa->checkAndRegenerate();
 
         return view('pages.dashboard.pencapaian', [

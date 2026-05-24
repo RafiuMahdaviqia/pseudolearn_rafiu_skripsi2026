@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -12,8 +13,8 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('id_user');
             $table->uuid('id_mahasiswa');
-            $table->integer('nyawa')->default(5);
-            $table->integer('max_nyawa')->default(5);
+            $table->integer('nyawa')->default(100);
+            $table->integer('max_nyawa')->default(100);
             $table->dateTime('next_regen_at')->nullable();
             $table->timestamps();
             $table->softDeletes();

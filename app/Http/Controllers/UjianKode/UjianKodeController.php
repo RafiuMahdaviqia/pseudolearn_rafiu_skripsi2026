@@ -47,7 +47,7 @@ class UjianKodeController extends Controller
             abort(404, 'Data nyawa pengguna tidak ditemukan.');
         }
 
-        // Check dan regenerate lives (1 life per 10 minutes)
+        // Check dan regenerate lives (10 lives per minute)
         $nyawa->checkAndRegenerate();
 
         return view('pages.ujian.ujianKode', [
