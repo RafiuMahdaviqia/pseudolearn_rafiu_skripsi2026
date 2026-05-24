@@ -28,7 +28,6 @@ use App\Http\Controllers\Quiz\QuestionListRefactorReferenceController;
 use App\Http\Controllers\UjianKonversi\UjianKonversiController;
 use App\Http\Controllers\ARS\ArsController;
 use App\Http\Controllers\LogUjianKode\LogUjianKodeController;
-use App\Http\Controllers\ARS\ArsController;
 use App\Models\Setting;
 use App\Http\Controllers\Chatbot\ChatbotController;
 

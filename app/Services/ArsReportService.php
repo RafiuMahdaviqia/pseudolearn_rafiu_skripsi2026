@@ -82,8 +82,4 @@ class ArsReportService
             );
         }
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> new-pseudolearn-ars-dda-decoy

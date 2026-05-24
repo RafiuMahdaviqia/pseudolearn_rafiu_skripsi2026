@@ -37,8 +37,6 @@ class QuizController extends Controller
     protected $levelModel;
     protected $visibleLimit = 5;
 
-    protected $visibleLimit = 5;
-
     public function __construct()
     {
         $this->levelService = new LevelService();
@@ -889,8 +887,6 @@ class QuizController extends Controller
                     ?? $konversi['judul']
                     ?? ($konversi['soal']['judul'] ?? ('Konversi ' . $row->id_bank_soal_konversi));
                 $nilaiKonversiList[$judul] = $row->nilai;
-            }
-        }
             }
         }
 

@@ -22,6 +22,11 @@ class AppServiceProvider extends ServiceProvider
     {
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
+            
     }
+    if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
+        \URL::forceRootUrl('https://' . $_SERVER['HTTP_X_FORWARDED_HOST']);
+        \URL::forceScheme('https');
+}
 }
 }
