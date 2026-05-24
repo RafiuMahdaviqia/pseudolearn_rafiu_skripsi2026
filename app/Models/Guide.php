@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 class Guide extends BaseModel
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $table = 'guide';
     protected $primaryKey = 'id';

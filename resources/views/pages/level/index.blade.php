@@ -31,6 +31,7 @@
                                 <th class="text-center">Urutan</th>
                                 <th>Logo</th>
                                 <th>Nama</th>
+                                <th class="text-center">Limit Soal</th>
                                 <th>Feedback Tipe Data</th>
                                 <th>Feedback Algoritma</th>
                                 <th class="text-center">Manual Aktif</th>

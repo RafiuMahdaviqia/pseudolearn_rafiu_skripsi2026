@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Core\BaseResponse;
+use App\Repositories\BankSoalKonversiRepository;
 use Illuminate\Support\Facades\DB;
 use App\Repositories\KonversiRepository;
 
@@ -11,7 +12,7 @@ class KonversiService
     protected $konversiRepository;
     public function __construct()
     {
-        $this->konversiRepository = new KonversiRepository();
+        $this->konversiRepository = new BankSoalKonversiRepository();
     }
 
     public function table($request)

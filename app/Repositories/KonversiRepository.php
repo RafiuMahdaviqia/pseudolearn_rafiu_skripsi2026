@@ -6,12 +6,14 @@ use App\Models\Soal;
 use App\Models\Kelas;
 use App\Models\Nyawa;
 use App\Models\Konversi;
+use App\Models\LabelSkor;
 use App\Models\Mahasiswa;
 use App\Core\BaseResponse;
 use App\Models\Pencapaian;
 use Illuminate\Support\Str;
 use App\Models\DebugKonversi;
 use App\Models\UjianKonversi;
+use App\Services\DecoyAnswerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Jobs\DeletePencapaianKonversi;
@@ -19,7 +21,6 @@ use Symfony\Component\Process\Process;
 use App\Jobs\GeneratePencapaianKonversi;
 use Prettus\Repository\Eloquent\BaseRepository;
 use Symfony\Component\Process\Exception\ProcessFailedException;
-use App\Models\ArsResult;
 
 /**
  * Class KelasRepository.
@@ -34,6 +35,7 @@ class KonversiRepository extends BaseRepository
     protected $mahasiswaModel;
     protected $ujianKonversiModel;
     protected $debugKonversiModel;
+    protected $labelSkorModel;
 
     public function __construct()
     {
@@ -42,6 +44,7 @@ class KonversiRepository extends BaseRepository
         $this->mahasiswaModel = new Mahasiswa();
         $this->ujianKonversiModel = new UjianKonversi();
         $this->debugKonversiModel = new DebugKonversi();
+        $this->labelSkorModel = new LabelSkor();
     }
 
     /**
@@ -78,10 +81,14 @@ class KonversiRepository extends BaseRepository
     {
         DB::beginTransaction();
         try {
+            // Ambil array jawaban
             $jawabanValues = $request->input('jawaban', []);
+
+            // Satukan jadi array terstruktur (increment)
             $jawabanStructured = [];
             $increment = 1;
             foreach ($jawabanValues as $val) {
+                // Skip jika benar-benar kosong (optional)
                 if ($val === null || trim($val) === '') {
                     continue;
                 }
@@ -91,8 +98,15 @@ class KonversiRepository extends BaseRepository
                 $increment++;
             }
 
+            // $runJava = $this->runJavaCode($jawabanValues, $request->input('soal_id'));
+
+            // if (!$runJava['status']) {
+            //     throw new \Exception('Java execution failed: ' . ($runJava['error'] ?? 'Unknown error'));
+            // }
+
             $payload = [
-                'id_level' => $request->input('level_id'), //UUID
+                // id otomatis oleh boot() (UUID)
+                'id_level' => $request->input('level_id'),
                 'id_soal'  => $request->input('soal_id'),
                 'jawaban'  => $jawabanStructured,
                 'output'   => $request->input('output', ''),
@@ -103,6 +117,7 @@ class KonversiRepository extends BaseRepository
 
             DB::commit();
 
+            // Dispatch job per kelas
             $kelasList = Kelas::all();
             foreach ($kelasList as $kelas) {
                 GeneratePencapaianKonversi::dispatch($data, $kelas->id);
@@ -120,9 +135,12 @@ class KonversiRepository extends BaseRepository
         try {
             $codes = $request->input('codes', []);
             $soalId = $request->input('soal_id');
-            $safeSoalId = str_replace('-', '_', $soalId);
-            $mainCode = "";
 
+            // Bikin soalId aman untuk nama class Java
+            $safeSoalId = str_replace('-', '_', $soalId);
+
+            // Gabungkan value dari array codes
+            $mainCode = "";
             foreach ($codes as $code) {
                 if (isset($code['value']) && trim($code['value']) !== '') {
                     $mainCode .= "        " . $code['value'] . "\n";
@@ -132,13 +150,14 @@ class KonversiRepository extends BaseRepository
             $lines = explode("\n", $mainCode);
             $fixed = [];
             $varTypes = [];
+
             // Step 1: ambil deklarasi variabel
             foreach ($lines as $line) {
                 $trim = trim($line);
 
                 // cocokkan deklarasi, misal: int uang_bayar;  float pajak_jual;
                 if (preg_match('/^(int|float|double)\s+([a-zA-Z_][a-zA-Z0-9_]*)/', $trim, $m)) {
-                    $varTypes[$m[2]] = $m[1]; 
+                    $varTypes[$m[2]] = $m[1]; // simpan "uang_bayar" => "int"
                 }
             }
 
@@ -168,6 +187,7 @@ class KonversiRepository extends BaseRepository
 
             $mainCode = implode("\n", $fixed);
 
+            // Buat kode java lengkap
             $javaCode = <<<EOD
             public class Main_$safeSoalId {
                 public static void main(String[] args) {
@@ -176,6 +196,7 @@ class KonversiRepository extends BaseRepository
             }
             EOD;
 
+            // Tentukan path file sementara
             $dirPath = storage_path("app/java/$soalId");
             if (!is_dir($dirPath)) {
                 mkdir($dirPath, 0777, true);
@@ -184,12 +205,14 @@ class KonversiRepository extends BaseRepository
             $filePath = $dirPath . "/Main_$safeSoalId.java";
             file_put_contents($filePath, $javaCode);
 
+            // Compile Java
             $compile = new Process(['javac', $filePath], $dirPath);
             $compile->run();
             if (!$compile->isSuccessful()) {
                 throw new ProcessFailedException($compile);
             }
 
+            // Jalankan Java
             $process = new Process(['java', '-cp', $dirPath, "Main_$safeSoalId"], $dirPath);
             $process->run();
             if (!$process->isSuccessful()) {
@@ -198,6 +221,7 @@ class KonversiRepository extends BaseRepository
 
             $output = $process->getOutput();
 
+            // Hapus file class jika berhasil
             @unlink($dirPath . "/Main_$safeSoalId.class");
 
             $output = [
@@ -211,12 +235,15 @@ class KonversiRepository extends BaseRepository
         }
     }
 
+
     public function getSoalByLevel($request)
     {
         $levelId = $request->query('level_id');
 
+        // Ambil id_soal yang sudah ada di tabel konversi
         $usedSoalIds = $this->model->pluck('id_soal')->toArray();
 
+        // Jika ada request soal_id, ambil soal dengan id tersebut tanpa filter usedSoalIds
         $soalId = $request->query('soal_id');
         if (!empty($soalId)) {
             $soal = $this->soalModel
@@ -224,6 +251,7 @@ class KonversiRepository extends BaseRepository
             ->where('id_level', $levelId)
             ->get(['id', 'judul']);
         } else {
+            // Ambil soal sesuai level, kecuali yang sudah ada di konversi
             $soal = $this->soalModel
             ->where('id_level', $levelId)
             ->whereNotIn('id', $usedSoalIds)
@@ -241,6 +269,7 @@ class KonversiRepository extends BaseRepository
             $data = $this->model->destroy($id);
             DB::commit();
 
+            // Dispatch job per kelas
             $kelasList = Kelas::all();
             foreach ($kelasList as $kelas) {
                 DeletePencapaianKonversi::dispatch($opr, $kelas->id);
@@ -257,11 +286,14 @@ class KonversiRepository extends BaseRepository
     {
         DB::beginTransaction();
         try {
+            // Ambil array jawaban
             $jawabanValues = $request->input('jawaban', []);
 
+            // Satukan jadi array terstruktur (increment)
             $jawabanStructured = [];
             $increment = 1;
             foreach ($jawabanValues as $val) {
+                // Skip jika benar-benar kosong (optional)
                 if ($val === null || trim($val) === '') {
                     continue;
                 }
@@ -272,6 +304,7 @@ class KonversiRepository extends BaseRepository
             }
 
             $payload = [
+                // id otomatis oleh boot() (UUID)
                 'id_level' => $request->input('level_id'),
                 'id_soal'  => $request->input('soal_id'),
                 'jawaban'  => $jawabanStructured,
@@ -303,15 +336,20 @@ class KonversiRepository extends BaseRepository
 
             $kunciJawaban = $soalKonversi->jawaban;
             $kodeLangkah = $request->input('kode_langkah', []);
+
             $errors = [];
 
+            // Cek setiap baris: bandingkan array kata per baris, abaikan spasi
             foreach ($kunciJawaban as $idx => $baris) {
                 $nomorBaris = array_key_first($baris);
                 $isiKunci   = $baris[$nomorBaris];
                 $jawabanUser = $kodeLangkah[$idx] ?? null;
+
+                // Normalisasi: hapus semua spasi
                 $kunciNoSpace = str_replace(' ', '', $isiKunci);
                 $userNoSpace  = str_replace(' ', '', $jawabanUser);
 
+                // Cek persis sama (case sensitive, termasuk tanda baca)
                 if ($userNoSpace !== $kunciNoSpace) {
                     $errors[] = [
                         'message' => "Jawaban salah pada baris ke {$nomorBaris}",
@@ -328,24 +366,33 @@ class KonversiRepository extends BaseRepository
                 if ($nyawa->nyawa > 0) {
                     $nyawa->nyawa -= 1;
 
+                    // kalau nyawa belum penuh dan tidak ada timer → set regen
                     if ($nyawa->next_regen_at === null && $nyawa->nyawa < $nyawa->max_nyawa) {
-                        $nyawa->next_regen_at = now()->addMinutes(10);
+                        $nyawa->next_regen_at = now()->addMinute();
                     }
 
                     $nyawa->save();
                 }
 
-                return BaseResponse::errorMessage([
-                    'message' => 'Terdapat jawaban salah',
-                    'errors'  => $errors
+                $decoy = $this->buildDecoyForGaming($idMahasiswa, $soalKonversi);
+
+                return BaseResponse::json([
+                    'success' => false,
+                    'message' => [
+                        'message' => 'Terdapat jawaban salah',
+                        'errors'  => $errors,
+                    ],
+                    'decoy' => $decoy,
                 ]);
             }
 
+            // Analisa similarity per langkah
             $debugData = $this->analyzeDebug(
                 $kodeLangkah,
                 array_map(fn($item) => array_values($item)[0], $kunciJawaban)
             );
 
+            // Hitung rata-rata similarity
             $total_similarity = 0;
             $valid_steps = 0;
             foreach ($debugData as $step) {
@@ -358,15 +405,30 @@ class KonversiRepository extends BaseRepository
             $final_score = round($average_similarity * $soalKonversi->bobot, 2);
             $formatted_score = number_format($final_score, 2, '.', '');
 
+            // Jika similarity < 1, anggap ada jawaban salah
+            // if ($average_similarity < 1) {
+            //     DB::rollBack();
+            //     return BaseResponse::errorMessage([
+            //         'message' => 'Terdapat jawaban salah atau kurang tepat',
+            //         'similarity' => $average_similarity,
+            //         'debug' => $debugData
+            //     ]);
+            // }
+
+            // Jika semua jawaban benar, jalankan runJavaCode
             $runJava = $this->runJavaCode(new \Illuminate\Http\Request([
                 'codes' => collect($kodeLangkah)->map(fn($value) => ['value' => $value])->toArray(),
                 'soal_id' => $soalKonversi->id_soal
             ]));
 
+            // Ambil output dari JsonResponse
             $runJavaData = $runJava->getData(true);
+
+            // Normalisasi output dari runJavaCode (bisa terbungkus di key 'data')
             $javaOutput = $runJavaData['data']['output'] ?? ($runJavaData['output'] ?? '');
             $runJavaData['output'] = $javaOutput;
 
+            // Upsert UjianKonversi agar pasti ter-update/terbentuk
             $ujianKonversi = $this->ujianKonversiModel->updateOrCreate(
                 [
                     'id_soal_konversi' => $soalKonversi->id,
@@ -381,6 +443,7 @@ class KonversiRepository extends BaseRepository
                 ]
             );
 
+            // Upsert DebugKonversi agar debug selalu terbarui
             $this->debugKonversiModel->updateOrCreate(
                 [
                     'id_soal_konversi' => $soalKonversi->id,
@@ -413,31 +476,6 @@ class KonversiRepository extends BaseRepository
                 ];
             }
 
-            $arsResult = ArsResult::where('id_mahasiswa', $idMahasiswa)
-                ->where('id_level', $soalKonversi->id_level)
-                ->where('id_soal', $soalKonversi->id_soal)
-                ->first();
-
-            if ($arsResult) {
-                $waktuKonversi = $request->input('waktu', 0);
-                $jumlahLangkah = count($kodeLangkah); // Hitung langkah konversi
-
-                if ($waktuKonversi < 53) {
-                    $konversiLabel = 'Ideal';
-                    $konversiScore = 90;
-                } else {
-                    $konversiLabel = 'Normal';
-                    $konversiScore = 70;
-                }
-
-                $arsResult->update([
-                    'konversi_label'   => $konversiLabel,
-                    'konversi_score'   => $konversiScore,
-                    'konversi_langkah' => $jumlahLangkah,
-                    'konversi_durasi'  => $waktuKonversi, 
-                ]);
-            }
-
             DB::commit();
             return BaseResponse::json([
                 'status' => true,
@@ -451,6 +489,36 @@ class KonversiRepository extends BaseRepository
             return BaseResponse::errorMessage($e->getMessage());
         }
     }
+    private function buildDecoyForGaming($idMahasiswa, $soalKonversi): ?array
+    {
+        $label = $this->labelSkorModel
+            ->where('id_level', $soalKonversi->id_level)
+            ->where('id_soal', $soalKonversi->id_soal)
+            ->where('id_mahasiswa', $idMahasiswa)
+            ->orderByDesc('created_at')
+            ->value('label');
+
+        if ($label !== 'Gaming the System') {
+            return null;
+        }
+
+        $decoyService = new DecoyAnswerService();
+
+        // Extract kunci lines from the structured jawaban array
+        $kunciLines = array_map(function ($item) {
+            return trim((string) (is_array($item) ? reset($item) : $item));
+        }, $soalKonversi->jawaban ?? []);
+
+        $decoyLines = $decoyService->makeDecoyLines($kunciLines);
+
+        if (empty(array_filter($decoyLines))) {
+            return null;
+        }
+
+        return [
+            'kode_langkah' => $decoyLines,
+        ];
+    }
 
     protected function generateTokens(string $text): array
     {
@@ -459,6 +527,7 @@ class KonversiRepository extends BaseRepository
         return $matches[0] ?? [];
     }
 
+    // 2. K-Gram generator
     protected function generateKGrams(string $text, int $k = 2): array
     {
         $length = strlen($text);
@@ -469,11 +538,13 @@ class KonversiRepository extends BaseRepository
         return $kgrams;
     }
 
+    // 3. Hash calculation
     protected function calculateHashes(array $kgrams): array
     {
         return array_map(fn($gram) => crc32($gram), $kgrams);
     }
 
+    // 4. Apply window
     protected function applyWindow(array $hashes, int $windowSize = 3): array
     {
         $windows = [];
@@ -484,6 +555,7 @@ class KonversiRepository extends BaseRepository
         return $windows;
     }
 
+    // 5. Fingerprint generator
     protected function generateFingerprints(array $windows): array
     {
         $fingerprints = [];
@@ -495,6 +567,7 @@ class KonversiRepository extends BaseRepository
         return array_unique($fingerprints);
     }
 
+    // 6. Jaccard similarity
     protected function calculateJaccard(array $set1, array $set2): float
     {
         if (empty($set1) && empty($set2)) return 1.0;
@@ -503,6 +576,7 @@ class KonversiRepository extends BaseRepository
         return $union > 0 ? $intersection / $union : 0.0;
     }
 
+    // 7. Analisa debug per jawaban
     public function analyzeDebug(array $userJawaban, array $kunciJawaban): array
     {
         $alphabet = range('a', 'z');
@@ -583,6 +657,16 @@ class KonversiRepository extends BaseRepository
         if (!is_null($kelas) && $kelas !== '') {
             $opr = $opr->where('id_kelas', $kelas);
         }
+
+        // $level = $request->input('level');
+        // if (!is_null($level) && $level !== '') {
+        //     $opr = $opr->where('id_level', $level);
+        // }
+
+        // $soal = $request->input('soal');
+        // if (!is_null($soal) && $soal !== '') {
+        //     $opr = $opr->where('id_soal', $soal);
+        // }
 
         $opr = $opr->draw();
 

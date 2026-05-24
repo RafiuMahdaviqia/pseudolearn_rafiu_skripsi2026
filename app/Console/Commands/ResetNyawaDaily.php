@@ -14,7 +14,8 @@ class ResetNyawaDaily extends Command
     public function handle()
     {
         $count = Nyawa::query()->update([
-            'nyawa' => \DB::raw('max_nyawa'),
+            'nyawa' => 100,
+            'max_nyawa' => 100,
             'next_regen_at' => null,
         ]);
 

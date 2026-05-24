@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('soal', function (Blueprint $table) {
-            $table->enum('difficulty', ['easy','medium','hard'])->nullable();
-        });
+        DB::table('nyawa')->update([
+            'nyawa' => 100,
+            'max_nyawa' => 100,
+            'next_regen_at' => null,
+        ]);
     }
 
     /**
@@ -21,8 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('soal', function (Blueprint $table) {
-            //
-        });
+        // Tidak ada rollback untuk data update
     }
 };

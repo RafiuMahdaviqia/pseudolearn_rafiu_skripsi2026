@@ -98,7 +98,12 @@ class ArsEngineService
             if (!$isStable) {
                 if ($pair['difficulty'] !== 'hard') {
                     if (in_array($pLabel, ['Struggling', 'Gaming the System']) ||
+<<<<<<< HEAD
                         in_array($kLabel, ['Struggling', 'Gaming the System'])) {
+=======
+                        in_array($kLabel, ['Struggling', 'Gaming the System'])) 
+{
+>>>>>>> new-pseudolearn-ars-dda-decoy
                         $isArs = true;
                     }
                 }
@@ -170,4 +175,8 @@ class ArsEngineService
 
         return $this->runArs($pairs);
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> new-pseudolearn-ars-dda-decoy

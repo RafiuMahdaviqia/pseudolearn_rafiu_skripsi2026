@@ -56,7 +56,7 @@ class BankSoalKonversiController extends Controller
             ->toArray();
 
         // Kirim sebagai array agar json_encode di blade aman
-        $data = $id ? $this->bankSoalModel->find($id)?->toArray() : null;
+        $data = $id ? $this->bankSoalModel->find($id, ['*'])?->toArray() : null;
 
         return view('pages.bankSoalKonversi.form', [
             'title'  => 'Form Bank Soal Konversi',
@@ -145,8 +145,8 @@ class BankSoalKonversiController extends Controller
         );
     }
 
-    // public function saveOrder(Request $request)
-    // {
-    //     return $this->bankSoalService->saveOrder($request);
-    // }
+    public function saveOrder(Request $request)
+    {
+        return $this->bankSoalService->saveOrder($request);
+    }
 }

@@ -52,7 +52,6 @@ return new class extends Migration
                 s.soal     AS soal_name,
                 bsk.jawaban,
                 bsk.output,
-                bsk.difficulty,
                 bsk.created_at,
                 bsk.updated_at,
                 bsk.deleted_at,

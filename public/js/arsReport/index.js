@@ -114,4 +114,8 @@ function reloadTable() {
 
 function detail(id) {
     window.location.href = APP_URL + "ars/detail/" + id;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> new-pseudolearn-ars-dda-decoy

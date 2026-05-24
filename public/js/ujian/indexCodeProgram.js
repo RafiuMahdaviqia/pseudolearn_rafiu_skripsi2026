@@ -1,5 +1,10 @@
 var APP_URL = window.APP_URL || "/";
 
+function buildQuizQuestionListUrl(levelId) {
+    const base = window.QUIZ_QUESTION_LIST_URL || (APP_URL + "quiz/question-list-z");
+    return base + "?level=" + encodeURIComponent(levelId);
+}
+
 function reloadUjian() {
     Swal.fire({
         title: 'Muat Ulang Ujian?',
@@ -25,7 +30,7 @@ function back(id_level){
         cancelButtonText: 'Tidak'
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href = APP_URL + "quiz/question-list?level=" + id_level;
+            window.location.href = buildQuizQuestionListUrl(id_level);
         }
     });
 }
@@ -135,7 +140,7 @@ function openModalFeedbackIncorrect(feedbackText, lives = null) {
         // Ganti tombol modal
         var modalFooter = document.querySelector('#modal-feedback-incorrect-konversi .modal-footer');
         if (modalFooter) {
-            modalFooter.innerHTML = `<button type="button" class="btn btn-primary" onclick="window.location.href='${APP_URL}quiz/question-list?level=${id_level}'">Kembali ke Daftar Soal</button>`;
+            modalFooter.innerHTML = `<button type="button" class="btn btn-primary" onclick="window.location.href='${buildQuizQuestionListUrl(id_level)}'">Kembali ke Daftar Soal</button>`;
         }
 
         // Sembunyikan tombol silang (X) pada header modal

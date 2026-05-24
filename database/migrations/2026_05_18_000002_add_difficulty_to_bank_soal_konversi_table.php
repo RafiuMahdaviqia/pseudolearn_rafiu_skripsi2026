@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('bank_soal_konversi', function (Blueprint $table) {
-            if (!Schema::hasColumn('bank_soal_konversi', 'order')) {
-                $table->unsignedInteger('order')->default(0)->after('id_soal')->index();
+            if (!Schema::hasColumn('bank_soal_konversi', 'difficulty')) {
+                $table->enum('difficulty', ['easy', 'medium', 'hard'])->nullable()->after('output')->index();
             }
         });
     }
@@ -18,10 +18,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('bank_soal_konversi', function (Blueprint $table) {
-            if (Schema::hasColumn('bank_soal_konversi', 'order')) {
-                $table->dropColumn('order');
+            if (Schema::hasColumn('bank_soal_konversi', 'difficulty')) {
+                $table->dropColumn('difficulty');
             }
         });
     }
 };
-

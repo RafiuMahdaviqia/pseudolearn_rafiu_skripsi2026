@@ -9,11 +9,15 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class Soal extends BaseModel
 {
     use HasFactory, HasUuids, SoftDeletes;
+
+    public const STATUS_ACTIVE = 1;
+    public const STATUS_INACTIVE = 0;
 
     protected $table = 'soal';
     protected $primaryKey = 'id';
@@ -63,5 +67,20 @@ class Soal extends BaseModel
     public function level() : BelongsTo
     {
         return $this->belongsTo(Level::class, 'id_level');
+    }
+
+    public static function activeStatusValues(): array
+    {
+        return [self::STATUS_ACTIVE, '1', 'active'];
+    }
+
+    public static function hasDifficultyColumn(): bool
+    {
+        return Schema::hasColumn((new static())->getTable(), 'difficulty');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereIn('status', self::activeStatusValues());
     }
 }

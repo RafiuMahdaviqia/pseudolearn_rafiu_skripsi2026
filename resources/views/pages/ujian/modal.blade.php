@@ -78,6 +78,17 @@
                         </p>
                         <br>
                         <p id="feedback-ujian"></p>
+                        <div id="decoy-section-ujian" class="mt-3 d-none">
+                            <div style="font-size: 0.9rem; font-weight: 600;">Contoh jawaban mirip (bukan kunci):</div>
+                            <div class="mt-2">
+                                <div style="font-size: 0.85rem; font-weight: 600;">Tipe Data</div>
+                                <ul id="decoy-tipe-list" style="font-size: 0.85rem; padding-left: 18px; margin-bottom: 8px;"></ul>
+                            </div>
+                            <div class="mt-2">
+                                <div style="font-size: 0.85rem; font-weight: 600;">Algoritma</div>
+                                <ul id="decoy-algo-list" style="font-size: 0.85rem; padding-left: 18px; margin-bottom: 0;"></ul>
+                            </div>
+                        </div>
                     </div>
                     <div style="flex-shrink: 0; margin-left: 24px;">
                         <img src="{{ asset('assets/media/img/fail.webp') }}" alt="fail" style="max-width: 170px; display: block;">
@@ -96,7 +107,7 @@
 
 <!-- modal-feedback-correct -->
 <div class="modal fade" tabindex="-1" id="modal-feedback-correct" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">
@@ -122,8 +133,7 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="window.location.href='{{ route('quiz.question-list') }}?level={{ $soal->id_level }}'">Selesai</button>
-                    <!-- <button type="button" class="btn btn-primary" id="submit-yakin">Yakin</button> -->
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='{{ route('quiz.question-list', ['level' => $soal->id_level]) }}'">Selesai</button>
                 </div>
             </form>
         </div>
@@ -182,6 +192,10 @@
                         </p>
                         <br>
                         <p id="feedback-ujian-konversi"></p>
+                        <div id="decoy-section-konversi" class="mt-3 d-none">
+                            <div style="font-size: 0.9rem; font-weight: 600;">Contoh jawaban mirip (bukan kunci):</div>
+                            <ul id="decoy-kode-list" style="font-size: 0.85rem; padding-left: 18px; margin-bottom: 0;"></ul>
+                        </div>
                     </div>
                     <div style="flex-shrink: 0; margin-left: 24px;">
                         <img src="{{ asset('assets/media/img/fail.webp') }}" alt="fail" style="max-width: 170px; display: block;">
@@ -199,7 +213,7 @@
 
 <!-- modal-feedback-correct KONVERSI-->
 <div class="modal fade" tabindex="-1" id="modal-feedback-correct-konversi" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">
@@ -225,7 +239,7 @@
                     </div>
 
                     {{-- Output awal dari server (selalu tampil) --}}
-                    <div id="java-run-result" style="background: #f5f5f5; border-radius: 6px; padding: 12px; font-family: monospace; color: #333;">
+                    <div id="java-run-result" style="background: #f5f5f5; border-radius: 6px; padding: 12px; font-family: monospace; color: #333; max-height:40vh; overflow:auto; white-space:pre-wrap;">
                         <!-- Hasil output Java akan ditampilkan di sini -->
                     </div>
 
@@ -243,13 +257,13 @@
                         {{-- Field input — diisi dinamis oleh renderScannerFieldsUjian() --}}
                         <div id="scanner-fields-ujian" class="d-flex flex-column gap-2 mb-3"></div>
 
-                        <button type="button" id="btn-run-scanner-ujian" class="btn btn-sm btn-primary" onclick="runScannerUjian()">
+                            <button type="button" id="btn-run-scanner-ujian" class="btn btn-sm btn-primary" onclick="runScannerUjian()">
                             <i class="bi bi-play-fill me-1"></i> Jalankan
                         </button>
 
                         {{-- Output setelah run dengan input siswa --}}
-                        <div id="java-run-result-scanner"
-                             style="margin-top: 12px; background: #f5f5f5; border-radius: 6px; padding: 12px; font-family: monospace; color: #333; display: none;">
+                            <div id="java-run-result-scanner"
+                                style="margin-top: 12px; background: #f5f5f5; border-radius: 6px; padding: 12px; font-family: monospace; color: #333; display: none; max-height:40vh; overflow:auto; white-space:pre-wrap;">
                         </div>
                     </div>
                 </div>

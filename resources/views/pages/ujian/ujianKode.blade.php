@@ -286,8 +286,20 @@
                                 <input type="hidden" id="id-level" value="{{ $soal->id_level }}">
 
                                 @php
-                                    $tipeDataList = collect(json_decode($soal['kunci_tipe_data'], true));
-                                    $algoritmaList = collect(json_decode($soal['kunci_algoritma'], true));
+                                    $decodeKunci = static function ($value): array {
+                                        if (is_array($value)) {
+                                            return $value;
+                                        }
+
+                                        if (is_string($value) && $value !== '') {
+                                            return json_decode($value, true) ?: [];
+                                        }
+
+                                        return [];
+                                    };
+
+                                    $tipeDataList = collect($decodeKunci($soal['kunci_tipe_data'] ?? []));
+                                    $algoritmaList = collect($decodeKunci($soal['kunci_algoritma'] ?? []));
                                     $dataLangkah = 1;
 
                                     $algoritmaTerpilih = $algoritmaList->filter(function ($row) {
@@ -300,11 +312,9 @@
                                         return false;
                                     });
 
-                                    // Format jawaban
-                                    $rawJawaban = $konversi['jawaban'] ?? '';
-
+                                    // Format jawaban (JSON array atau teks per baris)
                                     $jawabanList = collect(
-                                        array_filter(array_map('trim', explode("\n", (string) $rawJawaban))),
+                                        \App\Models\BankSoalKonversi::parseJawabanLines($konversi['jawaban'] ?? ''),
                                     )->shuffle();
 
                                     $totalLangkah = $jawabanList->count();
@@ -406,6 +416,8 @@
 
     <script>
         var hostUrl = "assets/";
+        var APP_URL = window.APP_URL || "/";
+        var QUIZ_QUESTION_LIST_URL = @json(route('quiz.question-list'));
     </script>
     <script src="{{ asset('js/ujian/indexUjianKode.js') }}"></script>
     <script src="{!! asset('assets/plugins/global/plugins.bundle.js') !!}"></script>

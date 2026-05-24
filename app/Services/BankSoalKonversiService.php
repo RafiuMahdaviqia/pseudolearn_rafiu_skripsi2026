@@ -67,25 +67,27 @@ class BankSoalKonversiService
         return $this->bankSoalKonversiRepository->getOrderListByLevel($levelId);
     }
 
-    // public function saveOrder($request)
-    // {
-    //     try {
-    //         DB::beginTransaction();
-    //         $orders = $request->input('order', []);
-    //         if (!is_array($orders)) {
-    //             return BaseResponse::errorMessage('Format order tidak valid');
-    //         }
+    public function saveOrder($request)
+    {
+        try {
+            DB::beginTransaction();
 
-    //         foreach ($orders as $item) {
-    //             if (!isset($item['id'], $item['order'])) continue;
-    //             $this->bankSoalKonversiRepository->update(['order' => (int) $item['order']], $item['id']);
-    //         }
+            $orders = $request->input('order', []);
+            if (!is_array($orders)) {
+                return BaseResponse::errorMessage('Format order tidak valid');
+            }
 
-    //         DB::commit();
-    //         return BaseResponse::updated('Urutan bank soal konversi berhasil disimpan');
-    //     } catch (\Throwable $e) {
-    //         DB::rollBack();
-    //         return BaseResponse::errorMessage($e->getMessage());
-    //     }
-    // }
+            $ok = $this->bankSoalKonversiRepository->saveOrder($orders);
+            if (!$ok) {
+                DB::rollBack();
+                return BaseResponse::errorMessage('Gagal menyimpan urutan bank soal konversi');
+            }
+
+            DB::commit();
+            return BaseResponse::updated(true);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return BaseResponse::errorMessage($e->getMessage());
+        }
+    }
 }

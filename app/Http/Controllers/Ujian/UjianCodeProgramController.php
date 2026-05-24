@@ -26,11 +26,21 @@ class UjianCodeProgramController extends Controller
     public function index(Request $request)
     {
         $id = $request->query('id');
-        $soalKonversi = $this->konversiModel->setView('v_konversi')->where('id', $id)->first();
-        $soal = $this->soalModel->where('id', $soalKonversi->id_soal)->first();
+        $soalKonversi = $this->konversiModel->setView('v_konversi')->find($id, ['*']);
+        if (!$soalKonversi) {
+            abort(404, 'Soal konversi tidak ditemukan.');
+        }
+        
+        $soal = $this->soalModel->find($soalKonversi->id_soal, ['*']);
+        if (!$soal) {
+            abort(404, 'Data soal tidak ditemukan.');
+        }
 
         $idUser = Auth::id();
-        $nyawa = Nyawa::where('id_user', $idUser)->first();
+        $nyawa = Nyawa::where('id_user', '=', $idUser, 'and')->first();
+        if (!$nyawa) {
+            abort(404, 'Data nyawa pengguna tidak ditemukan.');
+        }
 
         // Check and regenerate lives (1 life per 10 minutes)
         $nyawa->checkAndRegenerate();
