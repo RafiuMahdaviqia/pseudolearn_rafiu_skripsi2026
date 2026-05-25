@@ -50,6 +50,13 @@ class ArsReportService
 
         $arsData = $this->arsEngine->runArs($pairs);
 
+        // Persist ARS results so the report page reads stable data
+        try {
+            $this->saveArsResult($idMahasiswa, $idLevel, $arsData);
+        } catch (\Throwable $e) {
+            // swallow persistence errors but keep returning computed result
+        }
+
         return $arsData;
     }
 

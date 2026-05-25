@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\BankSoalKonversi;
 use App\Models\Mahasiswa;
 use App\Models\Soal;
 use App\Models\Ujian;
@@ -13,7 +14,8 @@ class UjianSeeder extends Seeder
     public function run(): void
     {
         $mhs = Mahasiswa::query()->first();
-        $soal = Soal::query()->orderBy('order')->first();
+        $bsk = BankSoalKonversi::query()->orderBy('created_at')->first();
+        $soal = $bsk ? Soal::query()->find($bsk->id_soal) : null;
 
         if (!$mhs || !$soal) {
             return;

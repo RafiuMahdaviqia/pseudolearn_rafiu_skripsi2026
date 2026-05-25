@@ -191,4 +191,3 @@ class UjianKodeRepository
         return [null, null];
     }
 }
-}

@@ -18,7 +18,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Easy 1: enqueue + print
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Operasi Enqueue dan Print pada Antrian' LIMIT 1)"),
                 'jawaban'    => "public class Main {\n" .
                                 "    int[] data;\n" .
@@ -67,7 +67,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Easy 2: enqueue + dequeue + print
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Operasi Dequeue dan Print pada Antrian' LIMIT 1)"),
                 'jawaban'    => "public class Main {\n" .
                                 "    int[] data;\n" .
@@ -123,7 +123,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Easy 3: enqueue + print (variasi data berbeda)
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Antrian Barang Gudang (Enqueue & Print)' LIMIT 1)"),
                 'jawaban'    => "public class Main {\n" .
                                 "    int[] data;\n" .
@@ -171,7 +171,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Easy 4: enqueue + dequeue + print (2x dequeue)
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Pengurangan Antrian Loket (Dequeue & Print)' LIMIT 1)"),
                 'jawaban'    => "public class Main {\n" .
                                 "    int[] data;\n" .
@@ -227,7 +227,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Easy 5: enqueue + print (2 kali)
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Pencatatan Cepat Antrian (Enqueue & Print)' LIMIT 1)"),
                 'jawaban'    => "public class Main {\n" .
                                 "    int[] data;\n" .
@@ -279,7 +279,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Medium 1: Scanner + IsFull + enqueue + peek
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Cek Kapasitas dan Peek Antrian Layanan' LIMIT 1)"),
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
@@ -343,7 +343,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Medium 2: IsEmpty + enqueue + dequeue + clear
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Mengosongkan Sisa Antrian' LIMIT 1)"),
                 'jawaban'    => "public class Main {\n" .
                                 "    int[] data;\n" .
@@ -400,7 +400,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Medium 3: Scanner + enqueue + dequeue + print
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Simulasi Operasi Layanan Queue' LIMIT 1)"),
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
@@ -460,7 +460,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Medium 4: Scanner + IsFull + enqueue + peek
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Batas Kapasitas Antrian' LIMIT 1)"),
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
@@ -524,7 +524,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Medium 5: IsEmpty + enqueue + clear + print
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Reset Ulang Antrian Pelanggan' LIMIT 1)"),
                 'jawaban'    => "public class Main {\n" .
                                 "    int[] data;\n" .
@@ -584,7 +584,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Hard 1 (mirip soal 12 PDF): Scanner + IsFull + enqueue + loop
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Batas Kapasitas Antrean Wahana Bermain' LIMIT 1)"),
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
@@ -643,7 +643,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Hard 2 (mirip soal 16 PDF): enqueue + dequeue + reset front/rear
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Simulasi Reset Antrean Otomatis di Klinik' LIMIT 1)"),
                 'jawaban'    => "public class Main {\n" .
                                 "    int[] data;\n" .
@@ -696,7 +696,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Hard 3 (mirip soal 24 PDF): Scanner + enqueue + dequeue + push ke Stack
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Pengarsipan Digital Antrean ke Stack' LIMIT 1)"),
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .
@@ -754,7 +754,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Hard 4 (mirip soal 26 PDF): enqueue + dequeue + push + pop + print (balik urutan)
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Pembalikan Urutan Mobil Keluar Gang' LIMIT 1)"),
                 'jawaban'    => "public class Main {\n" .
                                 "    int[] data;\n" .
@@ -817,7 +817,7 @@ class BankSoalKonversiSeeder extends Seeder
             // Hard 5 (mirip soal 28 PDF): Scanner + enqueue + push + dequeue + pop + cek palindrom
             [
                 'id'         => DB::raw('UUID()'),
-                'id_level'   => '019e5940-c171-73e1-a8e0-0e32d3e79b5f',
+                'id_level'   => '019863c4-59f9-7319-9104-08267fc3c551',
                 'id_soal'    => DB::raw("(SELECT id FROM soal WHERE judul = 'Validasi Antrean Palindrom' LIMIT 1)"),
                 'jawaban'    => "import java.util.Scanner;\n" .
                                 "public class Main {\n" .

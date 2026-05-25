@@ -104,8 +104,4 @@ function reloadDetail() {
     if (tableDetail) {
         tableDetail.ajax.reload();
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> new-pseudolearn-ars-dda-decoy

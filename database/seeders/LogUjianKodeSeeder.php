@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\BankSoalKonversi;
 use App\Models\LogUjianKode;
 use App\Models\Mahasiswa;
+use App\Models\Soal;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -14,6 +15,7 @@ class LogUjianKodeSeeder extends Seeder
     {
         $mhs = Mahasiswa::query()->first();
         $bsk = BankSoalKonversi::query()->orderBy('created_at')->first();
+        $soal = $bsk ? Soal::query()->find($bsk->id_soal) : null;
 
         if (!$mhs || !$bsk) {
             return;

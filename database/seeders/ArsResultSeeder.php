@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\BankSoalKonversi;
 use App\Models\ArsResult;
 use App\Models\Mahasiswa;
 use App\Models\Soal;
@@ -12,7 +13,8 @@ class ArsResultSeeder extends Seeder
     public function run(): void
     {
         $mhs = Mahasiswa::query()->first();
-        $soal = Soal::query()->orderBy('order')->first();
+        $bsk = BankSoalKonversi::query()->orderBy('created_at')->first();
+        $soal = $bsk ? Soal::query()->find($bsk->id_soal) : null;
 
         if (!$mhs || !$soal) {
             return;
@@ -29,12 +31,12 @@ class ArsResultSeeder extends Seeder
                 'difficulty' => $soal->difficulty,
                 'pseudo_langkah' => 3,
                 'pseudo_durasi' => 120,
-                'pseudo_label' => 'baik',
-                'pseudo_score' => 90,
+                'pseudo_label' => 'Struggling',
+                'pseudo_score' => 30,
                 'konversi_langkah' => 3,
                 'konversi_durasi' => 60,
-                'konversi_label' => 'baik',
-                'konversi_score' => 100,
+                'konversi_label' => 'Normal',
+                'konversi_score' => 70,
             ]
         );
     }

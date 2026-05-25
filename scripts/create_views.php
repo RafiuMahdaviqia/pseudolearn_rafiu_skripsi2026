@@ -135,29 +135,26 @@ SELECT
     uk.deleted_at
 FROM ujian_konversi uk
 SQL,
-<<<<<<< HEAD
-=======
     'v_konversi' => <<<'SQL'
 CREATE OR REPLACE VIEW v_konversi AS
-    SELECT
-        k.id,
-        k.id_level,
-        l.name AS level_name,
-        k.id_soal,
-        s.judul AS judul_soal,
-        s.soal AS soal_name,
-        k.jawaban,
-        k.output,
-        k.bobot,
-        k.created_at,
-        k.updated_at,
-        k.deleted_at,
-        s.status
-    FROM konversi k
-    LEFT JOIN level l ON k.id_level = l.id
-    LEFT JOIN soal s ON k.id_soal = s.id
+SELECT
+    k.id,
+    k.id_level,
+    l.name AS level_name,
+    k.id_soal,
+    s.judul AS judul_soal,
+    s.soal AS soal_name,
+    k.jawaban,
+    k.output,
+    k.bobot,
+    k.created_at,
+    k.updated_at,
+    k.deleted_at,
+    s.status
+FROM konversi k
+LEFT JOIN level l ON k.id_level = l.id
+LEFT JOIN soal s ON k.id_soal = s.id
 SQL,
->>>>>>> new-pseudolearn-ars-dda-decoy
 ];
 
 foreach ($views as $name => $sql) {

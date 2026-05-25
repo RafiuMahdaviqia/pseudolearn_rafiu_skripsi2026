@@ -6,6 +6,7 @@ use App\Models\BankSoalKonversi;
 use App\Models\UjianKode;
 use App\Models\User;
 use App\Models\Mahasiswa;
+use App\Models\Soal;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -15,6 +16,7 @@ class UjianKodeSeeder extends Seeder
     {
         $user = User::query()->where('is_admin', 0)->first();
         $bsk = BankSoalKonversi::query()->orderBy('created_at')->first();
+        $soal = $bsk ? Soal::query()->find($bsk->id_soal) : null;
 
         if (!$user || !$bsk) {
             return;

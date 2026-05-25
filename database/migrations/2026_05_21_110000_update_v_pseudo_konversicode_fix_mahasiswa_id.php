@@ -67,8 +67,7 @@ return new class extends Migration
                 ) AS pair_index
 
             FROM ujian_kode uk
-            JOIN users u ON u.id = uk.id_mahasiswa
-            JOIN mahasiswa m ON m.id_user = u.id
+            JOIN mahasiswa m ON m.id = uk.id_mahasiswa
             JOIN bank_soal_konversi bsk ON bsk.id = uk.id_bank_soal_konversi
             JOIN soal s ON s.id = bsk.id_soal
             LEFT JOIN log_ujian_kode luk 
