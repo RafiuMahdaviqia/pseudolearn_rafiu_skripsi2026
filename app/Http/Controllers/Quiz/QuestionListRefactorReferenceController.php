@@ -130,7 +130,7 @@ class QuestionListRefactorReferenceController extends Controller
             ->orderBy('created_at', 'desc')
             ->value('label');
 
-        $clusterLabel = ClusterLabel::tryFrom((string) $latestLabel);
+        $clusterLabel = ClusterLabel::tryFromCaseInsensitive($latestLabel);
 
         if ($clusterLabel === null) {
             return $currentDifficulty;

@@ -13,4 +13,23 @@ enum ClusterLabel: string
     {
         return array_search($this, self::cases(), true);
     }
+
+    /**
+     * Case-insensitive version of tryFrom().
+     * Safe against any casing variation in stored labels.
+     */
+    public static function tryFromCaseInsensitive(?string $value): ?self
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        foreach (self::cases() as $case) {
+            if (strcasecmp($case->value, $value) === 0) {
+                return $case;
+            }
+        }
+
+        return null;
+    }
 }
